@@ -13,7 +13,7 @@
 ## 2. Domain Layer
 - [x] Define TypeScript types/interfaces for Build, Selector, BuildStats in /src/domain
 - [x] Implement validation logic for cache expiration and selector types
-- [ ] Write unit tests for domain models and validation logic (cover edge cases)
+- [x] Write unit tests for domain models and validation logic (cover edge cases)
 
 ## 3. Infrastructure Layer
 - [ ] Implement FileSystemRepository in /src/infrastructure for reading/writing Build objects to data/config.json
