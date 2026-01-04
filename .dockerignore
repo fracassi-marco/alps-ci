@@ -1,0 +1,14 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+.next
+.git
+.gitignore
+README.md
+.DS_Store
+*.md
+.env*.local
+.vscode
+.idea
+

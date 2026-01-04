@@ -53,6 +53,33 @@ bun run build
 bun start
 ```
 
+## Docker Deployment
+
+### Build and Run with Docker
+
+```bash
+# Build the Docker image
+docker build -t alps-ci .
+
+# Run the container
+docker run -p 3000:3000 -v $(pwd)/data:/app/data alps-ci
+```
+
+### Using Docker Compose
+
+```bash
+# Build and start the service
+docker-compose up -d
+
+# Stop the service
+docker-compose down
+
+# View logs
+docker-compose logs -f
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
+
 ## Features
 
 - Create and manage Builds (GitHub Actions workflow monitors)
