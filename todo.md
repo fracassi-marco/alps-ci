@@ -1,10 +1,10 @@
 # Alps-CI Project Checklist
 
 ## 1. Foundation & Project Setup
-- [ ] Initialize Bun + Next.js (App Router) project with TypeScript and TailwindCSS
-- [ ] Set up Clean Architecture folder structure under /src (domain, use-cases, infrastructure)
-- [ ] Add .gitignore
-- [ ] Ensure project builds and runs locally
+- [x] Initialize Bun + Next.js (App Router) project with TypeScript and TailwindCSS
+- [x] Set up Clean Architecture folder structure under /src (domain, use-cases, infrastructure)
+- [x] Add .gitignore
+- [x] Ensure project builds and runs locally
 - [ ] Add Dockerfile using best practices for Bun + Next.js
 - [ ] Expose default port in Dockerfile
 - [ ] Ensure app runs in a container
