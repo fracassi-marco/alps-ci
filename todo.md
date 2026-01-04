@@ -11,8 +11,8 @@
 - [x] Add GitHub Actions workflow for build and test
 
 ## 2. Domain Layer
-- [ ] Define TypeScript types/interfaces for Build, Selector, BuildStats in /src/domain
-- [ ] Implement validation logic for cache expiration and selector types
+- [x] Define TypeScript types/interfaces for Build, Selector, BuildStats in /src/domain
+- [x] Implement validation logic for cache expiration and selector types
 - [ ] Write unit tests for domain models and validation logic (cover edge cases)
 
 ## 3. Infrastructure Layer
