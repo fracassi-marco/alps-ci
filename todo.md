@@ -5,10 +5,10 @@
 - [x] Set up Clean Architecture folder structure under /src (domain, use-cases, infrastructure)
 - [x] Add .gitignore
 - [x] Ensure project builds and runs locally
-- [ ] Add Dockerfile using best practices for Bun + Next.js
-- [ ] Expose default port in Dockerfile
-- [ ] Ensure app runs in a container
-- [ ] Add GitHub Actions workflow for build and test
+- [x] Add Dockerfile using best practices for Bun + Next.js
+- [x] Expose default port in Dockerfile
+- [x] Ensure app runs in a container
+- [x] Add GitHub Actions workflow for build and test
 
 ## 2. Domain Layer
 - [ ] Define TypeScript types/interfaces for Build, Selector, BuildStats in /src/domain
