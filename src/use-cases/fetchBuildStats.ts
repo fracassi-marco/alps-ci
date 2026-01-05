@@ -7,7 +7,11 @@ export class FetchBuildStatsUseCase {
 
   async execute(build: Build): Promise<BuildStats> {
     try {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      // Calculate 7 days ago at midnight (start of day) to include full days
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
 
       // Fetch workflow runs for the last 7 days
       const allRuns = await this.fetchWorkflowRunsForSelectors(
