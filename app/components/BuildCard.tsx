@@ -108,7 +108,9 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
   };
 
 
-  const maxSuccessCount = stats ? Math.max(...stats.last7DaysSuccesses.map((d) => d.successCount), 1) : 1;
+  const maxDailyTotal = stats
+    ? Math.max(...stats.last7DaysSuccesses.map((d) => (d.successCount + (d.failureCount || 0))), 1)
+    : 1;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -256,27 +258,41 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             )}
 
-            {/* Bar Chart - Last 7 Days Successes */}
+            {/* Stacked Bar Chart - Last 7 Days */}
             <div>
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                Successful Runs - Last 7 Days
+                Workflow Runs - Last 7 Days
               </h4>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <div className="flex items-end justify-between gap-2 h-24">
                   {stats.last7DaysSuccesses.map((day, index) => {
-                    const heightPercent = maxSuccessCount > 0 ? (day.successCount / maxSuccessCount) * 100 : 0;
+                    const totalCount = day.successCount + (day.failureCount || 0);
+                    const successHeightPercent = maxDailyTotal > 0 ? (day.successCount / maxDailyTotal) * 100 : 0;
+                    const failureHeightPercent = maxDailyTotal > 0 ? ((day.failureCount || 0) / maxDailyTotal) * 100 : 0;
+
                     return (
                       <div key={index} className="flex flex-col items-center gap-2 flex-1">
-                        {day.successCount > 0 && (
+                        {totalCount > 0 && (
                           <div className="text-xs font-bold text-gray-900 dark:text-white">
-                            {day.successCount}
+                            {totalCount}
                           </div>
                         )}
-                        <div className="w-full flex items-end justify-center h-16">
+                        <div className="w-full flex flex-col items-center justify-end h-16 gap-0">
+                          {/* Failures - on top */}
+                          {(day.failureCount || 0) > 0 && (
+                            <div
+                              className="w-full bg-red-500 dark:bg-red-600 transition-all hover:bg-red-600 dark:hover:bg-red-500 cursor-pointer"
+                              style={{ height: `${Math.max(failureHeightPercent, 8)}%` }}
+                              title={`${day.date}: ${day.failureCount} failures`}
+                            ></div>
+                          )}
+                          {/* Successes - on bottom */}
                           {day.successCount > 0 && (
                             <div
-                              className="w-full bg-green-500 dark:bg-green-600 rounded-t transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer"
-                              style={{ height: `${Math.max(heightPercent, 10)}%` }}
+                              className={`w-full bg-green-500 dark:bg-green-600 transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer ${
+                                (day.failureCount || 0) === 0 ? 'rounded-t' : ''
+                              }`}
+                              style={{ height: `${Math.max(successHeightPercent, 8)}%` }}
                               title={`${day.date}: ${day.successCount} successes`}
                             ></div>
                           )}
@@ -287,6 +303,17 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                       </div>
                     );
                   })}
+                </div>
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 mt-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Success</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 bg-red-500 dark:bg-red-600 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Failed</span>
+                  </div>
                 </div>
               </div>
             </div>

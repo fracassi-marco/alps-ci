@@ -29,7 +29,7 @@ export class FetchBuildStatsUseCase {
       const healthPercentage = calculateHealthPercentage(successfulExecutions, totalExecutions);
 
 
-      // Build daily success counts for bar chart
+      // Build daily success and failure counts for stacked bar chart
       const last7DaysSuccesses: DailySuccess[] = last7Days.map((date) => {
         const dateStr = formatDateYYYYMMDD(date);
         const successCount = allRuns.filter(
@@ -37,10 +37,16 @@ export class FetchBuildStatsUseCase {
             run.status === 'success' &&
             formatDateYYYYMMDD(run.createdAt) === dateStr
         ).length;
+        const failureCount = allRuns.filter(
+          (run) =>
+            run.status === 'failure' &&
+            formatDateYYYYMMDD(run.createdAt) === dateStr
+        ).length;
 
         return {
           date: dateStr,
           successCount,
+          failureCount,
         };
       });
 

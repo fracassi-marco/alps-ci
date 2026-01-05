@@ -48,10 +48,11 @@ export interface BuildStats {
   lastFetchedAt: Date;
 }
 
-// Daily success count for bar chart
+// Daily success and failure count for stacked bar chart
 export interface DailySuccess {
   date: string; // ISO date string (YYYY-MM-DD)
   successCount: number;
+  failureCount?: number;
 }
 
 // Build with statistics
