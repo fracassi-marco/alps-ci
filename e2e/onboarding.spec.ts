@@ -28,11 +28,11 @@ test.describe('Onboarding Flow', () => {
     await ensureDataDir();
     await cleanupConfig();
     // Wait a bit for file system to sync
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 300));
     // Navigate to page AFTER cleanup
-    await page.goto('/');
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    // Force reload to ensure server picks up empty config
+    await page.reload({ waitUntil: 'networkidle' });
   });
 
   test('should show welcome screen when no builds exist', async ({ page }) => {

@@ -48,11 +48,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
 
     // Build card should appear
     await expect(page.getByText('Test Build')).toBeVisible({ timeout: 10000 });
@@ -77,11 +77,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
     await expect(page.getByText('Build with Stats')).toBeVisible({ timeout: 10000 });
 
     // Wait for statistics to load (or error to appear)
@@ -112,11 +112,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
     await expect(page.getByText('Refresh Test Build')).toBeVisible({ timeout: 10000 });
 
     // Wait a moment for initial load
@@ -153,11 +153,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
     await expect(page.getByText('Multi Selector Build')).toBeVisible({ timeout: 10000 });
 
     // Wait for card to load
@@ -189,11 +189,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
     await expect(page.getByText('Metadata Test Build')).toBeVisible({ timeout: 10000 });
 
     // Wait for card to load
@@ -246,11 +246,11 @@ test.describe('Statistics Display and Refresh', () => {
       },
     ], null, 2));
 
-    // Wait for file to be written
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for file to be written and synced
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'networkidle' });
 
     // All three builds should be visible
     await expect(page.getByText('First Build')).toBeVisible({ timeout: 10000 });
