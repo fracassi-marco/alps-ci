@@ -281,20 +281,26 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                           {/* Failures - on top (always rounded if present) */}
                           {(day.failureCount || 0) > 0 && (
                             <div
-                              className="w-full bg-red-500 dark:bg-red-600 rounded-t transition-all hover:bg-red-600 dark:hover:bg-red-500 cursor-pointer"
+                              className="w-full bg-red-500 dark:bg-red-600 rounded-t transition-all hover:bg-red-600 dark:hover:bg-red-500 cursor-pointer relative group"
                               style={{ height: `${Math.max(failureHeightPercent, 8)}%` }}
-                              title={`${day.date}: ${day.failureCount} failures`}
-                            ></div>
+                            >
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                {day.failureCount} failure{day.failureCount !== 1 ? 's' : ''}
+                              </div>
+                            </div>
                           )}
                           {/* Successes - on bottom (rounded only if no failures on top) */}
                           {day.successCount > 0 && (
                             <div
-                              className={`w-full bg-green-500 dark:bg-green-600 transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer ${
+                              className={`w-full bg-green-500 dark:bg-green-600 transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer relative group ${
                                 (day.failureCount || 0) === 0 ? 'rounded-t' : ''
                               }`}
                               style={{ height: `${Math.max(successHeightPercent, 8)}%` }}
-                              title={`${day.date}: ${day.successCount} successes`}
-                            ></div>
+                            >
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                {day.successCount} success{day.successCount !== 1 ? 'es' : ''}
+                              </div>
+                            </div>
                           )}
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
