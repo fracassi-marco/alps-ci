@@ -22,9 +22,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create a non-root user (Alpine Linux syntax)
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -u 1001 -S nextjs -G nodejs
 
 # Copy built application
 COPY --from=builder /app/public ./public
@@ -41,5 +41,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["bun", "server.js"]
+# Next.js standalone creates server.js in the root
+# Use Bun instead of Node for better performance
+CMD ["bun", "run", "server.js"]
 
