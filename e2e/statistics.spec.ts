@@ -29,9 +29,10 @@ async function createBuildWithConfig(build: any) {
 test.describe('Statistics Display and Refresh', () => {
   test.beforeEach(async () => {
     await ensureDataDir();
+  });
+
+  test.afterEach(async () => {
     await cleanupConfig();
-    // Wait a bit for file system to sync
-    await new Promise(resolve => setTimeout(resolve, 100));
   });
 
   test('should show loading state while fetching statistics', async ({ page }) => {
@@ -47,7 +48,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
     // Build card should appear
     await expect(page.getByText('Test Build')).toBeVisible({ timeout: 10000 });
@@ -72,7 +77,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Build with Stats')).toBeVisible({ timeout: 10000 });
 
     // Wait for statistics to load (or error to appear)
@@ -103,7 +112,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Refresh Test Build')).toBeVisible({ timeout: 10000 });
 
     // Wait a moment for initial load
@@ -140,7 +153,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Multi Selector Build')).toBeVisible({ timeout: 10000 });
 
     // Wait for card to load
@@ -172,7 +189,11 @@ test.describe('Statistics Display and Refresh', () => {
       updatedAt: new Date().toISOString(),
     });
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Metadata Test Build')).toBeVisible({ timeout: 10000 });
 
     // Wait for card to load
@@ -225,7 +246,11 @@ test.describe('Statistics Display and Refresh', () => {
       },
     ], null, 2));
 
+    // Wait for file to be written
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
     // All three builds should be visible
     await expect(page.getByText('First Build')).toBeVisible({ timeout: 10000 });
