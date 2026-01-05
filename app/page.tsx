@@ -107,9 +107,8 @@ export default function Home() {
   };
 
   const handleRefresh = async (build: Build) => {
-    // TODO: Implement manual refresh in Step 7
-    console.log('Refresh build:', build.name);
-    alert('Manual refresh will be implemented in Step 7');
+    // Refresh is handled by the BuildCard component itself
+    console.log('Refresh triggered for build:', build.name);
   };
 
   if (loading) {

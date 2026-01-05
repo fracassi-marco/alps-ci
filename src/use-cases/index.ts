@@ -3,6 +3,7 @@ export { AddBuildUseCase } from './addBuild';
 export { EditBuildUseCase } from './editBuild';
 export { DeleteBuildUseCase } from './deleteBuild';
 export { RestoreFromBackupUseCase } from './restoreFromBackup';
+export { FetchBuildStatsUseCase } from './fetchBuildStats';
 
 export type { BuildRepository as ListBuildsRepository } from './listBuilds';
 export type { BuildRepository as AddBuildRepository } from './addBuild';
