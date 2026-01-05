@@ -8,13 +8,12 @@ import {
   GitBranch,
   Tag,
   Workflow,
-  TrendingUp,
-  TrendingDown,
   Activity,
   ExternalLink,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  ChevronDown
 } from 'lucide-react';
 import type { Build, Selector, BuildStats } from '@/domain/models';
 import { getHealthBadgeColor } from '@/domain/utils';
@@ -31,6 +30,7 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -107,27 +107,6 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
     });
   };
 
-  const getHealthBadge = (percentage: number) => {
-    const color = getHealthBadgeColor(percentage);
-    const bgColorMap = {
-      green: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 border-green-300 dark:border-green-700',
-      yellow: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
-      red: 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 border-red-300 dark:border-red-700',
-    };
-
-    return (
-      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 font-bold text-lg ${bgColorMap[color]}`}>
-        {percentage >= 90 ? (
-          <CheckCircle className="w-5 h-5" />
-        ) : percentage >= 70 ? (
-          <Activity className="w-5 h-5" />
-        ) : (
-          <XCircle className="w-5 h-5" />
-        )}
-        {percentage}% Health
-      </div>
-    );
-  };
 
   const maxSuccessCount = stats ? Math.max(...stats.last7DaysSuccesses.map((d) => d.successCount), 1) : 1;
 
@@ -207,50 +186,58 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Total Executions */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm mb-1">
-                  <Activity className="w-4 h-4" />
-                  Total Executions
+              <div
+                className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center"
+                title="Total Executions (Last 7 days)"
+              >
+                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                  Total
                 </div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">
                   {stats.totalExecutions}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Last 7 days
                 </div>
               </div>
 
               {/* Successful */}
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-sm mb-1">
-                  <TrendingUp className="w-4 h-4" />
-                  Successful
+              <div
+                className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center"
+                title="Successful Executions (Last 7 days)"
+              >
+                <div className="text-xs text-green-700 dark:text-green-400 font-medium mb-2">
+                  Success
                 </div>
-                <div className="text-2xl font-bold text-green-900 dark:text-green-300">
+                <div className="text-3xl font-bold text-green-900 dark:text-green-300">
                   {stats.successfulExecutions}
-                </div>
-                <div className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  Last 7 days
                 </div>
               </div>
 
               {/* Failed */}
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-sm mb-1">
-                  <TrendingDown className="w-4 h-4" />
+              <div
+                className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center"
+                title="Failed Executions (Last 7 days)"
+              >
+                <div className="text-xs text-red-700 dark:text-red-400 font-medium mb-2">
                   Failed
                 </div>
-                <div className="text-2xl font-bold text-red-900 dark:text-red-300">
+                <div className="text-3xl font-bold text-red-900 dark:text-red-300">
                   {stats.failedExecutions}
-                </div>
-                <div className="text-xs text-red-600 dark:text-red-500 mt-1">
-                  Last 7 days
                 </div>
               </div>
 
               {/* Health Badge */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex items-center justify-center">
-                {getHealthBadge(stats.healthPercentage)}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                  Health
+                </div>
+                <div className={`text-2xl font-bold ${
+                  stats.healthPercentage >= 90 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : stats.healthPercentage >= 70 
+                    ? 'text-yellow-600 dark:text-yellow-400' 
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {stats.healthPercentage}%
+                </div>
               </div>
             </div>
 
@@ -274,25 +261,33 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                 Successful Runs - Last 7 Days
               </h4>
-              <div className="flex items-end gap-2 h-32">
-                {stats.last7DaysSuccesses.map((day, index) => {
-                  const height = maxSuccessCount > 0 ? (day.successCount / maxSuccessCount) * 100 : 0;
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="text-xs font-medium text-gray-900 dark:text-white">
-                        {day.successCount}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <div className="flex items-end justify-between gap-2 h-24">
+                  {stats.last7DaysSuccesses.map((day, index) => {
+                    const heightPercent = maxSuccessCount > 0 ? (day.successCount / maxSuccessCount) * 100 : 0;
+                    return (
+                      <div key={index} className="flex flex-col items-center gap-2 flex-1">
+                        {day.successCount > 0 && (
+                          <div className="text-xs font-bold text-gray-900 dark:text-white">
+                            {day.successCount}
+                          </div>
+                        )}
+                        <div className="w-full flex items-end justify-center h-16">
+                          {day.successCount > 0 && (
+                            <div
+                              className="w-full bg-green-500 dark:bg-green-600 rounded-t transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer"
+                              style={{ height: `${Math.max(heightPercent, 10)}%` }}
+                              title={`${day.date}: ${day.successCount} successes`}
+                            ></div>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
                       </div>
-                      <div
-                        className="w-full bg-green-500 dark:bg-green-600 rounded-t transition-all hover:bg-green-600 dark:hover:bg-green-500"
-                        style={{ height: `${Math.max(height, day.successCount > 0 ? 8 : 0)}%` }}
-                        title={`${day.date}: ${day.successCount} successes`}
-                      ></div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -339,65 +334,89 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             )}
 
-            {/* Selectors */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                Selectors
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {build.selectors.map((selector, index) => (
-                  <div
-                    key={index}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm"
-                  >
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {getSelectorIcon(selector.type)}
-                    </span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {selector.type}:
-                    </span>
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {selector.pattern}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Accordion for Details */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <button
+                onClick={() => setShowDetails(!showDetails)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Additional Details
+                </span>
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
+                    showDetails ? 'transform rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-            {/* Metadata */}
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <div>
-                  <span className="font-medium">Cache Expiration:</span> {build.cacheExpirationMinutes} min
+              {showDetails && (
+                <div className="mt-4 space-y-6">
+                  {/* Selectors */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Selectors
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {build.selectors.map((selector, index) => (
+                        <div
+                          key={index}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm"
+                        >
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {getSelectorIcon(selector.type)}
+                          </span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {selector.type}:
+                          </span>
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {selector.pattern}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Metadata */}
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Metadata
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div>
+                        <span className="font-medium">Cache Expiration:</span> {build.cacheExpirationMinutes} min
+                      </div>
+                      <div>
+                        <span className="font-medium">Last Fetched:</span> {formatDate(stats.lastFetchedAt)}
+                      </div>
+                      <div>
+                        <span className="font-medium">Avg Duration:</span>{' '}
+                        {stats.recentRuns.length > 0 && stats.recentRuns.some(r => r.duration) ? (
+                          `${Math.round(
+                            stats.recentRuns
+                              .filter(r => r.duration)
+                              .reduce((sum, r) => sum + (r.duration || 0), 0) /
+                              stats.recentRuns.filter(r => r.duration).length /
+                              1000 /
+                              60
+                          )}m`
+                        ) : (
+                          'N/A'
+                        )}
+                      </div>
+                      <div>
+                        <span className="font-medium">Created:</span> {formatDate(build.createdAt)}
+                      </div>
+                      <div>
+                        <span className="font-medium">Updated:</span> {formatDate(build.updatedAt)}
+                      </div>
+                      <div>
+                        <span className="font-medium">Success Rate:</span> {stats.healthPercentage}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium">Last Fetched:</span> {formatDate(stats.lastFetchedAt)}
-                </div>
-                <div>
-                  <span className="font-medium">Avg Duration:</span>{' '}
-                  {stats.recentRuns.length > 0 && stats.recentRuns.some(r => r.duration) ? (
-                    `${Math.round(
-                      stats.recentRuns
-                        .filter(r => r.duration)
-                        .reduce((sum, r) => sum + (r.duration || 0), 0) /
-                        stats.recentRuns.filter(r => r.duration).length /
-                        1000 /
-                        60
-                    )}m`
-                  ) : (
-                    'N/A'
-                  )}
-                </div>
-                <div>
-                  <span className="font-medium">Created:</span> {formatDate(build.createdAt)}
-                </div>
-                <div>
-                  <span className="font-medium">Updated:</span> {formatDate(build.updatedAt)}
-                </div>
-                <div>
-                  <span className="font-medium">Success Rate:</span> {stats.healthPercentage}%
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
