@@ -8,6 +8,10 @@ Alps-CI is a CI dashboard that displays workflows from GitHub Actions for multip
 ## Key Concepts
 - **Build**: A set of workflows executed in a specific repository, identified by user-defined Selectors.
 - **Selector**: A filter for workflows, which can be a Git tag pattern (e.g., `vX.Y.Z`), a Git branch (e.g., `main`), or a GitHub Action workflow name (e.g., `CI-Workflow`). Selectors are entered as custom patterns or free text and can be mixed within a Build.
+- **Selector Logic**: 
+  - **Single selector or same type**: OR logic (union) - shows runs matching any selector
+  - **Branch + Tag combination**: AND logic (intersection) - shows only tag runs (tags are created from branches, so tag runs implicitly represent branch+tag combination)
+  - **Multiple workflow selectors**: OR logic (union)
 
 ---
 
