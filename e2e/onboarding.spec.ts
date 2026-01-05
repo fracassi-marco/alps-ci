@@ -24,16 +24,18 @@ async function ensureDataDir() {
 }
 
 test.describe('Onboarding Flow', () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
     await ensureDataDir();
     await cleanupConfig();
     // Wait a bit for file system to sync
     await new Promise(resolve => setTimeout(resolve, 100));
+    // Navigate to page AFTER cleanup
+    await page.goto('/');
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
   });
 
   test('should show welcome screen when no builds exist', async ({ page }) => {
-    await page.goto('/');
-
     // Wait for welcome screen with longer timeout
     await expect(page.getByRole('heading', { name: 'Welcome to Alps-CI' })).toBeVisible({ timeout: 10000 });
 
@@ -53,7 +55,6 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('should open add build form when clicking Add Your First Build', async ({ page }) => {
-    await page.goto('/');
 
     // Click the Add Your First Build button
     await page.getByRole('button', { name: 'Add Your First Build' }).click();
@@ -73,8 +74,6 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('should close form when clicking cancel', async ({ page }) => {
-    await page.goto('/');
-
     // Open form
     await page.getByRole('button', { name: 'Add Your First Build' }).click();
     await expect(page.getByRole('heading', { name: 'Add New Build' })).toBeVisible();
@@ -87,7 +86,6 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('should validate required fields', async ({ page }) => {
-    await page.goto('/');
 
     // Open form
     await page.getByRole('button', { name: 'Add Your First Build' }).click();

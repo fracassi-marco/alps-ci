@@ -146,6 +146,9 @@ test.describe('Statistics Display and Refresh', () => {
     // Wait for card to load
     await page.waitForTimeout(2000);
 
+    // Open Additional Details accordion
+    await page.getByRole('button', { name: 'Additional Details' }).click();
+
     // Check for Selectors section
     await expect(page.getByText('Selectors', { exact: false })).toBeVisible();
 
@@ -174,6 +177,9 @@ test.describe('Statistics Display and Refresh', () => {
 
     // Wait for card to load
     await page.waitForTimeout(2000);
+
+    // Open Additional Details accordion
+    await page.getByRole('button', { name: 'Additional Details' }).click();
 
     // Check for metadata
     await expect(page.getByText('Cache Expiration:', { exact: false })).toBeVisible();
