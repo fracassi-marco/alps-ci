@@ -327,6 +327,7 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                             <div className="text-xs text-gray-600 dark:text-gray-400">
                               {formatDate(run.createdAt)}
                               {run.duration && ` • ${Math.round(run.duration / 1000 / 60)}m`}
+                              {run.headBranch && ` • ${run.headBranch}`}
                             </div>
                           </div>
                         </div>
@@ -364,18 +365,38 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
             </div>
 
             {/* Metadata */}
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-4 text-xs text-gray-500 dark:text-gray-400">
-              <div>
-                <span className="font-medium">Cache Expiration:</span> {build.cacheExpirationMinutes} min
-              </div>
-              <div>
-                <span className="font-medium">Last Fetched:</span> {formatDate(stats.lastFetchedAt)}
-              </div>
-              <div>
-                <span className="font-medium">Created:</span> {formatDate(build.createdAt)}
-              </div>
-              <div>
-                <span className="font-medium">Updated:</span> {formatDate(build.updatedAt)}
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div>
+                  <span className="font-medium">Cache Expiration:</span> {build.cacheExpirationMinutes} min
+                </div>
+                <div>
+                  <span className="font-medium">Last Fetched:</span> {formatDate(stats.lastFetchedAt)}
+                </div>
+                <div>
+                  <span className="font-medium">Avg Duration:</span>{' '}
+                  {stats.recentRuns.length > 0 && stats.recentRuns.some(r => r.duration) ? (
+                    `${Math.round(
+                      stats.recentRuns
+                        .filter(r => r.duration)
+                        .reduce((sum, r) => sum + (r.duration || 0), 0) /
+                        stats.recentRuns.filter(r => r.duration).length /
+                        1000 /
+                        60
+                    )}m`
+                  ) : (
+                    'N/A'
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium">Created:</span> {formatDate(build.createdAt)}
+                </div>
+                <div>
+                  <span className="font-medium">Updated:</span> {formatDate(build.updatedAt)}
+                </div>
+                <div>
+                  <span className="font-medium">Success Rate:</span> {stats.healthPercentage}%
+                </div>
               </div>
             </div>
           </div>
