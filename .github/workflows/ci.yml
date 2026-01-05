@@ -25,8 +25,8 @@ jobs:
     - name: Build application
       run: bun run build
 
-    - name: Run tests
-      run: bun test || echo "No tests yet"
+    - name: Run unit tests
+      run: bun test __tests__/
 
   docker-build:
     runs-on: ubuntu-latest
