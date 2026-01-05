@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { AddEditBuildForm } from './components/AddEditBuildForm';
+import { BuildCard } from './components/BuildCard';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import type { Build } from '@/domain/models';
 
 export default function Home() {
@@ -10,6 +13,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showAddBuildForm, setShowAddBuildForm] = useState(false);
   const [editingBuild, setEditingBuild] = useState<Build | null>(null);
+  const [deletingBuild, setDeletingBuild] = useState<Build | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Fetch builds on mount
@@ -69,6 +74,44 @@ export default function Home() {
     setEditingBuild(null);
   };
 
+  const handleDeleteClick = (build: Build) => {
+    setDeletingBuild(build);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingBuild) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/builds/${deletingBuild.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove build from UI immediately
+        setBuilds((prev) => prev.filter((b) => b.id !== deletingBuild.id));
+        setDeletingBuild(null);
+      } else {
+        throw new Error('Failed to delete build');
+      }
+    } catch (error) {
+      console.error('Failed to delete build:', error);
+      alert('Failed to delete build. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeletingBuild(null);
+  };
+
+  const handleRefresh = async (build: Build) => {
+    // TODO: Implement manual refresh in Step 7
+    console.log('Refresh build:', build.name);
+    alert('Manual refresh will be implemented in Step 7');
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -86,23 +129,42 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Alps-CI</h1>
-        <p className="text-lg text-gray-600">
-          CI Dashboard for GitHub Actions Workflows
-        </p>
-        {/* TODO: Show build list */}
-        <div className="mt-8">
-          <p className="text-gray-500">
-            {builds.length} build(s) configured
-          </p>
-          <button
-            onClick={handleAddBuild}
-            className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            Add Build
-          </button>
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Alps-CI
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {builds.length} build{builds.length !== 1 ? 's' : ''} configured
+              </p>
+            </div>
+            <button
+              onClick={handleAddBuild}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Add Build
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Build Cards Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {builds.map((build) => (
+            <BuildCard
+              key={build.id}
+              build={build}
+              onEdit={handleEditBuild}
+              onDelete={handleDeleteClick}
+              onRefresh={handleRefresh}
+            />
+          ))}
         </div>
       </div>
 
@@ -113,6 +175,29 @@ export default function Home() {
           onSave={handleSaveBuild}
           onCancel={handleCancelForm}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deletingBuild && !isDeleting && (
+        <ConfirmDialog
+          title="Delete Build?"
+          message={`Are you sure you want to delete "${deletingBuild.name}"? This action cannot be undone. A backup will be created automatically.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          isDestructive
+        />
+      )}
+
+      {/* Deleting Overlay */}
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Deleting build...</p>
+          </div>
+        </div>
       )}
     </main>
   );
