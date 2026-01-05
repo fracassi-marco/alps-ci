@@ -69,82 +69,127 @@ export class FetchBuildStatsUseCase {
     build: Build,
     since: Date
   ): Promise<WorkflowRun[]> {
-    const allRuns: WorkflowRun[] = [];
+    // Separate selectors by type
+    const branchSelectors = build.selectors.filter(s => s.type === 'branch');
+    const tagSelectors = build.selectors.filter(s => s.type === 'tag');
+    const workflowSelectors = build.selectors.filter(s => s.type === 'workflow');
 
-    for (const selector of build.selectors) {
-      let runs: WorkflowRun[] = [];
+    let runs: WorkflowRun[] = [];
 
-      switch (selector.type) {
-        case 'branch':
-          runs = await this.githubClient.fetchWorkflowRuns(
+    // Special case: If we have both branch AND tag selectors, we want runs from tags only
+    // because a tag run IS associated with a branch (the branch it was created from)
+    if (branchSelectors.length > 0 && tagSelectors.length > 0) {
+      // Fetch tag runs only - tags are created FROM branches, so tag runs implicitly include branch context
+      for (const tagSelector of tagSelectors) {
+        const allTags = await this.githubClient.fetchTags(
+          build.organization,
+          build.repository,
+          build.cacheExpirationMinutes,
+          100
+        );
+
+        const matchingTags = allTags.filter((tag) =>
+          this.matchesPattern(tag, tagSelector.pattern)
+        );
+
+        if (matchingTags.length > 0) {
+          const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
             build.organization,
             build.repository,
             build.cacheExpirationMinutes,
-            { branch: selector.pattern, since, limit: 100 }
-          );
-          break;
-
-        case 'workflow':
-          runs = await this.githubClient.fetchWorkflowRuns(
-            build.organization,
-            build.repository,
-            build.cacheExpirationMinutes,
-            { workflowName: selector.pattern, since, limit: 100 }
-          );
-          break;
-
-        case 'tag':
-          // For tag selectors, fetch all tags and filter by pattern, then get runs for matching tags
-          const allTags = await this.githubClient.fetchTags(
-            build.organization,
-            build.repository,
-            build.cacheExpirationMinutes,
-            100
+            { since, limit: 100 }
           );
 
-          // Filter tags that match the pattern (support wildcards)
-          const matchingTags = allTags.filter((tag) =>
-            this.matchesPattern(tag, selector.pattern)
-          );
+          const tagRuns = allWorkflowRuns.filter((run) => {
+            if (run.headBranch) {
+              return matchingTags.some((tag) =>
+                run.headBranch === tag ||
+                run.headBranch === `refs/tags/${tag}`
+              );
+            }
+            return false;
+          });
 
-          // Fetch all workflow runs and filter by matching tags
-          if (matchingTags.length > 0) {
-            const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
+          // Add tag runs
+          for (const run of tagRuns) {
+            if (!runs.find((r) => r.id === run.id)) {
+              runs.push(run);
+            }
+          }
+        }
+      }
+    } else {
+      // Standard logic: fetch runs for each selector and merge (OR logic)
+      for (const selector of build.selectors) {
+        let selectorRuns: WorkflowRun[] = [];
+
+        switch (selector.type) {
+          case 'branch':
+            selectorRuns = await this.githubClient.fetchWorkflowRuns(
               build.organization,
               build.repository,
               build.cacheExpirationMinutes,
-              { since, limit: 100 }
+              { branch: selector.pattern, since, limit: 100 }
+            );
+            break;
+
+          case 'workflow':
+            selectorRuns = await this.githubClient.fetchWorkflowRuns(
+              build.organization,
+              build.repository,
+              build.cacheExpirationMinutes,
+              { workflowName: selector.pattern, since, limit: 100 }
+            );
+            break;
+
+          case 'tag':
+            const allTags = await this.githubClient.fetchTags(
+              build.organization,
+              build.repository,
+              build.cacheExpirationMinutes,
+              100
             );
 
-            // Filter runs that were triggered by the matching tags
-            // GitHub exposes the tag/branch name in the headBranch field
-            runs = allWorkflowRuns.filter((run) => {
-              // Check if headBranch matches any of our tags
-              if (run.headBranch) {
-                return matchingTags.some((tag) =>
-                  run.headBranch === tag ||
-                  run.headBranch === `refs/tags/${tag}`
-                );
-              }
-              return false;
-            });
-          }
-          break;
-      }
+            const matchingTags = allTags.filter((tag) =>
+              this.matchesPattern(tag, selector.pattern)
+            );
 
-      // Merge runs, avoiding duplicates by ID
-      for (const run of runs) {
-        if (!allRuns.find((r) => r.id === run.id)) {
-          allRuns.push(run);
+            if (matchingTags.length > 0) {
+              const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
+                build.organization,
+                build.repository,
+                build.cacheExpirationMinutes,
+                { since, limit: 100 }
+              );
+
+              selectorRuns = allWorkflowRuns.filter((run) => {
+                if (run.headBranch) {
+                  return matchingTags.some((tag) =>
+                    run.headBranch === tag ||
+                    run.headBranch === `refs/tags/${tag}`
+                  );
+                }
+                return false;
+              });
+            }
+            break;
+        }
+
+        // Merge runs
+        for (const run of selectorRuns) {
+          if (!runs.find((r) => r.id === run.id)) {
+            runs.push(run);
+          }
         }
       }
     }
 
     // Sort by creation date (newest first)
-    allRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    runs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    return allRuns;
+    return runs;
   }
+
 
   private matchesPattern(value: string, pattern: string): boolean {
     // Convert wildcard pattern to regex
