@@ -5,7 +5,7 @@ A modern CI dashboard that displays GitHub Actions workflows with real-time stat
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)
-![Tests](https://img.shields.io/badge/tests-220%20passing-green.svg)
+![Tests](https://img.shields.io/badge/tests-199%20unit%20tests-green.svg)
 
 ---
 
@@ -211,7 +211,7 @@ bun test
 bun run test:watch
 ```
 
-### End-to-End Tests (21 tests)
+### End-to-End Tests (2 test files)
 ```bash
 # Run e2e tests (headless)
 bun run test:e2e
@@ -230,9 +230,9 @@ bun run test:e2e:debug
 - **Domain Layer**: 100%
 - **Use-Cases**: 100%
 - **Repository**: 100%
-- **E2E User Flows**: 100%
+- **E2E User Flows**: Onboarding & Statistics
 
-**Total: 220 tests (199 unit + 21 e2e)**
+**Total: 199 unit tests + E2E tests**
 
 ---
 
