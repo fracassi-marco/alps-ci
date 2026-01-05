@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
-import { GitHubGraphQLClient, GitHubAuthenticationError, GitHubAPIError } from '../GitHubGraphQLClient';
+import { GitHubGraphQLClient, GitHubAuthenticationError, GitHubAPIError } from '../../src/infrastructure/GitHubGraphQLClient';
 
 describe('GitHubGraphQLClient', () => {
   let originalFetch: typeof global.fetch;

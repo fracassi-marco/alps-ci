@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { CachedGitHubClient } from '../CachedGitHubClient';
-import { InMemoryGitHubDataCache } from '../GitHubDataCache';
-import type { GitHubGraphQLClient } from '../GitHubGraphQLClient';
-import type { WorkflowRun } from '../../domain/models';
+import { CachedGitHubClient } from '../../src/infrastructure/CachedGitHubClient';
+import { InMemoryGitHubDataCache } from '../../src/infrastructure/GitHubDataCache';
+import type { GitHubGraphQLClient } from '../../src/infrastructure/GitHubGraphQLClient';
+import type { WorkflowRun } from '../../src/domain/models';
 
 describe('CachedGitHubClient', () => {
   let cachedClient: CachedGitHubClient;

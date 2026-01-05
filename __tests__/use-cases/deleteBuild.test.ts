@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { DeleteBuildUseCase } from '../deleteBuild';
-import type { Build } from '../../domain/models';
+import { DeleteBuildUseCase } from '../../src/use-cases/deleteBuild';
+import type { Build } from '../../src/domain/models';
 
 describe('DeleteBuildUseCase', () => {
   const buildToDelete: Build = {

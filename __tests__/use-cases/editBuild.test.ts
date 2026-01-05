@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { EditBuildUseCase } from '../editBuild';
-import type { Build } from '../../domain/models';
+import { EditBuildUseCase } from '../../src/use-cases/editBuild';
+import type { Build } from '../../src/domain/models';
 
 describe('EditBuildUseCase', () => {
   const existingBuild: Build = {

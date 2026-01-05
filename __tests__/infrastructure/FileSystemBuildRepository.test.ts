@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { FileSystemBuildRepository } from '../FileSystemBuildRepository';
+import { FileSystemBuildRepository } from '../../src/infrastructure/FileSystemBuildRepository';
 import { existsSync } from 'fs';
 import { rm, mkdir } from 'fs/promises';
-import type { Build } from '../../domain/models';
+import type { Build } from '../../src/domain/models';
 
 describe('FileSystemBuildRepository', () => {
   const testConfigPath = 'data/test/config.json';

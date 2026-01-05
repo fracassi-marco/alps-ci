@@ -10,8 +10,8 @@ import {
   hasStats,
   getLastNDaysRange,
   formatDateYYYYMMDD,
-} from '../utils';
-import type { Build, BuildStats, Selector } from '../models';
+} from '../../src/domain/utils';
+import type { Build, BuildStats, Selector } from '../../src/domain/models';
 
 describe('Utils - Generate Build ID', () => {
   test('should generate a unique ID', () => {

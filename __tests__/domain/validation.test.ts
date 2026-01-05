@@ -9,8 +9,8 @@ import {
   ValidationError,
   CACHE_EXPIRATION_MIN,
   CACHE_EXPIRATION_MAX,
-} from '../validation';
-import type { Selector, Build } from '../models';
+} from '../../src/domain/validation';
+import type { Selector, Build } from '../../src/domain/models';
 
 describe('Validation - Selector Type', () => {
   test('should validate correct selector types', () => {

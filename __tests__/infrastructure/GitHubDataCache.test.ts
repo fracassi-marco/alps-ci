@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { InMemoryGitHubDataCache } from '../GitHubDataCache';
-import type { WorkflowRun } from '../../domain/models';
+import { InMemoryGitHubDataCache } from '../../src/infrastructure/GitHubDataCache';
+import type { WorkflowRun } from '../../src/domain/models';
 
 describe('InMemoryGitHubDataCache', () => {
   let cache: InMemoryGitHubDataCache;
