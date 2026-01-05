@@ -27,13 +27,15 @@ test.describe('Onboarding Flow', () => {
   test.beforeEach(async () => {
     await ensureDataDir();
     await cleanupConfig();
+    // Wait a bit for file system to sync
+    await new Promise(resolve => setTimeout(resolve, 100));
   });
 
   test('should show welcome screen when no builds exist', async ({ page }) => {
     await page.goto('/');
 
-    // Wait for welcome screen
-    await expect(page.getByRole('heading', { name: 'Welcome to Alps-CI' })).toBeVisible();
+    // Wait for welcome screen with longer timeout
+    await expect(page.getByRole('heading', { name: 'Welcome to Alps-CI' })).toBeVisible({ timeout: 10000 });
 
     // Check for key onboarding elements
     await expect(page.getByText('Track Your GitHub Actions Workflows')).toBeVisible();

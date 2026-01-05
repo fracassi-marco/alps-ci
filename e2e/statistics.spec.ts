@@ -30,6 +30,8 @@ test.describe('Statistics Display and Refresh', () => {
   test.beforeEach(async () => {
     await ensureDataDir();
     await cleanupConfig();
+    // Wait a bit for file system to sync
+    await new Promise(resolve => setTimeout(resolve, 100));
   });
 
   test('should show loading state while fetching statistics', async ({ page }) => {
