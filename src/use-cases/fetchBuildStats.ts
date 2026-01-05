@@ -9,11 +9,24 @@ export class FetchBuildStatsUseCase {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+      console.log(`[FetchBuildStats] Building stats for: ${build.name}`);
+      console.log(`[FetchBuildStats] Selectors:`, build.selectors);
+      console.log(`[FetchBuildStats] Fetching runs since:`, sevenDaysAgo);
+
       // Fetch workflow runs for the last 7 days
       const allRuns = await this.fetchWorkflowRunsForSelectors(
         build,
         sevenDaysAgo
       );
+
+      console.log(`[FetchBuildStats] Total runs matching selectors: ${allRuns.length}`);
+      console.log(`[FetchBuildStats] Runs:`, allRuns.map(r => ({
+        id: r.id,
+        name: r.name,
+        status: r.status,
+        headBranch: r.headBranch,
+        createdAt: r.createdAt,
+      })));
 
       // Get last 7 days range for the bar chart
       const last7Days = getLastNDaysRange(7);
@@ -23,6 +36,8 @@ export class FetchBuildStatsUseCase {
       const successfulExecutions = allRuns.filter((run) => run.status === 'success').length;
       const failedExecutions = allRuns.filter((run) => run.status === 'failure').length;
       const healthPercentage = calculateHealthPercentage(successfulExecutions, totalExecutions);
+
+      console.log(`[FetchBuildStats] Stats - Total: ${totalExecutions}, Success: ${successfulExecutions}, Failed: ${failedExecutions}`);
 
       // Build daily success counts for bar chart
       const last7DaysSuccesses: DailySuccess[] = last7Days.map((date) => {
@@ -73,6 +88,8 @@ export class FetchBuildStatsUseCase {
     for (const selector of build.selectors) {
       let runs: WorkflowRun[] = [];
 
+      console.log(`[FetchBuildStats] Processing selector:`, selector);
+
       switch (selector.type) {
         case 'branch':
           runs = await this.githubClient.fetchWorkflowRuns(
@@ -81,6 +98,7 @@ export class FetchBuildStatsUseCase {
             build.cacheExpirationMinutes,
             { branch: selector.pattern, since, limit: 100 }
           );
+          console.log(`[FetchBuildStats] Branch '${selector.pattern}' returned ${runs.length} runs`);
           break;
 
         case 'workflow':
@@ -90,6 +108,7 @@ export class FetchBuildStatsUseCase {
             build.cacheExpirationMinutes,
             { workflowName: selector.pattern, since, limit: 100 }
           );
+          console.log(`[FetchBuildStats] Workflow '${selector.pattern}' returned ${runs.length} runs`);
           break;
 
         case 'tag':
@@ -101,10 +120,14 @@ export class FetchBuildStatsUseCase {
             100
           );
 
+          console.log(`[FetchBuildStats] All tags:`, allTags);
+
           // Filter tags that match the pattern (support wildcards)
           const matchingTags = allTags.filter((tag) =>
             this.matchesPattern(tag, selector.pattern)
           );
+
+          console.log(`[FetchBuildStats] Tags matching pattern '${selector.pattern}':`, matchingTags);
 
           // Fetch all workflow runs and filter by matching tags
           if (matchingTags.length > 0) {
@@ -115,18 +138,26 @@ export class FetchBuildStatsUseCase {
               { since, limit: 100 }
             );
 
+            console.log(`[FetchBuildStats] Fetched ${allWorkflowRuns.length} workflow runs to filter`);
+
             // Filter runs that were triggered by the matching tags
             // GitHub exposes the tag/branch name in the headBranch field
             runs = allWorkflowRuns.filter((run) => {
               // Check if headBranch matches any of our tags
               if (run.headBranch) {
-                return matchingTags.some((tag) =>
+                const matches = matchingTags.some((tag) =>
                   run.headBranch === tag ||
                   run.headBranch === `refs/tags/${tag}`
                 );
+                if (matches) {
+                  console.log(`[FetchBuildStats] Run ${run.id} matched: headBranch=${run.headBranch}`);
+                }
+                return matches;
               }
               return false;
             });
+
+            console.log(`[FetchBuildStats] Tag selector '${selector.pattern}' returned ${runs.length} matching runs`);
           }
           break;
       }
