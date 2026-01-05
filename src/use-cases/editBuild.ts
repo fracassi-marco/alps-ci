@@ -18,16 +18,21 @@ export class EditBuildUseCase {
     }
 
     const existingBuild = builds[index];
+    if (!existingBuild) {
+      throw new Error(`Build with id "${buildId}" not found`);
+    }
 
     // Sanitize only the provided updates
     const sanitized = sanitizeBuild(updates);
 
     // Merge updates with existing build, removing undefined values from sanitized
+    const cleanedUpdates = Object.fromEntries(
+      Object.entries(sanitized).filter(([_, v]) => v !== undefined)
+    ) as Partial<Build>;
+
     const updatedBuild: Build = {
       ...existingBuild,
-      ...(Object.fromEntries(
-        Object.entries(sanitized).filter(([_, v]) => v !== undefined)
-      ) as Partial<Build>),
+      ...cleanedUpdates,
       id: buildId, // Preserve original ID
       createdAt: existingBuild.createdAt, // Preserve creation date
       updatedAt: new Date(),
@@ -40,7 +45,7 @@ export class EditBuildUseCase {
     if (
       updates.name &&
       updates.name !== existingBuild.name &&
-      builds.some((b) => b.id !== buildId && b.name === updates.name.trim())
+      builds.some((b) => b.id !== buildId && b.name === updates.name?.trim())
     ) {
       throw new Error(`Build with name "${updates.name.trim()}" already exists`);
     }

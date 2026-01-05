@@ -130,8 +130,8 @@ describe('DeleteBuildUseCase', () => {
       findAll: mock(() => Promise.resolve([build1, build2, build3])),
       save: mock((builds: Build[]) => {
         expect(builds).toHaveLength(2);
-        expect(builds[0].id).toBe('1');
-        expect(builds[1].id).toBe('3');
+        expect(builds[0]?.id).toBe('1');
+        expect(builds[1]?.id).toBe('3');
         return Promise.resolve();
       }),
       backup: mock(() => Promise.resolve('backup.json')),

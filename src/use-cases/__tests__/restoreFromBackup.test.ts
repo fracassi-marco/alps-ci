@@ -15,7 +15,7 @@ describe('RestoreFromBackupUseCase', () => {
     };
 
     const useCase = new RestoreFromBackupUseCase(mockRepository);
-    await useCase.execute(mockBackups[0]);
+    await useCase.execute(mockBackups[0]!);
 
     expect(mockRepository.listBackups).toHaveBeenCalledTimes(1);
     expect(mockRepository.restore).toHaveBeenCalledWith(mockBackups[0]);
@@ -96,7 +96,7 @@ describe('RestoreFromBackupUseCase', () => {
 
     const useCase = new RestoreFromBackupUseCase(mockRepository);
 
-    await expect(useCase.execute(mockBackups[0])).rejects.toThrow('Failed to restore backup');
+    await expect(useCase.execute(mockBackups[0]!)).rejects.toThrow('Failed to restore backup');
   });
 
   it('should handle backups with special characters', async () => {
