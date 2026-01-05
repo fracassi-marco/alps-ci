@@ -7,10 +7,10 @@ export class FetchBuildStatsUseCase {
 
   async execute(build: Build): Promise<BuildStats> {
     try {
-      // Calculate 7 days ago at midnight (start of day) to include full days
+      // Calculate start of the 7-day window (today + 6 days ago = 7 days total)
       const today = new Date();
       const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 7);
+      sevenDaysAgo.setDate(today.getDate() - 6);
       sevenDaysAgo.setHours(0, 0, 0, 0);
 
       // Fetch workflow runs for the last 7 days
