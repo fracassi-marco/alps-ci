@@ -278,15 +278,15 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                           </div>
                         )}
                         <div className="w-full flex flex-col items-center justify-end h-16 gap-0">
-                          {/* Failures - on top */}
+                          {/* Failures - on top (always rounded if present) */}
                           {(day.failureCount || 0) > 0 && (
                             <div
-                              className="w-full bg-red-500 dark:bg-red-600 transition-all hover:bg-red-600 dark:hover:bg-red-500 cursor-pointer"
+                              className="w-full bg-red-500 dark:bg-red-600 rounded-t transition-all hover:bg-red-600 dark:hover:bg-red-500 cursor-pointer"
                               style={{ height: `${Math.max(failureHeightPercent, 8)}%` }}
                               title={`${day.date}: ${day.failureCount} failures`}
                             ></div>
                           )}
-                          {/* Successes - on bottom */}
+                          {/* Successes - on bottom (rounded only if no failures on top) */}
                           {day.successCount > 0 && (
                             <div
                               className={`w-full bg-green-500 dark:bg-green-600 transition-all hover:bg-green-600 dark:hover:bg-green-500 cursor-pointer ${
