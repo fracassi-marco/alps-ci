@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { AddEditBuildForm } from './components/AddEditBuildForm';
 import type { Build } from '@/domain/models';
 
 export default function Home() {
   const [builds, setBuilds] = useState<Build[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddBuildForm, setShowAddBuildForm] = useState(false);
+  const [editingBuild, setEditingBuild] = useState<Build | null>(null);
 
   useEffect(() => {
     // Fetch builds on mount
@@ -30,6 +32,41 @@ export default function Home() {
 
   const handleAddBuild = () => {
     setShowAddBuildForm(true);
+    setEditingBuild(null);
+  };
+
+  const handleEditBuild = (build: Build) => {
+    setEditingBuild(build);
+    setShowAddBuildForm(true);
+  };
+
+  const handleSaveBuild = async (build: Build) => {
+    try {
+      const url = editingBuild ? `/api/builds/${build.id}` : '/api/builds';
+      const method = editingBuild ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(build),
+      });
+
+      if (response.ok) {
+        await fetchBuilds();
+        setShowAddBuildForm(false);
+        setEditingBuild(null);
+      } else {
+        throw new Error('Failed to save build');
+      }
+    } catch (error) {
+      console.error('Failed to save build:', error);
+      throw error;
+    }
+  };
+
+  const handleCancelForm = () => {
+    setShowAddBuildForm(false);
+    setEditingBuild(null);
   };
 
   if (loading) {
@@ -43,7 +80,7 @@ export default function Home() {
     );
   }
 
-  // Show welcome screen if no builds exist
+  // Show welcome screen if no builds exist and form is not shown
   if (builds.length === 0 && !showAddBuildForm) {
     return <WelcomeScreen onAddBuild={handleAddBuild} />;
   }
@@ -55,13 +92,28 @@ export default function Home() {
         <p className="text-lg text-gray-600">
           CI Dashboard for GitHub Actions Workflows
         </p>
-        {/* TODO: Show build list and add build form */}
+        {/* TODO: Show build list */}
         <div className="mt-8">
           <p className="text-gray-500">
             {builds.length} build(s) configured
           </p>
+          <button
+            onClick={handleAddBuild}
+            className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Add Build
+          </button>
         </div>
       </div>
+
+      {/* Add/Edit Build Form */}
+      {showAddBuildForm && (
+        <AddEditBuildForm
+          build={editingBuild || undefined}
+          onSave={handleSaveBuild}
+          onCancel={handleCancelForm}
+        />
+      )}
     </main>
   );
 }
