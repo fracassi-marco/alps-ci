@@ -93,18 +93,41 @@ export class FetchBuildStatsUseCase {
           break;
 
         case 'tag':
-          // For tag selectors, we need to fetch all runs and filter by tag pattern
-          // This is a simplified approach - in production you might want to be more sophisticated
-          runs = await this.githubClient.fetchWorkflowRuns(
+          // For tag selectors, fetch all tags and filter by pattern, then get runs for matching tags
+          const allTags = await this.githubClient.fetchTags(
             build.organization,
             build.repository,
             build.cacheExpirationMinutes,
-            { since, limit: 100 }
+            100
           );
-          // Filter runs that match tag pattern (simplified - just check if pattern is in the run name)
-          runs = runs.filter((run) =>
-            run.name.toLowerCase().includes(selector.pattern.toLowerCase())
+
+          // Filter tags that match the pattern (support wildcards)
+          const matchingTags = allTags.filter((tag) =>
+            this.matchesPattern(tag, selector.pattern)
           );
+
+          // Fetch all workflow runs and filter by matching tags
+          if (matchingTags.length > 0) {
+            const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
+              build.organization,
+              build.repository,
+              build.cacheExpirationMinutes,
+              { since, limit: 100 }
+            );
+
+            // Filter runs that were triggered by the matching tags
+            // GitHub exposes the tag/branch name in the headBranch field
+            runs = allWorkflowRuns.filter((run) => {
+              // Check if headBranch matches any of our tags
+              if (run.headBranch) {
+                return matchingTags.some((tag) =>
+                  run.headBranch === tag ||
+                  run.headBranch === `refs/tags/${tag}`
+                );
+              }
+              return false;
+            });
+          }
           break;
       }
 
@@ -120,6 +143,18 @@ export class FetchBuildStatsUseCase {
     allRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return allRuns;
+  }
+
+  private matchesPattern(value: string, pattern: string): boolean {
+    // Convert wildcard pattern to regex
+    // Support * (match any characters) and ? (match single character)
+    const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
+      .replace(/\*/g, '.*') // * matches any characters
+      .replace(/\?/g, '.'); // ? matches single character
+
+    const regex = new RegExp(`^${regexPattern}$`, 'i'); // Case insensitive
+    return regex.test(value);
   }
 }
 

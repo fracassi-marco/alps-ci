@@ -324,6 +324,8 @@ export class GitHubGraphQLClient {
       createdAt,
       updatedAt,
       duration,
+      headBranch: run.head_branch,
+      event: run.event,
     };
   }
 

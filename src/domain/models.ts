@@ -32,6 +32,8 @@ export interface WorkflowRun {
   createdAt: Date;
   updatedAt: Date;
   duration?: number; // in milliseconds
+  headBranch?: string; // The branch or tag that triggered the run
+  event?: string; // The event that triggered the run (push, pull_request, etc.)
 }
 
 // Build statistics
