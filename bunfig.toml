@@ -1,0 +1,12 @@
+[test]
+# Specify test file patterns
+preload = []
+
+# Exclude e2e tests (they use Playwright, not Bun)
+exclude = [
+  "e2e/**/*",
+  "node_modules/**/*",
+  "dist/**/*",
+  ".next/**/*"
+]
+

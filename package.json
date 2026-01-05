@@ -10,6 +10,7 @@
     "lint": "next lint",
     "test": "bun test __tests__/",
     "test:watch": "bun test --watch __tests__/",
+    "test:all": "bun test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
