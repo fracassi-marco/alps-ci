@@ -31,6 +31,7 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showRecentRuns, setShowRecentRuns] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -324,46 +325,59 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             </div>
 
-            {/* Recent Runs */}
+            {/* Accordion for Recent Runs */}
             {stats.recentRuns.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Recent Workflow Runs
-                </h4>
-                <div className="space-y-2">
-                  {stats.recentRuns.map((run) => (
-                    <a
-                      key={run.id}
-                      href={run.htmlUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          {run.status === 'success' ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                          ) : run.status === 'failure' ? (
-                            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                          ) : (
-                            <Activity className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                          )}
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {run.name}
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {formatDate(run.createdAt)}
-                              {run.duration && ` • ${Math.round(run.duration / 1000 / 60)}m`}
-                              {run.headBranch && ` • ${run.headBranch}`}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <button
+                  onClick={() => setShowRecentRuns(!showRecentRuns)}
+                  className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Recent Workflow Runs ({stats.recentRuns.length})
+                  </span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
+                      showRecentRuns ? 'transform rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showRecentRuns && (
+                  <div className="mt-4 space-y-2">
+                    {stats.recentRuns.map((run) => (
+                      <a
+                        key={run.id}
+                        href={run.htmlUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            {run.status === 'success' ? (
+                              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            ) : run.status === 'failure' ? (
+                              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            ) : (
+                              <Activity className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {run.name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {formatDate(run.createdAt)}
+                                {run.duration && ` • ${Math.round(run.duration / 1000 / 60)}m`}
+                                {run.headBranch && ` • ${run.headBranch}`}
+                              </div>
                             </div>
                           </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400" />
                         </div>
-                        <ExternalLink className="w-4 h-4 text-gray-400" />
-                      </div>
-                    </a>
-                  ))}
-                </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
