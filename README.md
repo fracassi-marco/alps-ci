@@ -211,7 +211,10 @@ bun test
 bun run test:watch
 ```
 
-### End-to-End Tests (2 test files)
+### End-to-End Tests (2 test files - Local Development Only)
+
+**Note**: E2E tests are for local development and debugging only. They are **not** run in CI/CD pipelines.
+
 ```bash
 # Run e2e tests (headless)
 bun run test:e2e
@@ -230,9 +233,9 @@ bun run test:e2e:debug
 - **Domain Layer**: 100%
 - **Use-Cases**: 100%
 - **Repository**: 100%
-- **E2E User Flows**: Onboarding & Statistics
+- **E2E User Flows**: Onboarding & Statistics (local only)
 
-**Total: 199 unit tests + E2E tests**
+**Total: 199 unit tests (CI) + E2E tests (local)**
 
 ---
 

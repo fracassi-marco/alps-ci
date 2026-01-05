@@ -123,6 +123,8 @@ Prompt: Connect the UI to the use-cases and infrastructure layers. Ensure all ac
 ### 8.2. End-to-End Testing
 ```
 Prompt: Write end-to-end tests for the main user flows: onboarding, adding/editing/deleting Builds, error handling, and statistics refresh.
+
+Note: E2E tests are for local development only and are NOT run in CI/CD pipelines.
 ```
 
 ---
