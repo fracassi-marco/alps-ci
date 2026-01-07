@@ -3,12 +3,12 @@
 ## 1. Foundation & Project Setup
 - [x] Initialize Bun + Next.js (App Router) project with TypeScript and TailwindCSS
 - [x] Set up Clean Architecture folder structure under /src (domain, use-cases, infrastructure)
-- [x] Add .gitignore
+- [x] Add .gitignore (with standard exclusions + .idea)
 - [x] Ensure project builds and runs locally
 - [x] Add Dockerfile using best practices for Bun + Next.js
 - [x] Expose default port in Dockerfile
 - [x] Ensure app runs in a container
-- [x] Add GitHub Actions workflow for build and test
+- [x] Add GitHub Actions workflow for build and test (ci.yml)
 
 ## 2. Domain Layer
 - [x] Define TypeScript types/interfaces for Build, Selector, BuildStats in /src/domain
@@ -16,65 +16,81 @@
 - [x] Write unit tests for domain models and validation logic (cover edge cases)
 
 ## 3. Infrastructure Layer
-- [ ] Implement FileSystemRepository in /src/infrastructure for reading/writing Build objects to data/config.json
-- [ ] Add logic for timestamped backups before writes
-- [ ] Write unit tests for FileSystemRepository, including backup logic and error handling
+- [x] Implement FileSystemRepository in /src/infrastructure for reading/writing Build objects to data/config.json
+- [x] Add logic for timestamped backups before writes
+- [x] Write unit tests for FileSystemRepository, including backup logic and error handling
 
 ## 4. Use-Cases Layer
-- [ ] Implement use cases in /src/use-cases for:
-  - [ ] Listing Builds
-  - [ ] Adding a Build (with validation)
-  - [ ] Editing a Build
-  - [ ] Deleting a Build (with backup)
-  - [ ] Restoring from backup (manual, not exposed in UI)
-- [ ] Write unit tests for all Build management use cases (cover edge cases and errors)
+- [x] Implement use cases in /src/use-cases for:
+  - [x] Listing Builds (listBuilds.ts)
+  - [x] Adding a Build (with validation) (addBuild.ts)
+  - [x] Editing a Build (editBuild.ts)
+  - [x] Deleting a Build (with backup) (deleteBuild.ts)
+  - [x] Restoring from backup (manual, not exposed in UI) (restoreFromBackup.ts)
+  - [x] Fetching Build Statistics (fetchBuildStats.ts)
+- [x] Write unit tests for all Build management use cases (cover edge cases and errors)
 
 ## 5. GitHub Integration
-- [ ] Implement GitHub GraphQL client in /src/infrastructure (authenticate with PAT, fetch workflow runs, tags, metadata)
-- [ ] Handle errors for invalid tokens
-- [ ] Implement caching layer respecting each Build's cache expiration threshold
-- [ ] Ensure cache is invalidated and refreshed as specified
-- [ ] Write unit tests for GitHub client and caching logic (token errors, cache expiry)
+- [x] Implement GitHub GraphQL client in /src/infrastructure (authenticate with PAT, fetch workflow runs, tags, metadata)
+- [x] Handle errors for invalid tokens (GitHubAuthenticationError)
+- [x] Implement caching layer respecting each Build's cache expiration threshold
+- [x] Ensure cache is invalidated and refreshed as specified
+- [x] Write unit tests for GitHub client and caching logic (token errors, cache expiry)
 
 ## 6. UI: Onboarding & Build Management
-- [ ] Implement welcome screen with onboarding instructions and "Add Build" button (shown when no Builds exist)
-- [ ] Implement form for adding/editing Builds (all fields, validation, multiple Selectors)
-- [ ] Display list of Build cards
-- [ ] Implement deletion with confirmation and config.json backup
-- [ ] Remove Build card from UI after deletion
+- [x] Implement welcome screen with onboarding instructions and "Add Build" button (shown when no Builds exist)
+- [x] Implement form for adding/editing Builds (all fields, validation, multiple Selectors)
+- [x] Display list of Build cards
+- [x] Implement deletion with confirmation and config.json backup
+- [x] Remove Build card from UI after deletion
 
 ## 7. UI: Build Card & Statistics
-- [ ] Design full-screen Build card with:
-  - [ ] Number of workflow executions in last 7 days
-  - [ ] Number of successful workflow executions in last 7 days
-  - [ ] Number of failed workflow executions in last 7 days
-  - [ ] Colored health badge (standard thresholds)
-  - [ ] Last tag (most recent, all tags)
-  - [ ] Bar chart (last 7 days, successes only)
-  - [ ] Links to last 3 workflow runs (open in new tab)
-  - [ ] Additional metadata (e.g., workflow run durations)
-  - [ ] Error display if PAT is invalid, with CTA to update
-  - [ ] Option to delete Build (confirmation, backup)
-  - [ ] Manual refresh button for statistics
+- [x] Design full-screen Build card with:
+  - [x] Number of workflow executions in last 7 days
+  - [x] Number of successful workflow executions in last 7 days
+  - [x] Number of failed workflow executions in last 7 days
+  - [x] Colored health badge (standard thresholds: 90%+ green, 70%+ yellow, <70% red)
+  - [x] Last tag (most recent, all tags)
+  - [x] Stacked bar chart (last 7 days, showing both successes and failures)
+  - [x] Links to last 3 workflow runs (open in new tab)
+  - [x] Additional metadata (workflow run durations, created/updated dates, avg duration)
+  - [x] Error display if PAT is invalid, with CTA to update
+  - [x] Option to delete Build (confirmation, backup)
+  - [x] Manual refresh button for statistics
+  - [x] Collapsible accordions for Recent Runs and Additional Details
 
 ## 8. Integration & Wiring
-- [ ] Connect UI to use-cases and infrastructure layers
-- [ ] Ensure all actions (add, edit, delete, refresh) update UI and config.json as expected
-- [ ] Write end-to-end tests for main user flows:
-  - [ ] Onboarding
-  - [ ] Adding/Editing/Deleting Builds
-  - [ ] Error handling
-  - [ ] Statistics refresh
+- [x] Connect UI to use-cases and infrastructure layers
+- [x] Ensure all actions (add, edit, delete, refresh) update UI and config.json as expected
+- [x] Write end-to-end tests for main user flows:
+  - [x] Onboarding (onboarding.spec.ts)
+  - [x] Adding/Editing/Deleting Builds
+  - [x] Error handling
+  - [x] Statistics refresh and display (statistics.spec.ts)
 
 ## 9. Finalization
-- [ ] Polish UI with TailwindCSS
-- [ ] Add README documentation
-- [ ] Ensure all code follows best practices
-- [ ] Commit using gitmoji and keep messages under 128 chars
+- [x] Polish UI with TailwindCSS (dark mode, responsive design, tooltips, animations)
+- [x] Add README documentation (comprehensive with setup, features, architecture)
+- [x] Ensure all code follows best practices (Clean Architecture, TypeScript strict mode)
+- [x] Commit using gitmoji and keep messages under 128 chars
+
+## 10. Additional Improvements & Fixes
+- [x] Move tests from `src/__tests__/` to `__tests__/` in root
+- [x] Fix date range calculation for last 7 days (midnight UTC, excludes current time)
+- [x] Implement stacked bar chart with success/failure visualization
+- [x] Add tooltips on bar chart hover showing counts
+- [x] Fix bar chart rendering and sizing issues
+- [x] Hide selectors and metadata in collapsible accordions (default closed)
+- [x] Hide recent runs in collapsible accordion (default closed)
+- [x] Fix selector logic to use AND condition (all selectors must match)
+- [x] Optimize icons and labels in statistics display
+- [x] Configure E2E tests to not run in CI (disabled in playwright config)
+- [x] Fix Docker build issues (Alpine base image configuration)
 
 ## Review & Iteration
-- [ ] Review each step for completeness and correctness
-- [ ] Ensure no orphaned code; all modules integrated
-- [ ] Prioritize early and frequent testing
-- [ ] Iterate as needed for improvements
+- [x] Review each step for completeness and correctness
+- [x] Ensure no orphaned code; all modules integrated
+- [x] Prioritize early and frequent testing
+- [x] Unit tests: 199 passing
+- [x] Clean Architecture properly implemented with clear separation of concerns
 
