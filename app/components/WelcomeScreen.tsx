@@ -1,6 +1,6 @@
 'use client';
 
-import { PlusCircle, Rocket, GitBranch, BarChart3 } from 'lucide-react';
+import { PlusCircle, GitBranch, BarChart3 } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onAddBuild: () => void;
@@ -12,8 +12,8 @@ export function WelcomeScreen({ onAddBuild }: WelcomeScreenProps) {
       <div className="max-w-4xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-600 rounded-full mb-6">
-            <Rocket className="w-10 h-10 text-white" />
+          <div className="text-8xl mb-6">
+            🏔
           </div>
           <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
             Welcome to Alps-CI

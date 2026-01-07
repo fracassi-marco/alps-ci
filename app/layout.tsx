@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Alps-CI",
+  title: "🏔 Alps-CI",
   description: "CI dashboard for GitHub Actions workflows",
 };
 
