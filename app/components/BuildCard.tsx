@@ -259,63 +259,6 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             </div>
 
-            {/* Additional Metrics - Commits & Contributors */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Commits Last 7 Days */}
-              <div
-                className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center border border-purple-200 dark:border-purple-800"
-                title="Commits in the last 7 days"
-              >
-                <div className="text-xs text-purple-700 dark:text-purple-400 font-medium mb-1">
-                  Commits (7d)
-                </div>
-                <div className="text-xl font-bold text-purple-900 dark:text-purple-300">
-                  {stats.commitsLast7Days}
-                </div>
-              </div>
-
-              {/* Contributors Last 7 Days */}
-              <div
-                className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-center border border-orange-200 dark:border-orange-800"
-                title="Unique contributors in the last 7 days"
-              >
-                <div className="text-xs text-orange-700 dark:text-orange-400 font-medium mb-1">
-                  Contributors (7d)
-                </div>
-                <div className="text-xl font-bold text-orange-900 dark:text-orange-300">
-                  {stats.contributorsLast7Days}
-                </div>
-              </div>
-            </div>
-
-            {/* Total Metrics - All Time */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Total Commits */}
-              <div
-                className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center border border-indigo-200 dark:border-indigo-800"
-                title="Total commits in repository (all time)"
-              >
-                <div className="text-xs text-indigo-700 dark:text-indigo-400 font-medium mb-1">
-                  Total Commits
-                </div>
-                <div className="text-xl font-bold text-indigo-900 dark:text-indigo-300">
-                  {stats.totalCommits.toLocaleString()}
-                </div>
-              </div>
-
-              {/* Total Contributors */}
-              <div
-                className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 text-center border border-cyan-200 dark:border-cyan-800"
-                title="Total unique contributors (all time)"
-              >
-                <div className="text-xs text-cyan-700 dark:text-cyan-400 font-medium mb-1">
-                  Total Contributors
-                </div>
-                <div className="text-xl font-bold text-cyan-900 dark:text-cyan-300">
-                  {stats.totalContributors.toLocaleString()}
-                </div>
-              </div>
-            </div>
 
             {/* Last Tag */}
             {stats.lastTag && (
@@ -426,6 +369,43 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 bg-red-500 dark:bg-red-600 rounded"></div>
                     <span className="text-gray-600 dark:text-gray-400">Failed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Repository Statistics - Grouped by timeframe */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Last 7 Days */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Last 7 Days
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Commits</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.commitsLast7Days}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Contributors</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.contributorsLast7Days}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* All Time */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  All Time
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Commits</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.totalCommits.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Contributors</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.totalContributors.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

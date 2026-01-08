@@ -449,9 +449,9 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that commits count is displayed for last 7 days
+    // Check that the Last 7 Days section is displayed
     await waitFor(() => {
-      expect(screen.getByText(/Commits \(7d\)/)).toBeTruthy();
+      expect(screen.getByText('Last 7 Days')).toBeTruthy();
     });
 
     // Verify the value 25 appears (it's the commits in last 7 days)
@@ -481,9 +481,9 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that contributors count is displayed for last 7 days
+    // Check that the Last 7 Days section is displayed
     await waitFor(() => {
-      expect(screen.getByText(/Contributors \(7d\)/)).toBeTruthy();
+      expect(screen.getByText('Last 7 Days')).toBeTruthy();
     });
 
     // Verify the value 5 appears (it's the contributors in last 7 days)
@@ -546,10 +546,10 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that total commits is displayed with thousand separator
+    // Check that the All Time section is displayed
     await waitFor(() => {
+      expect(screen.getByText('All Time')).toBeTruthy();
       expect(screen.getByText('850')).toBeTruthy();
-      expect(screen.getByText(/Total Commits/)).toBeTruthy();
     });
   });
 
@@ -575,10 +575,10 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that total contributors is displayed
+    // Check that the All Time section is displayed
     await waitFor(() => {
+      expect(screen.getByText('All Time')).toBeTruthy();
       expect(screen.getByText('32')).toBeTruthy();
-      expect(screen.getByText(/Total Contributors/)).toBeTruthy();
     });
   });
 });
