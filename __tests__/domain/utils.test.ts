@@ -252,6 +252,8 @@ describe('Utils - Has Stats', () => {
         sha: 'abc123',
         url: 'https://github.com/test/repo/commit/abc123',
       },
+      totalCommits: 500,
+      totalContributors: 25,
     };
 
     expect(hasStats(stats)).toBe(true);
@@ -274,6 +276,8 @@ describe('Utils - Has Stats', () => {
       commitsLast7Days: 10,
       contributorsLast7Days: 3,
       lastCommit: null,
+      totalCommits: 500,
+      totalContributors: 25,
     };
 
     if (hasStats(statsOrNull)) {

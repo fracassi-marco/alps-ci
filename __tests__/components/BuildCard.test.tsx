@@ -48,6 +48,8 @@ describe('BuildCard - Inactive Health Label', () => {
       sha: 'abc1234567890',
       url: 'https://github.com/test-org/test-repo/commit/abc1234567890',
     },
+    totalCommits: 450,
+    totalContributors: 18,
   };
 
   const mockStatsWithZeroExecutions: BuildStats = {
@@ -62,6 +64,8 @@ describe('BuildCard - Inactive Health Label', () => {
     commitsLast7Days: 0,
     contributorsLast7Days: 0,
     lastCommit: null,
+    totalCommits: 0,
+    totalContributors: 0,
   };
 
   const mockOnEdit = mock(() => {});
@@ -257,6 +261,8 @@ describe('BuildCard - Clickable Repository Link', () => {
     commitsLast7Days: 8,
     contributorsLast7Days: 2,
     lastCommit: null,
+    totalCommits: 200,
+    totalContributors: 10,
   };
 
   const mockOnEdit = mock(() => {});
@@ -405,6 +411,8 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       sha: 'def4567890123',
       url: 'https://github.com/test-org/test-repo/commit/def4567890123',
     },
+    totalCommits: 850,
+    totalContributors: 32,
   };
 
   const mockOnEdit = mock(() => {});
@@ -441,11 +449,14 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that commits count is displayed
+    // Check that commits count is displayed for last 7 days
     await waitFor(() => {
-      expect(screen.getByText('25')).toBeTruthy();
-      expect(screen.getByText(/Commits/)).toBeTruthy();
+      expect(screen.getByText(/Commits \(7d\)/)).toBeTruthy();
     });
+
+    // Verify the value 25 appears (it's the commits in last 7 days)
+    const elements = screen.getAllByText('25');
+    expect(elements.length).toBeGreaterThan(0);
   });
 
   test('should display contributors in last 7 days', async () => {
@@ -470,11 +481,14 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
       expect(screen.queryByText('Loading statistics...')).toBeNull();
     });
 
-    // Check that contributors count is displayed
+    // Check that contributors count is displayed for last 7 days
     await waitFor(() => {
-      expect(screen.getByText('5')).toBeTruthy();
-      expect(screen.getByText(/Contributors/)).toBeTruthy();
+      expect(screen.getByText(/Contributors \(7d\)/)).toBeTruthy();
     });
+
+    // Verify the value 5 appears (it's the contributors in last 7 days)
+    const elements = screen.getAllByText('5');
+    expect(elements.length).toBeGreaterThan(0);
   });
 
   test('should display zero commits and contributors when there are none', async () => {
@@ -508,6 +522,64 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
     // Should display 0 for both metrics
     const zeroElements = screen.getAllByText('0');
     expect(zeroElements.length).toBeGreaterThan(0);
+  });
+
+  test('should display total commits', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that total commits is displayed with thousand separator
+    await waitFor(() => {
+      expect(screen.getByText('850')).toBeTruthy();
+      expect(screen.getByText(/Total Commits/)).toBeTruthy();
+    });
+  });
+
+  test('should display total contributors', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that total contributors is displayed
+    await waitFor(() => {
+      expect(screen.getByText('32')).toBeTruthy();
+      expect(screen.getByText(/Total Contributors/)).toBeTruthy();
+    });
   });
 });
 
@@ -546,6 +618,8 @@ describe('BuildCard - Last Commit Details', () => {
       sha: 'abc1234567890def',
       url: 'https://github.com/test-org/test-repo/commit/abc1234567890def',
     },
+    totalCommits: 1250,
+    totalContributors: 45,
   };
 
   const mockOnEdit = mock(() => {});

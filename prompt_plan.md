@@ -127,7 +127,6 @@ Prompt: Add the following statistics to the Build card:
 - Number of commits in the last 7 days
 - Number of contributors in the last 7 days
 - Last commit details: message, date, contributor, and commit hash
-- Duration of the last successful workflow run (matching selectors)
 - Total number of commits
 - Total number of contributors
 

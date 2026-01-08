@@ -288,6 +288,35 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             </div>
 
+            {/* Total Metrics - All Time */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total Commits */}
+              <div
+                className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-center border border-indigo-200 dark:border-indigo-800"
+                title="Total commits in repository (all time)"
+              >
+                <div className="text-xs text-indigo-700 dark:text-indigo-400 font-medium mb-1">
+                  Total Commits
+                </div>
+                <div className="text-xl font-bold text-indigo-900 dark:text-indigo-300">
+                  {stats.totalCommits.toLocaleString()}
+                </div>
+              </div>
+
+              {/* Total Contributors */}
+              <div
+                className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 text-center border border-cyan-200 dark:border-cyan-800"
+                title="Total unique contributors (all time)"
+              >
+                <div className="text-xs text-cyan-700 dark:text-cyan-400 font-medium mb-1">
+                  Total Contributors
+                </div>
+                <div className="text-xl font-bold text-cyan-900 dark:text-cyan-300">
+                  {stats.totalContributors.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
             {/* Last Tag */}
             {stats.lastTag && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">

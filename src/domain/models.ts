@@ -58,6 +58,8 @@ export interface BuildStats {
   commitsLast7Days: number;
   contributorsLast7Days: number;
   lastCommit: CommitDetails | null;
+  totalCommits: number;
+  totalContributors: number;
 }
 
 // Daily success and failure count for stacked bar chart
