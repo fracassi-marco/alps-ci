@@ -92,6 +92,8 @@
 - [x] Add commits in last 7 days statistics
 - [x] Add contributors in last 7 days statistics
 - [x] Add last commit details (message, date, author, sha with link)
+- [x] Fix selector logic from AND to OR (workflow matches ANY selector)
+- [x] Add 🏔 logo as favicon in SVG format with PWA manifest
 
 ## Review & Iteration
 - [x] Review each step for completeness and correctness
