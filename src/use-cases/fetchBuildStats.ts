@@ -99,8 +99,8 @@ export class FetchBuildStatsUseCase {
         build.cacheExpirationMinutes
       );
 
-      // Fetch total contributors (all time)
-      const totalContributors = await this.githubClient.fetchContributors(
+      // Fetch total contributors (all time) - uses dedicated GitHub contributors endpoint
+      const totalContributors = await this.githubClient.fetchTotalContributors(
         build.organization,
         build.repository,
         build.cacheExpirationMinutes

@@ -304,5 +304,30 @@ export class CachedGitHubClient {
 
     return commit;
   }
+
+  /**
+   * Fetches total contributors (all time) with caching support
+   */
+  async fetchTotalContributors(
+    owner: string,
+    repo: string,
+    cacheExpirationMinutes: number
+  ): Promise<number> {
+    const cacheKey = this.getCacheKey(owner, repo, 'total-contributors');
+
+    // Check cache first
+    const cached = this.cache.getWorkflowRuns(cacheKey);
+    if (this.isCacheValid(cached, cacheExpirationMinutes)) {
+      return cached.data as any;
+    }
+
+    // Cache miss or expired, fetch from API
+    const count = await this.client.fetchTotalContributors(owner, repo);
+
+    // Cache the result
+    this.cache.setWorkflowRuns(cacheKey, count as any);
+
+    return count;
+  }
 }
 

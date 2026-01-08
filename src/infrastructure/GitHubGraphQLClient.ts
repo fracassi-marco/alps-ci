@@ -417,6 +417,7 @@ export class GitHubGraphQLClient {
 
   /**
    * Fetch contributors from a repository within a date range
+   * For date-filtered requests, this fetches commits and extracts unique authors
    */
   async fetchContributors(
     owner: string,
@@ -467,6 +468,68 @@ export class GitHubGraphQLClient {
         throw error;
       }
       throw new GitHubAPIError(`Failed to fetch contributors: ${error}`);
+    }
+  }
+
+  /**
+   * Fetch total number of contributors (all time) from a repository
+   * Uses GitHub's dedicated contributors endpoint which returns all contributors
+   */
+  async fetchTotalContributors(
+    owner: string,
+    repo: string
+  ): Promise<number> {
+    try {
+      // GitHub's contributors endpoint returns all contributors
+      // We need to paginate through all pages to get accurate count
+      let totalContributors = 0;
+      let page = 1;
+      const perPage = 100;
+
+      while (true) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${perPage}&page=${page}&anon=1`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Alps-CI',
+          },
+        });
+
+        if (response.status === 401) {
+          throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+        }
+
+        if (!response.ok) {
+          throw new GitHubAPIError(
+            `GitHub API request failed: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const contributors = await response.json();
+
+        if (!Array.isArray(contributors) || contributors.length === 0) {
+          break;
+        }
+
+        totalContributors += contributors.length;
+
+        // If we got less than perPage results, we're done
+        if (contributors.length < perPage) {
+          break;
+        }
+
+        page++;
+      }
+
+      return totalContributors;
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch total contributors: ${error}`);
     }
   }
 
