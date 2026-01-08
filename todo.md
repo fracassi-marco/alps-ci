@@ -86,11 +86,13 @@
 - [x] Optimize icons and labels in statistics display
 - [x] Configure E2E tests to not run in CI (disabled in playwright config)
 - [x] Fix Docker build issues (Alpine base image configuration)
+- [x] Display "Inactive" label instead of health badge when there are 0 executions
+- [x] Add component tests for BuildCard using React Testing Library
 
 ## Review & Iteration
 - [x] Review each step for completeness and correctness
 - [x] Ensure no orphaned code; all modules integrated
 - [x] Prioritize early and frequent testing
-- [x] Unit tests: 199 passing
+- [x] Unit tests: 204 passing (including 5 component tests)
 - [x] Clean Architecture properly implemented with clear separation of concerns
 

@@ -16,7 +16,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import type { Build, Selector, BuildStats } from '@/domain/models';
-import { getHealthBadgeColor } from '@/domain/utils';
 
 interface BuildCardProps {
   build: Build;
@@ -232,15 +231,23 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                 <div className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
                   Health
                 </div>
-                <div className={`text-2xl font-bold ${
-                  stats.healthPercentage >= 90 
-                    ? 'text-green-600 dark:text-green-400' 
-                    : stats.healthPercentage >= 70 
-                    ? 'text-yellow-600 dark:text-yellow-400' 
-                    : 'text-red-600 dark:text-red-400'
-                }`}>
-                  {stats.healthPercentage}%
-                </div>
+                {stats.totalExecutions === 0 ? (
+                  <div className="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded-full">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Inactive
+                    </span>
+                  </div>
+                ) : (
+                  <div className={`text-2xl font-bold ${
+                    stats.healthPercentage >= 90 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : stats.healthPercentage >= 70 
+                      ? 'text-yellow-600 dark:text-yellow-400' 
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {stats.healthPercentage}%
+                  </div>
+                )}
               </div>
             </div>
 

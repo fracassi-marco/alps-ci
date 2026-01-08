@@ -1,4 +1,6 @@
 [test]
+# Use happy-dom for DOM testing
+preload = ["./test-setup.ts"]
 
 # Exclude e2e tests (they use Playwright, not Bun)
 exclude = [
