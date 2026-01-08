@@ -94,11 +94,13 @@
 - [x] Add last commit details (message, date, author, sha with link)
 - [x] Fix selector logic from AND to OR (workflow matches ANY selector)
 - [x] Add 🏔 logo as favicon in SVG format with PWA manifest
+- [x] Add total commits statistics (all time)
+- [x] Add total contributors statistics (all time)
 
 ## Review & Iteration
 - [x] Review each step for completeness and correctness
 - [x] Ensure no orphaned code; all modules integrated
 - [x] Prioritize early and frequent testing
-- [x] Unit tests: 215 passing (including 16 component tests)
+- [x] Unit tests: 217 passing (including 18 component tests)
 - [x] Clean Architecture properly implemented with clear separation of concerns
 
