@@ -218,5 +218,66 @@ export class CachedGitHubClient {
 
     return tag;
   }
+
+  /**
+   * Fetches commit count with caching support
+   */
+  async fetchCommits(
+    owner: string,
+    repo: string,
+    cacheExpirationMinutes: number,
+    since?: Date,
+    until?: Date
+  ): Promise<number> {
+    const cacheKey = this.getCacheKey(
+      owner,
+      repo,
+      `commits:${since?.toISOString() || 'all'}:${until?.toISOString() || 'now'}`
+    );
+
+    // Check cache first
+    const cached = this.cache.getWorkflowRuns(cacheKey);
+    if (this.isCacheValid(cached, cacheExpirationMinutes)) {
+      return cached.data as any;
+    }
+
+    // Cache miss or expired, fetch from API
+    const count = await this.client.fetchCommits(owner, repo, since, until);
+
+    // Cache the result
+    this.cache.setWorkflowRuns(cacheKey, count as any);
+
+    return count;
+  }
+
+  /**
+   * Fetches contributor count with caching support
+   */
+  async fetchContributors(
+    owner: string,
+    repo: string,
+    cacheExpirationMinutes: number,
+    since?: Date
+  ): Promise<number> {
+    const cacheKey = this.getCacheKey(
+      owner,
+      repo,
+      `contributors:${since?.toISOString() || 'all'}`
+    );
+
+    // Check cache first
+    const cached = this.cache.getWorkflowRuns(cacheKey);
+    if (this.isCacheValid(cached, cacheExpirationMinutes)) {
+      return cached.data as any;
+    }
+
+    // Cache miss or expired, fetch from API
+    const count = await this.client.fetchContributors(owner, repo, since);
+
+    // Cache the result
+    this.cache.setWorkflowRuns(cacheKey, count as any);
+
+    return count;
+  }
 }
 

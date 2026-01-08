@@ -46,6 +46,8 @@ export interface BuildStats {
   last7DaysSuccesses: DailySuccess[];
   recentRuns: WorkflowRun[];
   lastFetchedAt: Date;
+  commitsLast7Days: number;
+  contributorsLast7Days: number;
 }
 
 // Daily success and failure count for stacked bar chart

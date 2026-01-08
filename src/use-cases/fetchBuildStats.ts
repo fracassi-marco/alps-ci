@@ -60,6 +60,23 @@ export class FetchBuildStatsUseCase {
       // Get last 3 runs for links
       const recentRuns = allRuns.slice(0, 3);
 
+      // Fetch commits in the last 7 days
+      const commitsLast7Days = await this.githubClient.fetchCommits(
+        build.organization,
+        build.repository,
+        build.cacheExpirationMinutes,
+        sevenDaysAgo,
+        today
+      );
+
+      // Fetch contributors in the last 7 days
+      const contributorsLast7Days = await this.githubClient.fetchContributors(
+        build.organization,
+        build.repository,
+        build.cacheExpirationMinutes,
+        sevenDaysAgo
+      );
+
       return {
         totalExecutions,
         successfulExecutions,
@@ -69,6 +86,8 @@ export class FetchBuildStatsUseCase {
         last7DaysSuccesses,
         recentRuns,
         lastFetchedAt: new Date(),
+        commitsLast7Days,
+        contributorsLast7Days,
       };
     } catch (error) {
       throw error;

@@ -360,5 +360,115 @@ export class GitHubGraphQLClient {
         return 'queued';
     }
   }
+
+  /**
+   * Fetch commits from a repository within a date range
+   */
+  async fetchCommits(
+    owner: string,
+    repo: string,
+    since?: Date,
+    until?: Date
+  ): Promise<number> {
+    try {
+      const sinceParam = since ? `&since=${since.toISOString()}` : '';
+      const untilParam = until ? `&until=${until.toISOString()}` : '';
+
+      const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1${sinceParam}${untilParam}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      // Get total count from Link header
+      const linkHeader = response.headers.get('Link');
+      if (linkHeader) {
+        const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+        if (match && match[1]) {
+          return parseInt(match[1], 10);
+        }
+      }
+
+      // If no Link header, check if there are any commits
+      const commits = await response.json();
+      return Array.isArray(commits) ? commits.length : 0;
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch commits: ${error}`);
+    }
+  }
+
+  /**
+   * Fetch contributors from a repository within a date range
+   */
+  async fetchContributors(
+    owner: string,
+    repo: string,
+    since?: Date
+  ): Promise<number> {
+    try {
+      // First, fetch commits to get unique authors
+      const sinceParam = since ? `&since=${since.toISOString()}` : '';
+      const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=100${sinceParam}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const commits = await response.json();
+
+      if (!Array.isArray(commits)) {
+        return 0;
+      }
+
+      // Extract unique contributor logins
+      const contributors = new Set<string>();
+      for (const commit of commits) {
+        if (commit.author?.login) {
+          contributors.add(commit.author.login);
+        }
+      }
+
+      return contributors.size;
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch contributors: ${error}`);
+    }
+  }
 }
+
 

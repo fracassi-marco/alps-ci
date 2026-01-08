@@ -243,6 +243,8 @@ describe('Utils - Has Stats', () => {
       last7DaysSuccesses: [],
       recentRuns: [],
       lastFetchedAt: new Date(),
+      commitsLast7Days: 10,
+      contributorsLast7Days: 3,
     };
 
     expect(hasStats(stats)).toBe(true);
@@ -262,6 +264,8 @@ describe('Utils - Has Stats', () => {
       last7DaysSuccesses: [],
       recentRuns: [],
       lastFetchedAt: new Date(),
+      commitsLast7Days: 10,
+      contributorsLast7Days: 3,
     };
 
     if (hasStats(statsOrNull)) {

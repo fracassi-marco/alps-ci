@@ -39,6 +39,8 @@ describe('BuildCard - Inactive Health Label', () => {
     ],
     recentRuns: [],
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+    commitsLast7Days: 15,
+    contributorsLast7Days: 3,
   };
 
   const mockStatsWithZeroExecutions: BuildStats = {
@@ -50,6 +52,8 @@ describe('BuildCard - Inactive Health Label', () => {
     last7DaysSuccesses: [],
     recentRuns: [],
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+    commitsLast7Days: 0,
+    contributorsLast7Days: 0,
   };
 
   const mockOnEdit = mock(() => {});
@@ -242,6 +246,8 @@ describe('BuildCard - Clickable Repository Link', () => {
     ],
     recentRuns: [],
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+    commitsLast7Days: 8,
+    contributorsLast7Days: 2,
   };
 
   const mockOnEdit = mock(() => {});
@@ -352,6 +358,140 @@ describe('BuildCard - Clickable Repository Link', () => {
     const link = screen.getByRole('link', { name: /my-company\/awesome-project/i });
     expect(link).toBeTruthy();
     expect(link.getAttribute('href')).toBe('https://github.com/my-company/awesome-project');
+  });
+});
+
+describe('BuildCard - Commits and Contributors Statistics', () => {
+  const mockBuild: Build = {
+    id: 'test-build-id',
+    name: 'Test Build',
+    organization: 'test-org',
+    repository: 'test-repo',
+    selectors: [
+      { type: 'branch', pattern: 'main' },
+    ],
+    personalAccessToken: 'test-token',
+    cacheExpirationMinutes: 60,
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    updatedAt: new Date('2025-01-01T00:00:00Z'),
+  };
+
+  const mockStats: BuildStats = {
+    totalExecutions: 10,
+    successfulExecutions: 9,
+    failedExecutions: 1,
+    healthPercentage: 90,
+    lastTag: 'v1.0.0',
+    last7DaysSuccesses: [
+      { date: '2025-01-01', successCount: 5, failureCount: 1 },
+    ],
+    recentRuns: [],
+    lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+    commitsLast7Days: 25,
+    contributorsLast7Days: 5,
+  };
+
+  const mockOnEdit = mock(() => {});
+  const mockOnDelete = mock(() => {});
+  const mockOnRefresh = mock(() => {});
+
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    mockFetch.mockClear();
+  });
+
+  test('should display commits in last 7 days', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that commits count is displayed
+    await waitFor(() => {
+      expect(screen.getByText('25')).toBeTruthy();
+      expect(screen.getByText(/Commits/)).toBeTruthy();
+    });
+  });
+
+  test('should display contributors in last 7 days', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that contributors count is displayed
+    await waitFor(() => {
+      expect(screen.getByText('5')).toBeTruthy();
+      expect(screen.getByText(/Contributors/)).toBeTruthy();
+    });
+  });
+
+  test('should display zero commits and contributors when there are none', async () => {
+    const statsWithZero: BuildStats = {
+      ...mockStats,
+      commitsLast7Days: 0,
+      contributorsLast7Days: 0,
+    };
+
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => statsWithZero,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Should display 0 for both metrics
+    const zeroElements = screen.getAllByText('0');
+    expect(zeroElements.length).toBeGreaterThan(0);
   });
 });
 

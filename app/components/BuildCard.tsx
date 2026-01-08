@@ -258,6 +258,35 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               </div>
             </div>
 
+            {/* Additional Metrics - Commits & Contributors */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Commits Last 7 Days */}
+              <div
+                className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center border border-purple-200 dark:border-purple-800"
+                title="Commits in the last 7 days"
+              >
+                <div className="text-xs text-purple-700 dark:text-purple-400 font-medium mb-2">
+                  Commits (7d)
+                </div>
+                <div className="text-3xl font-bold text-purple-900 dark:text-purple-300">
+                  {stats.commitsLast7Days}
+                </div>
+              </div>
+
+              {/* Contributors Last 7 Days */}
+              <div
+                className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center border border-orange-200 dark:border-orange-800"
+                title="Unique contributors in the last 7 days"
+              >
+                <div className="text-xs text-orange-700 dark:text-orange-400 font-medium mb-2">
+                  Contributors (7d)
+                </div>
+                <div className="text-3xl font-bold text-orange-900 dark:text-orange-300">
+                  {stats.contributorsLast7Days}
+                </div>
+              </div>
+            </div>
+
             {/* Last Tag */}
             {stats.lastTag && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
