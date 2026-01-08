@@ -77,6 +77,21 @@ export class FetchBuildStatsUseCase {
         sevenDaysAgo
       );
 
+      // Fetch last commit
+      const lastCommitData = await this.githubClient.fetchLastCommit(
+        build.organization,
+        build.repository,
+        build.cacheExpirationMinutes
+      );
+
+      const lastCommit = lastCommitData ? {
+        message: lastCommitData.message,
+        date: lastCommitData.date,
+        author: lastCommitData.author,
+        sha: lastCommitData.sha,
+        url: lastCommitData.url,
+      } : null;
+
       return {
         totalExecutions,
         successfulExecutions,
@@ -88,6 +103,7 @@ export class FetchBuildStatsUseCase {
         lastFetchedAt: new Date(),
         commitsLast7Days,
         contributorsLast7Days,
+        lastCommit,
       };
     } catch (error) {
       throw error;

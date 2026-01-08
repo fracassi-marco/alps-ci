@@ -41,6 +41,13 @@ describe('BuildCard - Inactive Health Label', () => {
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
     commitsLast7Days: 15,
     contributorsLast7Days: 3,
+    lastCommit: {
+      message: 'Fix bug in authentication',
+      date: new Date('2025-01-02T10:00:00Z'),
+      author: 'John Doe',
+      sha: 'abc1234567890',
+      url: 'https://github.com/test-org/test-repo/commit/abc1234567890',
+    },
   };
 
   const mockStatsWithZeroExecutions: BuildStats = {
@@ -54,6 +61,7 @@ describe('BuildCard - Inactive Health Label', () => {
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
     commitsLast7Days: 0,
     contributorsLast7Days: 0,
+    lastCommit: null,
   };
 
   const mockOnEdit = mock(() => {});
@@ -248,6 +256,7 @@ describe('BuildCard - Clickable Repository Link', () => {
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
     commitsLast7Days: 8,
     contributorsLast7Days: 2,
+    lastCommit: null,
   };
 
   const mockOnEdit = mock(() => {});
@@ -389,6 +398,13 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
     lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
     commitsLast7Days: 25,
     contributorsLast7Days: 5,
+    lastCommit: {
+      message: 'Update dependencies',
+      date: new Date('2025-01-02T15:30:00Z'),
+      author: 'Jane Smith',
+      sha: 'def4567890123',
+      url: 'https://github.com/test-org/test-repo/commit/def4567890123',
+    },
   };
 
   const mockOnEdit = mock(() => {});
@@ -492,6 +508,174 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
     // Should display 0 for both metrics
     const zeroElements = screen.getAllByText('0');
     expect(zeroElements.length).toBeGreaterThan(0);
+  });
+});
+
+describe('BuildCard - Last Commit Details', () => {
+  const mockBuild: Build = {
+    id: 'test-build-id',
+    name: 'Test Build',
+    organization: 'test-org',
+    repository: 'test-repo',
+    selectors: [
+      { type: 'branch', pattern: 'main' },
+    ],
+    personalAccessToken: 'test-token',
+    cacheExpirationMinutes: 60,
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    updatedAt: new Date('2025-01-01T00:00:00Z'),
+  };
+
+  const mockStats: BuildStats = {
+    totalExecutions: 10,
+    successfulExecutions: 9,
+    failedExecutions: 1,
+    healthPercentage: 90,
+    lastTag: 'v1.0.0',
+    last7DaysSuccesses: [
+      { date: '2025-01-01', successCount: 5, failureCount: 1 },
+    ],
+    recentRuns: [],
+    lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+    commitsLast7Days: 25,
+    contributorsLast7Days: 5,
+    lastCommit: {
+      message: 'Fix critical bug in user authentication\n\nThis fixes the issue where users could not log in',
+      date: new Date('2025-01-05T14:30:00Z'),
+      author: 'Alice Johnson',
+      sha: 'abc1234567890def',
+      url: 'https://github.com/test-org/test-repo/commit/abc1234567890def',
+    },
+  };
+
+  const mockOnEdit = mock(() => {});
+  const mockOnDelete = mock(() => {});
+  const mockOnRefresh = mock(() => {});
+
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    mockFetch.mockClear();
+  });
+
+  test('should display last commit message', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that commit message is displayed (only first line)
+    await waitFor(() => {
+      expect(screen.getByText('Fix critical bug in user authentication')).toBeTruthy();
+    });
+  });
+
+  test('should display last commit author and date', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that author is displayed
+    await waitFor(() => {
+      expect(screen.getByText('Alice Johnson')).toBeTruthy();
+    });
+  });
+
+  test('should display last commit sha as link', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that short sha is displayed as a link
+    await waitFor(() => {
+      const shaLink = screen.getByText('abc1234');
+      expect(shaLink).toBeTruthy();
+      expect(shaLink.getAttribute('href')).toBe('https://github.com/test-org/test-repo/commit/abc1234567890def');
+      expect(shaLink.getAttribute('target')).toBe('_blank');
+    });
+  });
+
+  test('should not display last commit section when lastCommit is null', async () => {
+    const statsWithoutCommit: BuildStats = {
+      ...mockStats,
+      lastCommit: null,
+    };
+
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => statsWithoutCommit,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading statistics...')).toBeNull();
+    });
+
+    // Check that "Last Commit" section is not displayed
+    expect(screen.queryByText('Last Commit:')).toBeNull();
   });
 });
 

@@ -13,7 +13,8 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  ChevronDown
+  ChevronDown,
+  GitCommit
 } from 'lucide-react';
 import type { Build, Selector, BuildStats } from '@/domain/models';
 
@@ -298,6 +299,39 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                   <span className="text-sm text-blue-900 dark:text-blue-200 font-mono font-bold">
                     {stats.lastTag}
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* Last Commit */}
+            {stats.lastCommit && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <GitCommit className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
+                        Last Commit:
+                      </span>
+                      <a
+                        href={stats.lastCommit.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
+                        title="View commit on GitHub"
+                      >
+                        {stats.lastCommit.sha.substring(0, 7)}
+                      </a>
+                    </div>
+                    <p className="text-sm text-emerald-900 dark:text-emerald-100 mb-2 break-words">
+                      {stats.lastCommit.message.split('\n')[0]}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-emerald-700 dark:text-emerald-300">
+                      <span className="font-medium">{stats.lastCommit.author}</span>
+                      <span>•</span>
+                      <span>{formatDate(stats.lastCommit.date)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

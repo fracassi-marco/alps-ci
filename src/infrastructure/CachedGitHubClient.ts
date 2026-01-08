@@ -279,5 +279,30 @@ export class CachedGitHubClient {
 
     return count;
   }
+
+  /**
+   * Fetches last commit with caching support
+   */
+  async fetchLastCommit(
+    owner: string,
+    repo: string,
+    cacheExpirationMinutes: number
+  ): Promise<{ message: string; date: Date; author: string; sha: string; url: string } | null> {
+    const cacheKey = this.getCacheKey(owner, repo, 'last-commit');
+
+    // Check cache first
+    const cached = this.cache.getWorkflowRuns(cacheKey);
+    if (this.isCacheValid(cached, cacheExpirationMinutes)) {
+      return cached.data as any;
+    }
+
+    // Cache miss or expired, fetch from API
+    const commit = await this.client.fetchLastCommit(owner, repo);
+
+    // Cache the result
+    this.cache.setWorkflowRuns(cacheKey, commit as any);
+
+    return commit;
+  }
 }
 

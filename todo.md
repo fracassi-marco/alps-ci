@@ -91,11 +91,12 @@
 - [x] Make organization/repository name clickable link to GitHub repository (opens in new tab)
 - [x] Add commits in last 7 days statistics
 - [x] Add contributors in last 7 days statistics
+- [x] Add last commit details (message, date, author, sha with link)
 
 ## Review & Iteration
 - [x] Review each step for completeness and correctness
 - [x] Ensure no orphaned code; all modules integrated
 - [x] Prioritize early and frequent testing
-- [x] Unit tests: 211 passing (including 12 component tests)
+- [x] Unit tests: 215 passing (including 16 component tests)
 - [x] Clean Architecture properly implemented with clear separation of concerns
 

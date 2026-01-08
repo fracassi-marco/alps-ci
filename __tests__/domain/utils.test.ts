@@ -245,6 +245,13 @@ describe('Utils - Has Stats', () => {
       lastFetchedAt: new Date(),
       commitsLast7Days: 10,
       contributorsLast7Days: 3,
+      lastCommit: {
+        message: 'Test commit',
+        date: new Date(),
+        author: 'Test Author',
+        sha: 'abc123',
+        url: 'https://github.com/test/repo/commit/abc123',
+      },
     };
 
     expect(hasStats(stats)).toBe(true);
@@ -266,6 +273,7 @@ describe('Utils - Has Stats', () => {
       lastFetchedAt: new Date(),
       commitsLast7Days: 10,
       contributorsLast7Days: 3,
+      lastCommit: null,
     };
 
     if (hasStats(statsOrNull)) {

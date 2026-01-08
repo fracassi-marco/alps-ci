@@ -469,6 +469,58 @@ export class GitHubGraphQLClient {
       throw new GitHubAPIError(`Failed to fetch contributors: ${error}`);
     }
   }
+
+  /**
+   * Fetch the last commit from a repository
+   */
+  async fetchLastCommit(
+    owner: string,
+    repo: string
+  ): Promise<{ message: string; date: Date; author: string; sha: string; url: string } | null> {
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const commits = await response.json();
+
+      if (!Array.isArray(commits) || commits.length === 0) {
+        return null;
+      }
+
+      const lastCommit = commits[0];
+
+      return {
+        message: lastCommit.commit.message,
+        date: new Date(lastCommit.commit.author.date),
+        author: lastCommit.commit.author.name,
+        sha: lastCommit.sha,
+        url: lastCommit.html_url,
+      };
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch last commit: ${error}`);
+    }
+  }
 }
 
 

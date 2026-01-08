@@ -36,6 +36,15 @@ export interface WorkflowRun {
   event?: string; // The event that triggered the run (push, pull_request, etc.)
 }
 
+// Commit details
+export interface CommitDetails {
+  message: string;
+  date: Date;
+  author: string;
+  sha: string;
+  url: string;
+}
+
 // Build statistics
 export interface BuildStats {
   totalExecutions: number;
@@ -48,6 +57,7 @@ export interface BuildStats {
   lastFetchedAt: Date;
   commitsLast7Days: number;
   contributorsLast7Days: number;
+  lastCommit: CommitDetails | null;
 }
 
 // Daily success and failure count for stacked bar chart
