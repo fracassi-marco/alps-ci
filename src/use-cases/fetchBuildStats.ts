@@ -13,11 +13,25 @@ export class FetchBuildStatsUseCase {
       sevenDaysAgo.setDate(today.getDate() - 6);
       sevenDaysAgo.setHours(0, 0, 0, 0);
 
+      console.log(`[FetchBuildStats] Building stats for: ${build.name}`);
+      console.log(`[FetchBuildStats] Today: ${today.toISOString()}`);
+      console.log(`[FetchBuildStats] SevenDaysAgo (since): ${sevenDaysAgo.toISOString()}`);
+      console.log(`[FetchBuildStats] Selectors:`, build.selectors);
+
       // Fetch workflow runs for the last 7 days
       const allRuns = await this.fetchWorkflowRunsForSelectors(
         build,
         sevenDaysAgo
       );
+
+      console.log(`[FetchBuildStats] Total runs found matching selectors: ${allRuns.length}`);
+      console.log(`[FetchBuildStats] Runs:`, allRuns.map(r => ({
+        id: r.id,
+        name: r.name,
+        status: r.status,
+        headBranch: r.headBranch,
+        createdAt: r.createdAt,
+      })));
 
       // Get last 7 days range for the bar chart
       const last7Days = getLastNDaysRange(7);
@@ -114,6 +128,8 @@ export class FetchBuildStatsUseCase {
     build: Build,
     since: Date
   ): Promise<WorkflowRun[]> {
+    console.log(`[FetchBuildStats] Fetching workflow runs since: ${since.toISOString()}`);
+
     // Fetch all workflow runs since the specified date
     const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
       build.organization,
@@ -121,6 +137,15 @@ export class FetchBuildStatsUseCase {
       build.cacheExpirationMinutes,
       { since, limit: 100 }
     );
+
+    console.log(`[FetchBuildStats] Total workflow runs fetched from GitHub: ${allWorkflowRuns.length}`);
+    console.log(`[FetchBuildStats] All workflow runs:`, allWorkflowRuns.map(r => ({
+      id: r.id,
+      name: r.name,
+      status: r.status,
+      headBranch: r.headBranch,
+      createdAt: r.createdAt,
+    })));
 
     // Fetch all tags for tag matching
     const allTags = await this.githubClient.fetchTags(
@@ -130,10 +155,13 @@ export class FetchBuildStatsUseCase {
       100
     );
 
-    // Filter runs that match ALL selectors (AND logic)
+    console.log(`[FetchBuildStats] Total tags fetched: ${allTags.length}`);
+
+    // Filter runs that match ANY selector (OR logic)
+    // A run must match at least one selector
     const filteredRuns = allWorkflowRuns.filter((run) => {
-      // A run must match ALL selectors
-      return build.selectors.every((selector) => {
+      // A run must match at least ONE selector
+      const matches = build.selectors.some((selector) => {
         switch (selector.type) {
           case 'branch':
             // Check if run's headBranch matches the branch pattern
@@ -161,7 +189,15 @@ export class FetchBuildStatsUseCase {
             return false;
         }
       });
+
+      if (matches) {
+        console.log(`[FetchBuildStats] Run ${run.id} matched all selectors: headBranch=${run.headBranch}, name=${run.name}`);
+      }
+
+      return matches;
     });
+
+    console.log(`[FetchBuildStats] Filtered runs (matching all selectors): ${filteredRuns.length}`);
 
     // Sort by creation date (newest first)
     filteredRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
