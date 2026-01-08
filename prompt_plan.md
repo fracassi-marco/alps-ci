@@ -111,6 +111,29 @@ Prompt: Display errors on the Build card if the PAT is invalid, with a CTA to up
 Prompt: Add workflow run durations and any other useful metadata to the Build card.
 ```
 
+### 7.4.1. Inactive Health Label
+```
+Prompt: When there are 0 executions for a Build, display an "Inactive" label instead of a health badge on the Build card. Ensure this is reflected in both the UI and any related logic.
+```
+
+### 7.4.2. Clickable Repository Link
+```
+Prompt: Under the Build name, display the organization/repository name as a clickable link to the GitHub repository (open in a new tab).
+```
+
+### 7.4.3. Additional Build Statistics
+```
+Prompt: Add the following statistics to the Build card:
+- Number of commits in the last 7 days
+- Number of contributors in the last 7 days
+- Last commit details: message, date, contributor, and commit hash
+- Duration of the last successful workflow run (matching selectors)
+- Total number of commits
+- Total number of contributors
+
+Update the UI, domain models, use-cases, and infrastructure as needed to support these features. Ensure all new data is fetched from the GitHub API and displayed in a harmonized, user-friendly way. Add or update tests to cover these enhancements.
+```
+
 ---
 
 ## 8. Integration & Wiring
@@ -144,4 +167,3 @@ Prompt: Polish the UI with TailwindCSS, add README documentation, and ensure all
 - No orphaned code: every module is integrated before moving on.
 - Early and frequent testing is prioritized.
 - Prompts are ready for a code-generation LLM to implement in a test-driven, incremental manner.
-
