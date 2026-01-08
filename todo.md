@@ -88,11 +88,12 @@
 - [x] Fix Docker build issues (Alpine base image configuration)
 - [x] Display "Inactive" label instead of health badge when there are 0 executions
 - [x] Add component tests for BuildCard using React Testing Library
+- [x] Make organization/repository name clickable link to GitHub repository (opens in new tab)
 
 ## Review & Iteration
 - [x] Review each step for completeness and correctness
 - [x] Ensure no orphaned code; all modules integrated
 - [x] Prioritize early and frequent testing
-- [x] Unit tests: 204 passing (including 5 component tests)
+- [x] Unit tests: 208 passing (including 9 component tests)
 - [x] Clean Architecture properly implemented with clear separation of concerns
 

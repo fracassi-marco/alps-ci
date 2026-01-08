@@ -121,9 +121,16 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
             <h3 className="text-2xl font-bold text-white mb-1">
               {build.name}
             </h3>
-            <p className="text-indigo-100">
+            <a
+              href={`https://github.com/${build.organization}/${build.repository}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-100 hover:text-white hover:underline transition-colors inline-flex items-center gap-1"
+              title="Open repository on GitHub"
+            >
               {build.organization}/{build.repository}
-            </p>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           <div className="flex gap-2 ml-4">
             <button

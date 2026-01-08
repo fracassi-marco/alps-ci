@@ -216,3 +216,143 @@ describe('BuildCard - Inactive Health Label', () => {
   });
 });
 
+describe('BuildCard - Clickable Repository Link', () => {
+  const mockBuild: Build = {
+    id: 'test-build-id',
+    name: 'Test Build',
+    organization: 'test-org',
+    repository: 'test-repo',
+    selectors: [
+      { type: 'branch', pattern: 'main' },
+    ],
+    personalAccessToken: 'test-token',
+    cacheExpirationMinutes: 60,
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    updatedAt: new Date('2025-01-01T00:00:00Z'),
+  };
+
+  const mockStats: BuildStats = {
+    totalExecutions: 5,
+    successfulExecutions: 5,
+    failedExecutions: 0,
+    healthPercentage: 100,
+    lastTag: 'v1.0.0',
+    last7DaysSuccesses: [
+      { date: '2025-01-01', successCount: 5, failureCount: 0 },
+    ],
+    recentRuns: [],
+    lastFetchedAt: new Date('2025-01-03T00:00:00Z'),
+  };
+
+  const mockOnEdit = mock(() => {});
+  const mockOnDelete = mock(() => {});
+  const mockOnRefresh = mock(() => {});
+
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    mockFetch.mockClear();
+  });
+
+  test('should render repository link with correct href', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    // Find the repository link
+    const link = screen.getByRole('link', { name: /test-org\/test-repo/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('href')).toBe('https://github.com/test-org/test-repo');
+  });
+
+  test('should open repository link in new tab', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    const link = screen.getByRole('link', { name: /test-org\/test-repo/i });
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  test('should display organization and repository name correctly', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={mockBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    // Check that the text is displayed
+    expect(screen.getByText(/test-org\/test-repo/)).toBeTruthy();
+  });
+
+  test('should handle different organization and repository names', async () => {
+    const customBuild: Build = {
+      ...mockBuild,
+      organization: 'my-company',
+      repository: 'awesome-project',
+    };
+
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => mockStats,
+      })
+    );
+
+    render(
+      <BuildCard
+        build={customBuild}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onRefresh={mockOnRefresh}
+      />
+    );
+
+    const link = screen.getByRole('link', { name: /my-company\/awesome-project/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('href')).toBe('https://github.com/my-company/awesome-project');
+  });
+});
+
+
