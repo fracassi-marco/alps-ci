@@ -232,8 +232,8 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                   Health
                 </div>
                 {stats.totalExecutions === 0 ? (
-                  <div className="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded-full">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <div className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                       Inactive
                     </span>
                   </div>
