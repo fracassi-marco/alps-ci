@@ -6,9 +6,53 @@ export interface Selector {
   pattern: string; // Free text pattern (e.g., "vX.Y.Z", "main", "CI-Workflow")
 }
 
+// Authentication and Multi-Tenant types
+
+export type Role = 'owner' | 'admin' | 'member';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantMember {
+  id: string;
+  tenantId: string;
+  userId: string;
+  role: Role;
+  invitedBy: string | null;
+  joinedAt: Date;
+  createdAt: Date;
+}
+
+export interface Invitation {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: Role;
+  token: string;
+  invitedBy: string;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+  createdAt: Date;
+}
+
 // Build configuration
 export interface Build {
   id: string;
+  tenantId?: string; // Optional for backward compatibility during migration
   name: string;
   organization: string;
   repository: string;
@@ -74,4 +118,3 @@ export interface BuildWithStats extends Build {
   stats: BuildStats | null;
   error: string | null;
 }
-

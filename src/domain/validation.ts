@@ -156,3 +156,66 @@ export function isCacheExpired(
   return now >= expirationTime;
 }
 
+// Authentication validation
+
+export function validateEmail(email: string): void {
+  if (!email || typeof email !== 'string') {
+    throw new ValidationError('Email is required and must be a string');
+  }
+
+  const trimmedEmail = email.trim();
+  if (trimmedEmail.length === 0) {
+    throw new ValidationError('Email cannot be empty');
+  }
+
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    throw new ValidationError('Invalid email format');
+  }
+}
+
+export function validatePassword(password: string): void {
+  if (!password || typeof password !== 'string') {
+    throw new ValidationError('Password is required and must be a string');
+  }
+
+  if (password.length < 8) {
+    throw new ValidationError('Password must be at least 8 characters long');
+  }
+
+  if (password.length > 128) {
+    throw new ValidationError('Password must not exceed 128 characters');
+  }
+}
+
+export function validateTenantName(name: string): void {
+  if (!name || typeof name !== 'string') {
+    throw new ValidationError('Tenant name is required and must be a string');
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    throw new ValidationError('Tenant name cannot be empty');
+  }
+
+  if (trimmedName.length > 100) {
+    throw new ValidationError('Tenant name must not exceed 100 characters');
+  }
+}
+
+export function validateRole(role: string): void {
+  if (!['owner', 'admin', 'member'].includes(role)) {
+    throw new ValidationError('Invalid role. Must be one of: owner, admin, member');
+  }
+}
+
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
