@@ -160,6 +160,97 @@ Prompt: Polish the UI with TailwindCSS, add README documentation, and ensure all
 
 ---
 
+## 10. Multi-Tenant Architecture
+
+### 10.1. Setup Authentication Infrastructure
+```
+Prompt: Set up better-auth with email/password and Google OAuth providers. Configure the authentication system to support multi-tenant architecture with user sessions and token management. Install necessary dependencies (better-auth, related OAuth packages). Create the auth configuration file with providers, session settings, and callbacks. Set up environment variables for OAuth credentials (Google Client ID/Secret) and auth secret keys.
+```
+
+### 10.2. Setup Database with Tenant Support
+```
+Prompt: Set up Supabase client (or PostgreSQL connection) and create the core database schema for multi-tenant architecture. Define and create the following tables:
+- tenants: id (uuid), name (string), slug (string, unique), created_at, updated_at
+- users: id (uuid), email (string, unique), name (string), avatar_url (string), created_at, updated_at
+- tenant_members: id (uuid), tenant_id (fk), user_id (fk), role (enum: owner, admin, member), invited_by (fk to users), joined_at, created_at
+- invitations: id (uuid), tenant_id (fk), email (string), role (enum), token (string, unique), invited_by (fk to users), expires_at, accepted_at, created_at
+
+Implement Row Level Security (RLS) policies to ensure users can only access data from tenants they belong to. Create indexes for performance. Add migration scripts and seed data for development.
+```
+
+### 10.3. Implement Tenant Registration Flow
+```
+Prompt: Create the tenant registration flow where the first user creates a new tenant (company) during signup. Build the following:
+- Registration page with fields: user name, email, password, company name
+- Use better-auth for user creation
+- After user creation, automatically create a new tenant with a generated slug
+- Associate the user as the tenant owner in tenant_members table
+- Create a session with tenant context
+- Redirect to the empty dashboard with onboarding
+
+Update domain models to include Tenant and TenantMember types. Create use-cases for tenant creation and user-tenant association. Add repository methods for tenant operations. Write unit tests for tenant creation logic.
+```
+
+### 10.4. Implement User Invitation System
+```
+Prompt: Build the invitation system allowing tenant owners/admins to invite colleagues via email. Implement:
+- UI component: "Invite Member" button and modal with email input and role selector
+- Use-case: createInvitation (validates email, generates unique token, sets expiration)
+- Send invitation email with acceptance link (can use a simple email service or log to console for dev)
+- Public invitation acceptance page: accepts token, validates expiration, allows user to sign up or sign in
+- After acceptance, associate user with tenant and mark invitation as accepted
+- UI to view pending and accepted invitations (tenant admins only)
+
+Add role-based permission checks. Update tests to cover invitation creation, expiration, and acceptance flows.
+```
+
+### 10.5. Migrate Builds to Multi-Tenant Model
+```
+Prompt: Update the existing Builds data model to support multi-tenancy. Make the following changes:
+- Add tenant_id field to Build model
+- Migrate FileSystemBuildRepository to DatabaseBuildRepository using Supabase/PostgreSQL
+- Create builds table: id (uuid), tenant_id (fk), name, organization, repository, selectors (jsonb), pat (encrypted), cache_expiration, created_at, updated_at
+- Add RLS policies to builds table (users can only see builds from their tenants)
+- Update all use-cases (listBuilds, addBuild, editBuild, deleteBuild) to include tenant_id context
+- Update API routes to extract tenant_id from authenticated user session
+- Migrate existing data from config.json to database (create a migration script)
+
+Ensure backward compatibility during migration. Update all tests to work with the new database-backed repository.
+```
+
+### 10.6. Implement Tenant-Scoped Dashboard UI
+```
+Prompt: Update the dashboard UI to display only data belonging to the current user's tenant. Implement:
+- Protected routes that require authentication
+- Middleware to verify user session and load tenant context
+- Update dashboard to fetch and display only builds for current tenant
+- Add tenant switcher in navigation if user belongs to multiple tenants (show tenant name, allow switching)
+- Display tenant name and member count in header/navigation
+- Update welcome screen to show tenant name
+- Add "Team Settings" page showing tenant members and pending invitations
+
+Ensure all API calls include tenant context. Update tests for authenticated routes.
+```
+
+### 10.7. Add Role-Based Access Control
+```
+Prompt: Implement role-based access control (RBAC) within tenants. Define the following roles and permissions:
+- Owner: Full access (manage builds, invite/remove members, delete tenant)
+- Admin: Manage builds, invite members (cannot remove owner or delete tenant)
+- Member: View builds only (read-only access)
+
+Implement:
+- Permission checking utilities in domain layer
+- Middleware to enforce permissions on API routes
+- UI components that conditionally render based on user role (hide delete buttons for members, etc.)
+- Use-cases for role management (updateMemberRole, removeMember - owner/admin only)
+- Settings page for role management
+
+Add comprehensive tests for permission checks and role-based operations. Ensure proper error messages when unauthorized actions are attempted.
+```
+
+---
+
 # Review & Iteration
 
 - Each step is small, testable, and builds on the previous.
