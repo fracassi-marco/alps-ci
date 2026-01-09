@@ -56,11 +56,64 @@ cd alps-ci
 # Install dependencies
 bun install
 
+# Set up environment variables
+cp .env.example .env.local
+
+# Generate authentication secret
+bun run auth:generate-secret
+
+# Add the generated secret to .env.local
+# DATABASE_URL is already configured for local development
+
+# Start local PostgreSQL database (Docker required)
+bun run db:start
+
+# Push database schema
+bun run db:push
+
+# Seed development data
+bun run db:seed
+
 # Run development server
 bun run dev
 ```
 
 Visit `http://localhost:3000` to see the application.
+
+> **Note**: Multi-tenant authentication requires a PostgreSQL database. See [Migrations Guide](docs/MIGRATIONS.md), [Database Setup](docs/DATABASE_SETUP.md), and [Authentication Setup](docs/AUTH_SETUP.md) for details.
+
+### Database Management
+
+```bash
+# Start database
+bun run db:start
+
+# Stop database
+bun run db:stop
+
+# Reset database (deletes all data)
+bun run db:reset
+
+# Push schema changes
+bun run db:push
+
+# Seed development data
+bun run db:seed
+
+# Open Drizzle Studio (database GUI)
+bun run db:studio
+
+# View database logs
+bun run db:logs
+
+# Open PostgreSQL shell
+bun run db:shell
+
+# Check database status
+bun run db:status
+```
+
+See [docs/MIGRATIONS.md](docs/MIGRATIONS.md) for schema management and [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) for detailed database documentation.
 
 ### Using Docker
 

@@ -101,6 +101,113 @@
 - [x] Review each step for completeness and correctness
 - [x] Ensure no orphaned code; all modules integrated
 - [x] Prioritize early and frequent testing
-- [x] Unit tests: 217 passing (including 18 component tests)
+- [x] Unit tests: 234 passing (including 18 component tests)
 - [x] Clean Architecture properly implemented with clear separation of concerns
+
+## 10. Multi-Tenant Architecture (In Progress)
+
+### 10.1. Authentication Infrastructure
+- [x] Install better-auth and related packages (@auth/core, arctic, pg)
+- [x] Create auth configuration file with email/password and Google OAuth providers
+- [x] Set up environment variables for authentication (.env.example)
+- [x] Create API route handler for better-auth (/api/auth/[...all])
+- [x] Create client-side auth helper (auth-client.ts)
+- [x] Create server-side session management utilities (auth-session.ts)
+- [x] Add authentication domain types (User, Tenant, TenantMember, Invitation, Role)
+- [x] Add authentication validation functions (email, password, tenant name, role)
+- [x] Write unit tests for authentication validation (17 tests passing)
+- [x] Create AUTH_SETUP.md documentation
+- [x] Add script to generate auth secret (bun run auth:generate-secret)
+- [x] Update README with authentication setup instructions
+- [x] Export authentication utilities from infrastructure index
+
+### 10.2. Database with Tenant Support
+- [ ] Set up PostgreSQL/Supabase client configuration
+- [ ] Create database migration script for initial schema
+- [ ] Define tables: tenants, users, tenant_members, invitations
+- [ ] Implement Row Level Security (RLS) policies
+- [ ] Add indexes for performance optimization
+- [ ] Create seed data for development/testing
+- [ ] Write database repository classes for each entity
+- [ ] Add unit tests for database operations
+
+### 10.3. Tenant Registration Flow
+- [ ] Create registration page UI (sign up form)
+- [ ] Implement user registration with better-auth
+- [ ] Implement automatic tenant creation on first user sign up
+- [ ] Create use-case for tenant creation
+- [ ] Associate user as tenant owner in tenant_members
+- [ ] Create session with tenant context
+- [ ] Redirect to dashboard after successful registration
+- [ ] Write unit tests for tenant registration use-case
+- [ ] Write E2E tests for registration flow
+
+### 10.4. User Invitation System
+- [ ] Create "Invite Member" UI component (button + modal)
+- [ ] Implement createInvitation use-case
+- [ ] Generate unique invitation tokens with expiration
+- [ ] Create invitation acceptance page (public route)
+- [ ] Handle invitation token validation
+- [ ] Associate invited user with tenant on acceptance
+- [ ] Add role selector to invitation UI (owner/admin/member)
+- [ ] Create UI to view pending and accepted invitations
+- [ ] Add email service integration (or console logging for dev)
+- [ ] Write unit tests for invitation use-cases
+- [ ] Write E2E tests for invitation flow
+
+### 10.5. Migrate Builds to Multi-Tenant Model
+- [ ] Add tenant_id field to Build domain model
+- [ ] Create DatabaseBuildRepository using PostgreSQL
+- [ ] Create builds database table with RLS policies
+- [ ] Implement PAT encryption for database storage
+- [ ] Update listBuilds use-case to filter by tenant_id
+- [ ] Update addBuild use-case to include tenant_id
+- [ ] Update editBuild use-case with tenant context
+- [ ] Update deleteBuild use-case with tenant context
+- [ ] Create migration script from config.json to database
+- [ ] Update API routes to extract tenant_id from session
+- [ ] Ensure backward compatibility during migration
+- [ ] Update all tests for database-backed repository
+- [ ] Write integration tests for multi-tenant build operations
+
+### 10.6. Tenant-Scoped Dashboard UI
+- [ ] Create authentication middleware for protected routes
+- [ ] Add login page UI
+- [ ] Add logout functionality
+- [ ] Update dashboard to fetch builds filtered by tenant
+- [ ] Add tenant switcher in navigation (if user has multiple tenants)
+- [ ] Display tenant name and member count in header
+- [ ] Update welcome screen to show tenant name
+- [ ] Create "Team Settings" page
+- [ ] Show tenant members list in settings
+- [ ] Show pending invitations in settings
+- [ ] Add session management UI (active sessions, logout all)
+- [ ] Write E2E tests for authenticated dashboard access
+
+### 10.7. Role-Based Access Control
+- [ ] Define permission utilities in domain layer
+- [ ] Create permission checking middleware for API routes
+- [ ] Implement UI conditional rendering based on role
+- [ ] Add updateMemberRole use-case (owner/admin only)
+- [ ] Add removeMember use-case (owner/admin only)
+- [ ] Create role management UI in settings page
+- [ ] Restrict build deletion to admin/owner roles
+- [ ] Restrict build editing to admin/owner roles
+- [ ] Allow read-only access for member role
+- [ ] Add deleteTenant use-case (owner only)
+- [ ] Write unit tests for permission checking
+- [ ] Write integration tests for RBAC enforcement
+- [ ] Add unauthorized error handling in UI
+
+### 10.8. Multi-Tenant Testing & Documentation
+- [ ] Update all E2E tests for multi-tenant scenarios
+- [ ] Test tenant isolation (users can't see other tenant's data)
+- [ ] Test role permissions at API and UI level
+- [ ] Test invitation flow end-to-end
+- [ ] Test tenant switching functionality
+- [ ] Update README with multi-tenant setup instructions
+- [ ] Document database schema in separate doc
+- [ ] Add deployment guide for production (with database)
+- [ ] Create troubleshooting guide for auth/database issues
+- [ ] Update Docker setup to include database connection
 

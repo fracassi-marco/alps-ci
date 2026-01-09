@@ -58,3 +58,10 @@ bun.lockb
 .classpath
 .settings/
 
+# Database backups
+backup-*.sql
+*.dump
+
+# Drizzle (keep migrations in git, but ignore temp files)
+.drizzle/
+
