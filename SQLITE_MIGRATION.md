@@ -12,9 +12,11 @@ Alps-CI has been successfully migrated from a Docker-based PostgreSQL setup to a
 - **Default**: `DATABASE_URL=file:data/local.db`
 
 #### 2. Dependencies
-- ✅ Added: `better-sqlite3` and `@types/better-sqlite3`
-  - Note: We use `better-sqlite3` instead of `bun:sqlite` because Next.js build process requires Node.js compatibility
-  - `bun:sqlite` is Bun-specific and doesn't work with Next.js production builds
+- ✅ Using: **both** `better-sqlite3` AND `bun:sqlite` (via smart wrapper)
+  - `bun:sqlite` (built-in) - Used when running scripts directly with Bun
+  - `better-sqlite3` - Used when running Next.js build/runtime (Node.js)
+  - Smart detection based on runtime: `typeof Bun !== 'undefined'`
+  - See [docs/WHY_NOT_BUN_SQLITE.md](docs/WHY_NOT_BUN_SQLITE.md) for detailed explanation
 - ✅ Maintained: `postgres` and `@types/pg` (for production use)
 - ❌ Removed: Docker Compose development setup
 - ❌ Removed: Docker-specific database scripts
@@ -27,11 +29,12 @@ Alps-CI has been successfully migrated from a Docker-based PostgreSQL setup to a
 - `.gitignore` - Added SQLite database files (*.db, *.db-shm, *.db-wal)
 
 **Database:**
-- `src/infrastructure/database/index.ts` - SQLite connection setup
+- `src/infrastructure/database/index.ts` - Re-export wrapper
+- `src/infrastructure/database/client.ts` - NEW: Smart wrapper (bun:sqlite OR better-sqlite3)
 - `src/infrastructure/database/schema.ts` - Re-export wrapper
 - `src/infrastructure/database/schema-sqlite.ts` - NEW: SQLite schema
 - `src/infrastructure/database/schema-postgres.ts` - NEW: PostgreSQL schema
-- `src/infrastructure/auth.ts` - SQLite authentication support
+- `src/infrastructure/auth.ts` - Smart SQLite detection
 
 **Scripts:**
 - `package.json` - Removed Docker scripts (db:start, db:stop, etc.)

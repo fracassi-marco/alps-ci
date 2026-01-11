@@ -10,8 +10,8 @@ Alps-CI uses [better-auth](https://better-auth.com) for authentication with supp
 Copy `.env.example` to `.env.local` and configure:
 
 ```bash
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/alpsci
+# Database (SQLite by default for local development)
+DATABASE_URL=file:data/local.db
 
 # Authentication
 BETTER_AUTH_SECRET=your-secret-key-at-least-32-characters-long
@@ -23,10 +23,19 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
+> **Note**: For production multi-tenant deployments, use PostgreSQL:
+> ```bash
+> DATABASE_URL=postgresql://user:password@host:5432/database
+> ```
+
 ### Generate Auth Secret
 
 ```bash
+# Option 1: Using openssl
 openssl rand -base64 32
+
+# Option 2: Using Bun script
+bun run auth:generate-secret
 ```
 
 ### Google OAuth Setup
@@ -43,12 +52,37 @@ openssl rand -base64 32
 
 ## Database Setup
 
-The authentication system requires PostgreSQL. Run the migration to create necessary tables:
+The authentication system works with both SQLite (default) and PostgreSQL. 
 
+### Initial Setup
+
+1. **Generate migrations** (first time only):
 ```bash
-# Will be added in next step (10.2)
+bun run db:generate
+```
+
+2. **Apply migrations**:
+```bash
 bun run db:migrate
 ```
+
+3. **Or use push for development** (faster, skips migration files):
+```bash
+bun run db:push
+```
+
+### Seed Development Data (Optional)
+
+```bash
+bun run db:seed
+```
+
+This creates:
+- A test user: `dev@example.com`
+- A test tenant: "Development Team"
+- User assigned as owner of the tenant
+
+See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for more details.
 
 ## Usage
 
