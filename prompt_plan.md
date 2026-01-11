@@ -223,7 +223,7 @@ Status: ✅ Completed
 - All 246 tests passing (12 new + 234 existing)
 ```
 
-### 10.4. Implement User Invitation System
+### 10.4. Implement User Invitation System ✅ COMPLETED
 ```
 Prompt: Build the invitation system allowing tenant owners/admins to invite colleagues via email. Implement:
 - UI component: "Invite Member" button and modal with email input and role selector
@@ -234,6 +234,33 @@ Prompt: Build the invitation system allowing tenant owners/admins to invite coll
 - UI to view pending and accepted invitations (tenant admins only)
 
 Add role-based permission checks. Update tests to cover invitation creation, expiration, and acceptance flows.
+
+Status: ✅ Completed
+- Created CreateInvitationUseCase with secure token generation (32 bytes)
+- Created AcceptInvitationUseCase with expiration and validation checks
+- Implemented DatabaseInvitationRepository with create, findByToken, findByEmail, findPendingByTenantId, markAsAccepted
+- Created permissions module with canInviteMembers, canManageBuilds, canRemoveMembers, etc.
+- Built /api/invitations endpoint (POST to create, GET to list pending)
+- Built /api/invitations/[token] endpoint (GET details, POST to accept)
+- Created /invite/[token] page for accepting invitations
+- Invitation features:
+  - 7-day expiration by default
+  - Secure random token generation
+  - Email validation
+  - Role validation (owner/admin/member)
+  - Permission checks (only owners/admins can invite)
+  - Duplicate membership prevention
+  - Expiration validation
+  - Already accepted validation
+- Wrote 19 comprehensive unit tests covering:
+  - Successful invitation creation (5 tests)
+  - Validation errors (3 tests)
+  - Edge cases (2 tests)
+  - Successful acceptance (3 tests)
+  - Acceptance validation errors (4 tests)
+  - Acceptance edge cases (2 tests)
+- All 265 tests passing (19 new + 246 existing)
+- Email sending: Log to console (TODO: integrate email service)
 ```
 
 ### 10.5. Migrate Builds to Multi-Tenant Model
