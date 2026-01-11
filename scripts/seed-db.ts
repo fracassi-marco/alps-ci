@@ -5,8 +5,8 @@
  * Run: bun run db:seed
  */
 
-import { db, users, tenants, tenantMembers } from '../src/infrastructure/database';
-import { eq } from 'drizzle-orm';
+import { db, users, tenants, tenantMembers, accounts } from '../src/infrastructure/database';
+import bcrypt from 'bcryptjs';
 
 async function seed() {
   console.log('🌱 Seeding database...\n');
@@ -27,6 +27,19 @@ async function seed() {
 
     if (user) {
       console.log(`   ✅ User created: ${user.email}`);
+
+      // Create password account for better-auth
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      await db
+        .insert(accounts)
+        .values({
+          userId: user.id,
+          accountId: user.email,
+          providerId: 'credential',
+          password: hashedPassword,
+        })
+        .onConflictDoNothing();
+      console.log('   ✅ Password account created');
     } else {
       console.log('   ℹ️  User already exists');
     }
@@ -69,7 +82,7 @@ async function seed() {
 
     console.log('\n✅ Database seeding completed successfully!\n');
     console.log('📧 Dev user email: dev@example.com');
-    console.log('🔑 Dev user password: password123 (to be set in better-auth)');
+    console.log('🔑 Dev user password: password123');
     console.log('🏢 Tenant: Development Team (development-team)\n');
 
     process.exit(0);

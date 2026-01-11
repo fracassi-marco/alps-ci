@@ -1,25 +1,62 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, UserPlus, LogOut, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession, signOut } from '@/infrastructure/auth-client';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { AddEditBuildForm } from './components/AddEditBuildForm';
 import { BuildCard } from './components/BuildCard';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { InviteMemberModal } from './components/InviteMemberModal';
 import type { Build } from '@/domain/models';
 
 export default function Home() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [builds, setBuilds] = useState<Build[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddBuildForm, setShowAddBuildForm] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingBuild, setEditingBuild] = useState<Build | null>(null);
   const [deletingBuild, setDeletingBuild] = useState<Build | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push('/auth/signin');
+    }
+  }, [session, isPending, router]);
 
   useEffect(() => {
     // Fetch builds on mount
-    fetchBuilds();
-  }, []);
+    if (session) {
+      fetchBuilds();
+    }
+  }, [session]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowUserMenu(false);
+    if (showUserMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showUserMenu]);
+
+  // Show loading while checking auth
+  if (isPending || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const fetchBuilds = async () => {
     try {
@@ -111,6 +148,42 @@ export default function Home() {
     console.log('Refresh triggered for build:', build.name);
   };
 
+  const handleInvite = async (email: string, role: string) => {
+    try {
+      // TODO: Get tenantId from session/context
+      const tenantId = 'temp-tenant-id'; // This should come from the user's session
+
+      const response = await fetch('/api/invitations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenantId,
+          email,
+          role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send invitation');
+      }
+
+      // Show success message
+      alert(`✅ Invitation sent to ${email}!`);
+    } catch (error: any) {
+      console.error('Failed to send invitation:', error);
+      throw error;
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/auth/signin');
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -144,13 +217,48 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleAddBuild}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Add Build
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
+              >
+                <UserPlus className="w-5 h-5" />
+                Invite Member
+              </button>
+              <button
+                onClick={handleAddBuild}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Add Build
+              </button>
+
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUserMenu(!showUserMenu);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="text-sm font-medium">{session.user?.name || session.user?.email}</span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -200,6 +308,14 @@ export default function Home() {
             <p className="text-gray-600 dark:text-gray-400">Deleting build...</p>
           </div>
         </div>
+      )}
+
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <InviteMemberModal
+          onClose={() => setShowInviteModal(false)}
+          onInvite={handleInvite}
+        />
       )}
     </main>
   );
