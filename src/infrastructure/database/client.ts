@@ -5,7 +5,6 @@
  */
 
 import { drizzle as drizzleBetterSqlite } from 'drizzle-orm/better-sqlite3';
-import { drizzle as drizzleBunSqlite } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
@@ -24,14 +23,25 @@ try {
 // Detect if we're running with Bun or Node.js
 const isBun = typeof Bun !== 'undefined';
 
-let db: ReturnType<typeof drizzleBetterSqlite> | ReturnType<typeof drizzleBunSqlite>;
+let db: any;
 
 if (isBun) {
   // Use Bun's native SQLite (for scripts run with `bun run`)
   console.log('💾 Using Bun SQLite (bun:sqlite)...');
-  const { Database } = require('bun:sqlite');
-  const sqlite = new Database(dbPath);
-  db = drizzleBunSqlite(sqlite, { schema });
+  try {
+    // Dynamic import to avoid bundler issues
+    const { Database } = require('bun:sqlite');
+    const { drizzle: drizzleBunSqlite } = require('drizzle-orm/bun-sqlite');
+    const sqlite = new Database(dbPath);
+    db = drizzleBunSqlite(sqlite, { schema });
+  } catch (e) {
+    // Fallback to better-sqlite3 if bun:sqlite fails
+    console.log('⚠️  bun:sqlite failed, falling back to better-sqlite3');
+    const Database = require('better-sqlite3');
+    const sqlite = new Database(dbPath);
+    sqlite.pragma('journal_mode = WAL');
+    db = drizzleBetterSqlite(sqlite, { schema });
+  }
 } else {
   // Use better-sqlite3 (for Next.js/Node.js runtime)
   console.log('💾 Using better-sqlite3 (Next.js runtime)...');

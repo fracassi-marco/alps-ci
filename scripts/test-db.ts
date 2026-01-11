@@ -20,21 +20,21 @@ async function test() {
     // Count users
     const allUsers = await db.select().from(users);
     console.log(`👥 Users in database: ${allUsers.length}`);
-    allUsers.forEach(user => {
+    allUsers.forEach((user: any) => {
       console.log(`   - ${user.email} (${user.name})`);
     });
 
     // Count tenants
     const allTenants = await db.select().from(tenants);
     console.log(`\n🏢 Tenants in database: ${allTenants.length}`);
-    allTenants.forEach(tenant => {
+    allTenants.forEach((tenant: any) => {
       console.log(`   - ${tenant.name} (${tenant.slug})`);
     });
 
     // Count tenant members
     const allMembers = await db.select().from(tenantMembers);
     console.log(`\n👥 Tenant memberships: ${allMembers.length}`);
-    allMembers.forEach(member => {
+    allMembers.forEach((member: any) => {
       console.log(`   - User ${member.userId} → Tenant ${member.tenantId} (${member.role})`);
     });
 
