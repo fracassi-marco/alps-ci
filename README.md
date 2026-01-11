@@ -63,15 +63,12 @@ cp .env.example .env.local
 bun run auth:generate-secret
 
 # Add the generated secret to .env.local
-# DATABASE_URL is already configured for local development
-
-# Start local PostgreSQL database (Docker required)
-bun run db:start
+# DATABASE_URL defaults to SQLite (file:data/local.db)
 
 # Push database schema
 bun run db:push
 
-# Seed development data
+# Seed development data (optional)
 bun run db:seed
 
 # Run development server
@@ -80,37 +77,25 @@ bun run dev
 
 Visit `http://localhost:3000` to see the application.
 
-> **Note**: Multi-tenant authentication requires a PostgreSQL database. See [Migrations Guide](docs/MIGRATIONS.md), [Database Setup](docs/DATABASE_SETUP.md), and [Authentication Setup](docs/AUTH_SETUP.md) for details.
+> **Note**: Alps-CI uses SQLite by default for local development. For production multi-tenant deployments, PostgreSQL is recommended. See [Database Setup](docs/DATABASE_SETUP.md) and [Authentication Setup](docs/AUTH_SETUP.md) for details.
 
 ### Database Management
 
 ```bash
-# Start database
-bun run db:start
-
-# Stop database
-bun run db:stop
-
-# Reset database (deletes all data)
-bun run db:reset
-
 # Push schema changes
 bun run db:push
+
+# Generate migrations
+bun run db:generate
+
+# Apply migrations
+bun run db:migrate
 
 # Seed development data
 bun run db:seed
 
 # Open Drizzle Studio (database GUI)
 bun run db:studio
-
-# View database logs
-bun run db:logs
-
-# Open PostgreSQL shell
-bun run db:shell
-
-# Check database status
-bun run db:status
 ```
 
 See [docs/MIGRATIONS.md](docs/MIGRATIONS.md) for schema management and [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md) for detailed database documentation.

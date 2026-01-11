@@ -11,7 +11,7 @@ services:
       - ./data:/app/data
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://alpsci:alpsci_dev_password@db:5432/alpsci
+      - DATABASE_URL=postgresql://alpsci:alpscidevpassword@db:5432/alpsci
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3000}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -27,7 +27,7 @@ services:
       - "5432:5432"
     environment:
       - POSTGRES_USER=alpsci
-      - POSTGRES_PASSWORD=alpsci_dev_password
+      - POSTGRES_PASSWORD=alpscidevpassword
       - POSTGRES_DB=alpsci
     volumes:
       - postgres_data:/var/lib/postgresql/data

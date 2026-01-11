@@ -43,6 +43,9 @@ next-env.d.ts
 
 # data directory
 /data
+*.db
+*.db-shm
+*.db-wal
 
 # bun
 .bun

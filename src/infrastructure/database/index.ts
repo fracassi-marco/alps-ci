@@ -1,21 +1,35 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
 import * as schema from './schema';
+import { join } from 'path';
+import { mkdirSync } from 'fs';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
+const databaseUrl = process.env.DATABASE_URL || 'file:data/local.db';
+
+// SQLite connection for local development
+console.log('💾 Using SQLite database...');
+const dbPath = databaseUrl.replace('file:', '');
+const dbDir = join(process.cwd(), 'data');
+
+// Ensure data directory exists
+try {
+  mkdirSync(dbDir, { recursive: true });
+} catch (error) {
+  // Directory already exists
 }
 
-// Create postgres client
-const client = postgres(process.env.DATABASE_URL, {
-  max: 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
-});
+const sqlite = new Database(dbPath);
+sqlite.pragma('journal_mode = WAL'); // Better performance
 
-// Create drizzle instance
-export const db = drizzle(client, { schema });
+const db = drizzle(sqlite, { schema });
+
+// Export database instance
+export { db };
 
 // Export schema for use in queries
 export * from './schema';
+
+
+
+
 

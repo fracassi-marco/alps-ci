@@ -1,57 +1,79 @@
 # Database Setup Guide
 
-This guide explains how to set up and use the local PostgreSQL database for Alps-CI development.
+This guide explains how to set up and use the database for Alps-CI development and production.
 
 ## Quick Start (Development)
 
-### 1. Start the Database
+Alps-CI uses **SQLite** by default for local development - no Docker or external database required!
+
+### 1. Push Schema to Database
 
 ```bash
-# Start only the database (for local Next.js development)
-docker compose -f docker-compose.dev.yml up -d
-
-# Or use the npm script
-bun run db:start
-```
-
-### 2. Push Schema to Database
-
-```bash
-# Push schema using Drizzle (recommended for development)
+# Push schema using Drizzle (creates the database automatically)
 bun run db:push
 ```
 
-This will create all tables, indexes, and constraints based on the TypeScript schema.
+This will:
+- Create the SQLite database at `data/local.db`
+- Create all tables, indexes, and constraints based on the TypeScript schema
 
-### 3. Seed Development Data
+### 2. Seed Development Data (Optional)
 
 ```bash
 # Insert seed data for development
 bun run db:seed
 ```
 
-### 4. Update .env.local
-
-Add to your `.env.local` file:
+### 3. Verify Database Setup
 
 ```bash
-DATABASE_URL=postgresql://alpsci:alpsci_dev_password@localhost:5432/alpsci
-```
-
-### 5. Verify Database Setup
-
-```bash
-# Check database is running
-bun run db:status
-
-# View database logs
-bun run db:logs
-
-# Open PostgreSQL shell
-bun run db:shell
+# Test database connection
+bun run db:test
 
 # Open Drizzle Studio (GUI)
 bun run db:studio
+```
+
+### 4. Environment Configuration
+
+The default configuration in `.env.local` uses SQLite:
+
+```bash
+DATABASE_URL=file:data/local.db
+```
+
+## Database Options
+
+### SQLite (Default - Local Development)
+
+**Advantages:**
+- No external dependencies
+- Zero configuration
+- Perfect for local development
+- Fast and lightweight
+- File-based (easy to backup/restore)
+
+**Connection String:**
+```bash
+DATABASE_URL=file:data/local.db
+```
+
+### PostgreSQL (Production - Multi-tenant)
+
+**Advantages:**
+- Better for production multi-tenant deployments
+- Concurrent access
+- Advanced features (JSON operations, full-text search)
+- Scalable
+
+**Connection String:**
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+**Example (Supabase):**
+```bash
+DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
 ```
 
 ## Database Schema Management
@@ -64,41 +86,26 @@ See [MIGRATIONS.md](./MIGRATIONS.md) for detailed documentation on:
 - Using Drizzle Studio
 - Production deployment
 
-## Database Connection
-
-The database is accessible at:
-
-The database is accessible at:
-- **Host**: `localhost`
-- **Port**: `5432`
-- **Database**: `alpsci`
-- **User**: `alpsci`
-- **Password**: `alpsci_dev_password`
-
-Connection string:
-```
-postgresql://alpsci:alpsci_dev_password@localhost:5432/alpsci
-```
-
-### 3. Update .env.local
-
-Add to your `.env.local` file:
+## Database Scripts
 
 ```bash
-DATABASE_URL=postgresql://alpsci:alpsci_dev_password@localhost:5432/alpsci
-```
+# Push schema changes (recommended for development)
+bun run db:push
 
-### 4. Verify Database Setup
+# Generate migration files
+bun run db:generate
 
-```bash
-# Check database is running
-docker compose -f docker-compose.dev.yml ps
+# Apply migrations (production)
+bun run db:migrate
 
-# View database logs
-docker compose -f docker-compose.dev.yml logs db
+# Open Drizzle Studio (database GUI)
+bun run db:studio
 
-# Connect to database with psql
-docker compose -f docker-compose.dev.yml exec db psql -U alpsci -d alpsci
+# Seed development data
+bun run db:seed
+
+# Test database connection
+bun run db:test
 ```
 
 ## Database Schema
@@ -145,151 +152,185 @@ The seed data includes:
 
 To customize seed data, edit `scripts/seed-db.ts`.
 
-## Production Setup
+## Switching Between SQLite and PostgreSQL
 
-### Reset Database
+### From SQLite to PostgreSQL
 
+1. Update `.env.local`:
 ```bash
-# Stop and remove containers and volumes
-docker compose -f docker-compose.dev.yml down -v
-
-# Or use the script
-bun run db:reset
-
-# Push schema again
-bun run db:push
-
-# Seed data
-bun run db:seed
+DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
-### View Database Tables
+2. Push schema:
+```bash
+bun run db:push
+```
+
+3. Migrate data (if needed):
+```bash
+# Export from SQLite
+bun run db:studio  # Export data manually
+
+# Import to PostgreSQL
+bun run db:seed  # Or import manually
+```
+
+### From PostgreSQL to SQLite
+
+1. Update `.env.local`:
+```bash
+DATABASE_URL=file:data/local.db
+```
+
+2. Push schema:
+```bash
+bun run db:push
+```
+
+## Database Tools
+
+### Drizzle Studio (Visual GUI)
 
 ```bash
-# Using psql
-bun run db:shell
-
-# Then in psql:
-\dt
-
-# Or use Drizzle Studio (GUI)
+# Open Drizzle Studio
 bun run db:studio
 ```
 
-### Run SQL Queries
+Access at `https://local.drizzle.studio`
+
+Features:
+- Browse all tables
+- View and edit data
+- Run queries
+- Export data
+
+### SQLite CLI
 
 ```bash
-# Interactive psql session
-docker compose -f docker-compose.dev.yml exec db psql -U alpsci -d alpsci
+# Open SQLite database
+sqlite3 data/local.db
 
-# Run a query
-docker compose -f docker-compose.dev.yml exec db psql -U alpsci -d alpsci -c "SELECT * FROM users;"
+# List tables
+.tables
+
+# Describe table
+.schema users
+
+# Run query
+SELECT * FROM users;
+
+# Exit
+.quit
 ```
 
-### Backup Database
+## Backup & Restore
+
+### SQLite Backup
 
 ```bash
-# Create backup
-docker compose -f docker-compose.dev.yml exec db pg_dump -U alpsci alpsci > backup.sql
+# Backup (copy the file)
+cp data/local.db data/backups/local-$(date +%Y%m%d-%H%M%S).db
 
-# Restore backup
-cat backup.sql | docker compose -f docker-compose.dev.yml exec -T db psql -U alpsci -d alpsci
+# Restore
+cp data/backups/local-20260111-120000.db data/local.db
 ```
 
-### View Database Logs
+### PostgreSQL Backup
 
 ```bash
-# Follow logs
-docker compose -f docker-compose.dev.yml logs -f db
+# Backup
+pg_dump $DATABASE_URL > backup.sql
 
-# View recent logs
-docker compose -f docker-compose.dev.yml logs --tail=100 db
+# Restore
+psql $DATABASE_URL < backup.sql
 ```
 
-## Migrations
+## Production Setup
 
-Schema changes are managed with Drizzle ORM:
+### Recommended: PostgreSQL on Managed Service
 
+For production multi-tenant deployments:
+
+1. **Choose a provider:**
+   - Supabase (recommended for simplicity)
+   - AWS RDS
+   - Google Cloud SQL
+   - DigitalOcean Managed Databases
+   - Railway
+
+2. **Set DATABASE_URL:**
 ```bash
-# Development: Push schema directly
-bun run db:push
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
 
-# Production: Generate migration files
-bun run db:generate
-
-# Apply migrations
+3. **Run migrations:**
+```bash
 bun run db:migrate
 ```
 
-For detailed migration documentation, see [MIGRATIONS.md](./MIGRATIONS.md).
+4. **Enable SSL** (provider-specific)
 
-## Seed Data (Development)
+5. **Set up backups** (automated by provider)
 
-For production:
-1. Use a managed PostgreSQL service (AWS RDS, Google Cloud SQL, etc.)
-2. Remove seed data from `init-db.sql`
-3. Use strong passwords
-4. Enable SSL connections
-5. Set up regular backups
-6. Configure connection pooling
+### Alternative: SQLite for Single-Tenant
+
+If deploying for a single team:
+- Keep `DATABASE_URL=file:data/local.db`
+- Mount `/app/data` volume in Docker
+- Set up regular file backups
+- Consider using Litestream for replication
 
 ## Troubleshooting
 
-### Database not starting
+### SQLite Database Locked
 
 ```bash
-# Check logs
-docker compose -f docker-compose.dev.yml logs db
+# Check for zombie processes
+lsof data/local.db
 
-# Check if port 5432 is already in use
-lsof -i :5432
+# Remove write-ahead log
+rm data/local.db-wal data/local.db-shm
 ```
 
-### Connection refused
+### PostgreSQL Connection Issues
 
 ```bash
-# Wait for database to be ready
-docker compose -f docker-compose.dev.yml exec db pg_isready -U alpsci
+# Test connection
+psql $DATABASE_URL -c "SELECT version();"
 
-# Check health status
-docker compose -f docker-compose.dev.yml ps
+# Check if server is reachable
+pg_isready -d $DATABASE_URL
 ```
 
-### Schema not initialized
+### Schema Out of Sync
 
 ```bash
-# Push schema to database
+# Reset and push schema
+rm data/local.db  # For SQLite
 bun run db:push
-
-# Seed data
-bun run db:seed
 ```
 
-### RLS blocking queries
+### Migrations Failed
 
-If you need to bypass RLS for development:
-```sql
--- Disable RLS temporarily (not recommended)
-ALTER TABLE builds DISABLE ROW LEVEL SECURITY;
+```bash
+# Check migration status
+bun run db:studio
 
--- Or set current user context
-SET app.current_user_id = '00000000-0000-0000-0000-000000000001';
+# Manually fix in Studio, then regenerate
+bun run db:generate
 ```
 
 ## Common Commands Cheat Sheet
 
 ```bash
-# Start database
-bun run db:start
-
-# Stop database
-bun run db:stop
-
-# Reset database (delete all data)
-bun run db:reset
-
-# Push schema
+# Push schema (development)
 bun run db:push
+
+# Generate migrations (production)
+bun run db:generate
+
+# Apply migrations
+bun run db:migrate
 
 # Seed data
 bun run db:seed
@@ -297,14 +338,8 @@ bun run db:seed
 # Open Drizzle Studio (GUI)
 bun run db:studio
 
-# Connect to database
-bun run db:shell
-
-# View logs
-bun run db:logs
-
-# Check status
-bun run db:status
+# Test connection
+bun run db:test
 ```
 
 ## Next Steps
