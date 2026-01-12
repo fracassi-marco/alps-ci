@@ -100,8 +100,29 @@ An isolated workspace for a company/organization. Each tenant has:
 - Welcome screen when no Builds exist (with onboarding instructions)
 - "Add Your First Build" button
 - "Invite Member" button (owner/admin only)
-- User menu with sign out option
+- User menu with:
+  - Organization link (to team management page)
+  - Sign out option
 - List of all Builds as cards
+
+### Organization Management
+Accessible via profile menu "Organization" link. Shows:
+- **Organization Name**: Display tenant name at the top
+- **Members Table**: List of all team members with columns:
+  - Name: User's full name
+  - Email: User's email address
+  - Role: Owner/Admin/Member badge with color coding
+  - Joined Date: When they joined the team
+- **Pending Invitations Table**: List of pending invitations with columns:
+  - Email: Invited email address
+  - Role: Invited role
+  - Invited By: Name of user who sent invitation
+  - Expires: Expiration date/time
+  - Actions: Revoke button (owner/admin only)
+- **Access Control**:
+  - All authenticated users can view organization members
+  - Only owners/admins can see and revoke pending invitations
+  - Revoke action requires confirmation
 
 ### Build Management
 When adding a Build, specify:

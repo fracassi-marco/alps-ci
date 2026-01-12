@@ -308,6 +308,67 @@ Implement:
 Add comprehensive tests for permission checks and role-based operations. Ensure proper error messages when unauthorized actions are attempted.
 ```
 
+### 10.8. Implement Organization Management Page
+```
+Prompt: Create an Organization management page accessible from the user profile menu. Implement the following:
+
+**Navigation**:
+- Add "Organization" link in user profile menu (above "Sign out")
+- Create route `/organization` protected by authentication middleware
+
+**Organization Page UI** (`/app/organization/page.tsx`):
+- Display tenant/organization name as page title
+- Show two main sections:
+
+**1. Members Table**:
+- Display all team members in a responsive table with columns:
+  - Name: User's full name
+  - Email: User's email address  
+  - Role: Badge component with color coding (Owner=purple, Admin=blue, Member=gray)
+  - Joined Date: Formatted date (e.g., "Jan 12, 2026")
+- All authenticated users can view this table
+- Sort by joined date (newest first)
+
+**2. Pending Invitations Table** (visible to owners/admins only):
+- Display pending (not yet accepted) invitations with columns:
+  - Email: Invited email address
+  - Role: Badge showing invited role
+  - Invited By: Name of user who sent the invitation
+  - Expires: Formatted expiration date/time with warning if expiring soon (<24h)
+  - Actions: "Revoke" button (confirmation dialog required)
+- Filter invitations where acceptedAt is null and expiresAt > now
+- Show empty state message if no pending invitations
+
+**Backend**:
+- Create `/api/organization/members` GET endpoint:
+  - Returns list of tenant members with user details
+  - Requires authentication
+  - Filters by current user's tenant
+- Create `/api/organization/invitations` GET endpoint:
+  - Returns pending invitations for tenant
+  - Requires authentication + owner/admin role
+  - Includes inviter name via join
+- Create `/api/organization/invitations/[id]` DELETE endpoint:
+  - Revokes/deletes invitation
+  - Requires authentication + owner/admin role
+  - Returns 403 if user lacks permission
+
+**Tests**:
+- Unit tests for organization data fetching use-cases
+- API route tests for permissions and data filtering
+- Component tests for Members and Invitations tables
+- E2E test for viewing organization page
+
+**UI/UX**:
+- Use Lucide icons (Users, Mail, UserCheck, X)
+- Responsive table design (stack on mobile)
+- Loading states while fetching data
+- Error boundaries for API failures
+- Confirmation dialog for revoke action ("Are you sure you want to revoke this invitation?")
+- Success toast after revoking invitation
+- Role badges with consistent color scheme
+```
+
 ---
 
 # Review & Iteration
