@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AcceptInvitationUseCase } from '@/use-cases/acceptInvitation';
 import { DatabaseInvitationRepository } from '@/infrastructure/InvitationRepository';
-import { DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
 import { getCurrentUser } from '@/infrastructure/auth-session';
+import {DatabaseTenantMemberRepository} from "@/infrastructure/DatabaseTenantMemberRepository.ts";
 
 const invitationRepository = new DatabaseInvitationRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();

@@ -4,7 +4,8 @@ import { db } from '@/infrastructure/database/client';
 import { tenantMembers } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
 import { ChangeMemberRoleUseCase } from '@/use-cases/changeMemberRole';
-import { DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
+
+import {DatabaseTenantMemberRepository} from "@/infrastructure/DatabaseTenantMemberRepository.ts";
 
 /**
  * PATCH /api/organization/members/[id]/role

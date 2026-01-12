@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegisterTenantUseCase } from '@/use-cases/registerTenant';
-import { DatabaseTenantRepository, DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
+import { DatabaseTenantRepository } from '@/infrastructure/TenantRepository';
+import {DatabaseTenantMemberRepository} from "@/infrastructure/DatabaseTenantMemberRepository.ts";
 
 const tenantRepository = new DatabaseTenantRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();

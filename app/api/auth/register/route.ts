@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegisterTenantUseCase } from '@/use-cases/registerTenant';
-import { DatabaseTenantRepository, DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
+import { DatabaseTenantRepository } from '@/infrastructure/TenantRepository';
 import { db } from '@/infrastructure/database/client';
 import { users, accounts } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import {DatabaseTenantMemberRepository} from "@/infrastructure/DatabaseTenantMemberRepository.ts";
 
 const tenantRepository = new DatabaseTenantRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();

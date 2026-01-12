@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/infrastructure/auth-session';
-import { DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
+
+import {DatabaseTenantMemberRepository} from "@/infrastructure/DatabaseTenantMemberRepository.ts";
 
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 
