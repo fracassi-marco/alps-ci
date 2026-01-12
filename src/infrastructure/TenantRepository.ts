@@ -153,5 +153,32 @@ export class DatabaseTenantMemberRepository implements TenantMemberRepository {
       createdAt: new Date(member.createdAt),
     }));
   }
+
+  async findById(id: string): Promise<TenantMember | null> {
+    const [member] = await db
+      .select()
+      .from(tenantMembers)
+      .where(eq(tenantMembers.id, id))
+      .limit(1);
+
+    if (!member) return null;
+
+    return {
+      id: member.id,
+      tenantId: member.tenantId,
+      userId: member.userId,
+      role: member.role as 'owner' | 'admin' | 'member',
+      invitedBy: member.invitedBy,
+      joinedAt: new Date(member.joinedAt),
+      createdAt: new Date(member.createdAt),
+    };
+  }
+
+  async updateMemberRole(memberId: string, newRole: 'owner' | 'admin' | 'member'): Promise<void> {
+    await db
+      .update(tenantMembers)
+      .set({ role: newRole })
+      .where(eq(tenantMembers.id, memberId));
+  }
 }
 

@@ -26,6 +26,10 @@ export interface TenantRepository {
 export interface TenantMemberRepository {
   create(member: Omit<TenantMember, 'id' | 'createdAt'>): Promise<TenantMember>;
   findByUserIdAndTenantId(userId: string, tenantId: string): Promise<TenantMember | null>;
+  findById(id: string): Promise<TenantMember | null>;
+  findByUserId(userId: string): Promise<TenantMember[]>;
+  findByTenantId(tenantId: string): Promise<TenantMember[]>;
+  updateMemberRole(memberId: string, newRole: 'owner' | 'admin' | 'member'): Promise<void>;
 }
 
 export class RegisterTenantUseCase {

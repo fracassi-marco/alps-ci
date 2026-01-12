@@ -34,6 +34,13 @@ export default function OrganizationPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [invitationToRevoke, setInvitationToRevoke] = useState<Invitation | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showRoleChangeDialog, setShowRoleChangeDialog] = useState(false);
+  const [roleChangeData, setRoleChangeData] = useState<{
+    member: Member;
+    newRole: 'owner' | 'admin' | 'member';
+  } | null>(null);
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -68,6 +75,11 @@ export default function OrganizationPage() {
       if (!tenantResponse.ok) throw new Error('Failed to fetch organization info');
       const tenantData = await tenantResponse.json();
       setUserRole(tenantData.role);
+
+      // Store current user ID from session
+      if (session?.user?.id) {
+        setCurrentUserId(session.user.id);
+      }
 
       // Fetch tenant details
       const orgResponse = await fetch(`/api/organization/${tenantData.tenantId}`);
@@ -134,6 +146,81 @@ export default function OrganizationPage() {
   const handleRevokeCancel = () => {
     setShowConfirmDialog(false);
     setInvitationToRevoke(null);
+  };
+
+  const handleRoleChange = (member: Member, newRole: 'owner' | 'admin' | 'member') => {
+    setRoleChangeData({ member, newRole });
+    setShowRoleChangeDialog(true);
+  };
+
+  const handleRoleChangeConfirm = async () => {
+    if (!roleChangeData) return;
+
+    try {
+      setChangingRoleId(roleChangeData.member.id);
+      const response = await fetch(`/api/organization/members/${roleChangeData.member.id}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newRole: roleChangeData.newRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change role');
+      }
+
+      // Update member in list
+      setMembers(members.map(m =>
+        m.id === roleChangeData.member.id
+          ? { ...m, role: roleChangeData.newRole }
+          : m
+      ));
+
+      // Show success message
+      alert(`✅ ${roleChangeData.member.name}'s role changed to ${roleChangeData.newRole}`);
+    } catch (err: any) {
+      console.error('Failed to change role:', err);
+      alert(`❌ ${err.message}`);
+    } finally {
+      setChangingRoleId(null);
+      setShowRoleChangeDialog(false);
+      setRoleChangeData(null);
+    }
+  };
+
+  const handleRoleChangeCancel = () => {
+    setShowRoleChangeDialog(false);
+    setRoleChangeData(null);
+  };
+
+  const canChangeRole = (member: Member) => {
+    // Only owners and admins can change roles
+    if (userRole !== 'owner' && userRole !== 'admin') return false;
+
+    // Cannot change your own role
+    if (currentUserId && member.id === currentUserId) return false;
+
+    // Cannot change role of last owner
+    if (member.role === 'owner') {
+      const ownerCount = members.filter(m => m.role === 'owner').length;
+      if (ownerCount <= 1) return false;
+    }
+
+    return true;
+  };
+
+  const getAvailableRoles = () => {
+    // Only owners can promote to owner
+    if (userRole === 'owner') {
+      return ['owner', 'admin', 'member'] as const;
+    }
+    // Admins can only assign admin or member
+    return ['admin', 'member'] as const;
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -296,6 +383,11 @@ export default function OrganizationPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Joined
                   </th>
+                  {(userRole === 'owner' || userRole === 'admin') && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -315,6 +407,28 @@ export default function OrganizationPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(member.joinedAt)}
                     </td>
+                    {(userRole === 'owner' || userRole === 'admin') && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {canChangeRole(member) ? (
+                          <select
+                            value={member.role}
+                            onChange={(e) => handleRoleChange(member, e.target.value as 'owner' | 'admin' | 'member')}
+                            disabled={changingRoleId === member.id}
+                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {getAvailableRoles().map(role => (
+                              <option key={role} value={role}>
+                                {role.charAt(0).toUpperCase() + role.slice(1)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500 text-xs">
+                            {member.id === currentUserId ? 'You' : 'Protected'}
+                          </span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -434,6 +548,45 @@ export default function OrganizationPage() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Change Confirmation Dialog */}
+      {showRoleChangeDialog && roleChangeData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Change Member Role?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to change <strong>{roleChangeData.member.name}</strong>'s role from{' '}
+              <strong>{roleChangeData.member.role}</strong> to <strong>{roleChangeData.newRole}</strong>?
+              This will take effect immediately.
+            </p>
+            {roleChangeData.member.role === 'owner' && roleChangeData.newRole !== 'owner' && (
+              <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  ⚠️ <strong>Warning:</strong> This user will lose owner privileges including the ability to delete the organization.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={handleRoleChangeCancel}
+                disabled={changingRoleId !== null}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRoleChangeConfirm}
+                disabled={changingRoleId !== null}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {changingRoleId ? 'Changing...' : 'Confirm'}
               </button>
             </div>
           </div>

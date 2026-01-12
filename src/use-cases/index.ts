@@ -5,6 +5,7 @@ export { DeleteBuildUseCase } from './deleteBuild';
 export { RestoreFromBackupUseCase } from './restoreFromBackup';
 export { FetchBuildStatsUseCase } from './fetchBuildStats';
 export { RevokeInvitationUseCase } from './revokeInvitation';
+export { ChangeMemberRoleUseCase } from './changeMemberRole';
 
 export type { BuildRepository as ListBuildsRepository } from './listBuilds';
 export type { BuildRepository as AddBuildRepository } from './addBuild';

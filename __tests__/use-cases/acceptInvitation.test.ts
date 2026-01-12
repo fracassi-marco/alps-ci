@@ -72,6 +72,25 @@ class MockTenantMemberRepository implements TenantMemberRepository {
     return this.members.find(m => m.userId === userId && m.tenantId === tenantId) || null;
   }
 
+  async findById(id: string): Promise<TenantMember | null> {
+    return this.members.find(m => m.id === id) || null;
+  }
+
+  async findByUserId(userId: string): Promise<TenantMember[]> {
+    return this.members.filter(m => m.userId === userId);
+  }
+
+  async findByTenantId(tenantId: string): Promise<TenantMember[]> {
+    return this.members.filter(m => m.tenantId === tenantId);
+  }
+
+  async updateMemberRole(memberId: string, newRole: 'owner' | 'admin' | 'member'): Promise<void> {
+    const member = this.members.find(m => m.id === memberId);
+    if (member) {
+      member.role = newRole;
+    }
+  }
+
   reset() {
     this.members = [];
     this.nextId = 1;

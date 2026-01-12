@@ -111,8 +111,9 @@ Accessible via profile menu "Organization" link. Shows:
 - **Members Table**: List of all team members with columns:
   - Name: User's full name
   - Email: User's email address
-  - Role: Owner/Admin/Member badge with color coding
+  - Role: Owner/Admin/Member badge with color coding (clickable dropdown for owners/admins)
   - Joined Date: When they joined the team
+  - Actions: Change role dropdown (owner/admin only, cannot change own role or demote last owner)
 - **Pending Invitations Table**: List of pending invitations with columns:
   - Email: Invited email address
   - Role: Invited role
@@ -122,7 +123,18 @@ Accessible via profile menu "Organization" link. Shows:
 - **Access Control**:
   - All authenticated users can view organization members
   - Only owners/admins can see and revoke pending invitations
+  - Only owners/admins can change user roles
   - Revoke action requires confirmation
+  - Role change requires confirmation
+
+### Role Management Rules
+- **Who can change roles**: Only owners and admins
+- **Protection rules**:
+  - Cannot change your own role (prevents accidental self-demotion)
+  - Cannot demote the last owner (organization must have at least one owner)
+  - Cannot promote members to owner if you're only an admin (only owners can create other owners)
+- **Confirmation required**: All role changes require confirmation dialog
+- **Role change effects**: Take effect immediately after confirmation
 
 ### Build Management
 When adding a Build, specify:

@@ -369,6 +369,92 @@ Prompt: Create an Organization management page accessible from the user profile 
 - Role badges with consistent color scheme
 ```
 
+### 10.9. Implement Role Management for Team Members
+```
+Prompt: Add the ability for owners and admins to change the roles of team members. Implement the following:
+
+**Use-Case Layer** (`src/use-cases/changeMemberRole.ts`):
+- Create `ChangeMemberRoleUseCase` with the following validations:
+  - User must be owner or admin to change roles
+  - Cannot change your own role (prevent self-demotion)
+  - Cannot demote the last owner (must maintain at least one owner)
+  - Only owners can promote members to owner role (admins cannot create other owners)
+  - Validate new role is one of: 'owner', 'admin', 'member'
+- Accept parameters: `{ userId: string, targetMemberId: string, newRole: string, tenantId: string }`
+- Return success/error with descriptive messages
+
+**Repository Method**:
+- Add `updateMemberRole(memberId: string, newRole: string): Promise<void>` to `TenantMemberRepository` interface
+- Implement in `DatabaseTenantMemberRepository` using Drizzle ORM
+
+**API Endpoint** (`/api/organization/members/[id]/role`):
+- Create PATCH endpoint to update member role
+- Extract current user from session
+- Fetch current user's tenant membership and role
+- Validate user has permission (owner or admin)
+- Call `ChangeMemberRoleUseCase` with parameters
+- Return 200 on success with updated member data
+- Return appropriate error codes:
+  - 401: Not authenticated
+  - 403: Insufficient permissions
+  - 400: Invalid role or business rule violation (e.g., last owner, self-change)
+  - 404: Member not found
+
+**UI Component** (`/app/organization/page.tsx`):
+- Add role dropdown in Actions column of Members table
+- Show dropdown only for owners/admins
+- Disable dropdown for:
+  - Current user's own row (cannot change own role)
+  - Last owner (if current member is owner)
+- On role selection:
+  - Show confirmation dialog: "Change {name}'s role from {oldRole} to {newRole}?"
+  - On confirm, call API endpoint
+  - Show loading state during API call
+  - On success: Update table, show success toast, refresh data
+  - On error: Show error message with reason
+- Role dropdown options:
+  - Owner (only for current owners)
+  - Admin
+  - Member
+
+**Confirmation Dialog**:
+- Title: "Change Member Role?"
+- Message: "Are you sure you want to change {userName}'s role from {currentRole} to {newRole}? This will take effect immediately."
+- Warning for demoting owner: "This user will lose owner privileges including the ability to delete the organization."
+- Buttons: Cancel, Confirm
+
+**Tests**:
+- Unit tests for `ChangeMemberRoleUseCase`:
+  - Successful role change (owner/admin changing member)
+  - Owner promoting member to admin
+  - Owner promoting member to owner
+  - Admin promoting member to admin
+  - Admin cannot promote to owner (error)
+  - Cannot change own role (error)
+  - Cannot demote last owner (error)
+  - Invalid role (error)
+  - Member cannot change roles (error)
+- API route tests for permissions and validations
+- E2E test for changing member role
+
+**Business Rules Summary**:
+1. Only owners and admins can change roles ✅
+2. Cannot change your own role ✅
+3. Cannot demote the last owner ✅
+4. Only owners can create other owners ✅
+5. All role changes require confirmation ✅
+6. Changes take effect immediately ✅
+
+**UI/UX**:
+- Use dropdown menu (ChevronDown icon) in Actions column
+- Color-coded role badges match existing design
+- Loading spinner during role change
+- Success toast: "✅ {name}'s role changed to {newRole}"
+- Error toast: "❌ {errorMessage}"
+- Disabled state styling for non-editable roles
+- Confirmation dialog with role-specific warnings
+```
+
 ---
 
 # Review & Iteration
