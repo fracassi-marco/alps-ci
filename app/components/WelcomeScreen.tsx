@@ -4,9 +4,12 @@ import { PlusCircle, GitBranch, BarChart3 } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onAddBuild: () => void;
+  userRole?: 'owner' | 'admin' | 'member' | null;
 }
 
-export function WelcomeScreen({ onAddBuild }: WelcomeScreenProps) {
+export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
+  const canAddBuilds = userRole === 'owner' || userRole === 'admin';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
       <div className="max-w-4xl w-full">
@@ -113,14 +116,22 @@ export function WelcomeScreen({ onAddBuild }: WelcomeScreenProps) {
             </div>
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={onAddBuild}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 text-lg"
-          >
-            <PlusCircle className="w-6 h-6" />
-            Add Your First Build
-          </button>
+          {/* CTA Button - Only show for owners and admins */}
+          {canAddBuilds ? (
+            <button
+              onClick={onAddBuild}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 text-lg"
+            >
+              <PlusCircle className="w-6 h-6" />
+              Add Your First Build
+            </button>
+          ) : (
+            <div className="text-center py-4 px-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <p className="text-gray-600 dark:text-gray-400">
+                You need owner or admin permissions to add builds. Please contact your organization owner.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer Note */}

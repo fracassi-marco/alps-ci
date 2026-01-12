@@ -23,6 +23,7 @@ export default function Home() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | null>(null);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -90,6 +91,7 @@ export default function Home() {
 
       const data = await response.json();
       setTenantId(data.tenantId);
+      setUserRole(data.role);
     } catch (error) {
       console.error('Failed to fetch tenant info:', error);
     }
@@ -221,7 +223,7 @@ export default function Home() {
 
   // Show welcome screen if no builds exist and form is not shown
   if (builds.length === 0 && !showAddBuildForm) {
-    return <WelcomeScreen onAddBuild={handleAddBuild} />;
+    return <WelcomeScreen onAddBuild={handleAddBuild} userRole={userRole} />;
   }
 
   return (
@@ -242,20 +244,25 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
-              >
-                <UserPlus className="w-5 h-5" />
-                Invite Member
-              </button>
-              <button
-                onClick={handleAddBuild}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Add Build
-              </button>
+              {/* Only show buttons for owners and admins */}
+              {userRole && (userRole === 'owner' || userRole === 'admin') && (
+                <>
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    Invite Member
+                  </button>
+                  <button
+                    onClick={handleAddBuild}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Build
+                  </button>
+                </>
+              )}
 
               {/* User Menu */}
               <div className="relative">
