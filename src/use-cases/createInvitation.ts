@@ -22,10 +22,12 @@ export interface CreateInvitationOutput {
 
 export interface InvitationRepository {
   create(invitation: Omit<Invitation, 'id' | 'createdAt'>): Promise<Invitation>;
+  findById(id: string): Promise<Invitation | null>;
   findByToken(token: string): Promise<Invitation | null>;
   findByEmail(email: string): Promise<Invitation[]>;
   findPendingByTenantId(tenantId: string): Promise<Invitation[]>;
   markAsAccepted(id: string): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export class CreateInvitationUseCase {

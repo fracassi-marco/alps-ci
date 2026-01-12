@@ -41,6 +41,28 @@ export class DatabaseInvitationRepository implements InvitationRepository {
     };
   }
 
+  async findById(id: string): Promise<Invitation | null> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.id, id))
+      .limit(1);
+
+    if (!invitation) return null;
+
+    return {
+      id: invitation.id,
+      tenantId: invitation.tenantId,
+      email: invitation.email,
+      role: invitation.role as 'owner' | 'admin' | 'member',
+      token: invitation.token,
+      invitedBy: invitation.invitedBy,
+      expiresAt: new Date(invitation.expiresAt),
+      acceptedAt: invitation.acceptedAt ? new Date(invitation.acceptedAt) : null,
+      createdAt: new Date(invitation.createdAt),
+    };
+  }
+
   async findByToken(token: string): Promise<Invitation | null> {
     const [invitation] = await db
       .select()
@@ -112,6 +134,12 @@ export class DatabaseInvitationRepository implements InvitationRepository {
       .set({
         acceptedAt: new Date(),
       })
+      .where(eq(invitations.id, id));
+  }
+
+  async delete(id: string): Promise<void> {
+    await db
+      .delete(invitations)
       .where(eq(invitations.id, id));
   }
 }

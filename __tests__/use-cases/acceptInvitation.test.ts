@@ -22,6 +22,10 @@ class MockInvitationRepository implements InvitationRepository {
     return invitation;
   }
 
+  async findById(id: string): Promise<Invitation | null> {
+    return this.invitations.find(i => i.id === id) || null;
+  }
+
   async findByToken(token: string): Promise<Invitation | null> {
     return this.invitations.find(i => i.token === token) || null;
   }
@@ -39,6 +43,10 @@ class MockInvitationRepository implements InvitationRepository {
     if (invitation) {
       invitation.acceptedAt = new Date();
     }
+  }
+
+  async delete(id: string): Promise<void> {
+    this.invitations = this.invitations.filter(i => i.id !== id);
   }
 
   reset() {
