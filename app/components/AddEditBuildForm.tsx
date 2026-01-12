@@ -8,7 +8,7 @@ import { generateBuildId } from '@/domain/utils';
 
 interface AddEditBuildFormProps {
   build?: Build;
-  onSave: (build: Build) => Promise<void>;
+  onSave: (build: Partial<Build>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -68,7 +68,7 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
     setIsSubmitting(true);
 
     try {
-      const buildData: Build = {
+      const buildData: Partial<Build> = {
         id: build?.id || generateBuildId(),
         name: formData.name.trim(),
         organization: formData.organization.trim(),
@@ -81,6 +81,7 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
         cacheExpirationMinutes: formData.cacheExpirationMinutes,
         createdAt: build?.createdAt || new Date(),
         updatedAt: new Date(),
+        // tenantId is handled by the backend based on authenticated user
       };
 
       // Validate using domain validation

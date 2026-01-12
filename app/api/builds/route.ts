@@ -1,15 +1,45 @@
 import { NextResponse } from 'next/server';
-import { FileSystemBuildRepository } from '@/infrastructure/FileSystemBuildRepository';
+import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { AddBuildUseCase } from '@/use-cases/addBuild';
 import { ListBuildsUseCase } from '@/use-cases/listBuilds';
 import { ValidationError } from '@/domain/validation';
+import { getCurrentUser } from '@/infrastructure/auth-session';
+import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 
-const repository = new FileSystemBuildRepository();
+const repository = new DatabaseBuildRepository();
+const tenantMemberRepository = new DatabaseTenantMemberRepository();
 
 export async function GET() {
   try {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    // Get user's tenant memberships
+    const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
+    // Use first membership (primary tenant)
+    const membership = memberships[0];
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
     const useCase = new ListBuildsUseCase(repository);
-    const builds = await useCase.execute();
+    const builds = await useCase.execute(membership.tenantId);
     return NextResponse.json(builds);
   } catch (error) {
     console.error('Failed to fetch builds:', error);
@@ -19,9 +49,36 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    // Get user's tenant memberships
+    const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
+    // Use first membership (primary tenant)
+    const membership = memberships[0];
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
     const newBuild = await request.json();
     const useCase = new AddBuildUseCase(repository);
-    const savedBuild = await useCase.execute(newBuild);
+    const savedBuild = await useCase.execute(newBuild, membership.tenantId);
 
     return NextResponse.json(savedBuild, { status: 201 });
   } catch (error) {

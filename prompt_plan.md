@@ -455,6 +455,34 @@ Prompt: Add the ability for owners and admins to change the roles of team member
 - Confirmation dialog with role-specific warnings
 ```
 
+### 10.10. Persist Builds in Database with Tenant Scope
+```
+Prompt: Replace JSON-based build storage with database-backed persistence scoped by tenant membership.
+
+**Backend / Database**:
+- Add `builds` table migrations with columns: `id`, `tenant_id` (FK), `name`, `organization`, `repository`, `selectors` (JSON), `pat`, `cacheExpirationMinutes`, timestamps.
+- Update Drizzle schema and repository implementations to target the DB table.
+- Remove FileSystemBuildRepository usage from production paths (keep only if needed for legacy import CLI).
+- Ensure all CRUD operations filter by `tenant_id` from the current user’s membership.
+
+**Use-Cases & Infrastructure**:
+- Update Build-related use cases (list/add/edit/delete/fetch stats) to depend on a database repository that enforces tenant scoping.
+- Inject current tenant ID into use cases via controllers/API routes.
+- Ensure selectors, PAT, cache metadata are serialized/deserialized safely.
+
+**API Routes**:
+- `/api/builds` (GET/POST), `/api/builds/[id]` (PATCH/DELETE), `/api/builds/[id]/stats` must include tenant filters.
+- Reject access if the authenticated user is not a member of the tenant owning the build.
+
+**UI**:
+- Ensure dashboard fetches builds only for the user’s tenant (no cross-tenant leakage).
+- Handle errors when user lacks access to a build.
+
+**Tests**:
+- Update unit tests and integration tests to mock database repository.
+- Add tests covering tenant isolation (user cannot access other tenant’s builds).
+```
+
 ---
 
 # Review & Iteration

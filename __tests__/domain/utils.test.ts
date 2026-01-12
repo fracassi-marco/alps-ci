@@ -142,6 +142,7 @@ describe('Utils - Create Build', () => {
   ];
 
   const buildData: Omit<Build, 'id' | 'createdAt' | 'updatedAt'> = {
+    tenantId: 'tenant-123',
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',
@@ -193,6 +194,7 @@ describe('Utils - Update Build Timestamp', () => {
     const originalDate = new Date('2024-01-01T00:00:00Z');
     const build: Build = {
       id: 'test-id',
+      tenantId: 'tenant-123',
       name: 'Test',
       organization: 'org',
       repository: 'repo',
@@ -212,6 +214,7 @@ describe('Utils - Update Build Timestamp', () => {
   test('should preserve all other build properties', () => {
     const build: Build = {
       id: 'test-id',
+      tenantId: 'tenant-123',
       name: 'Test',
       organization: 'org',
       repository: 'repo',

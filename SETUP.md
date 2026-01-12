@@ -28,7 +28,7 @@ cp .env.example .env.local
 bun run auth:generate-secret
 # Add the generated secret to .env.local as BETTER_AUTH_SECRET
 
-# Push database schema (creates SQLite database)
+# Push database schema (creates SQLite database with all tables)
 bun run db:push
 
 # (Optional) Seed development data
@@ -38,7 +38,9 @@ bun run db:seed
 bun run dev
 ```
 
-Visit `http://localhost:3000` and register your first account!
+Visit `http://localhost:3000/auth/register` to create your first account and organization!
+
+**Important**: Authentication is required for all build operations. The first user to register automatically creates a new organization (tenant) and becomes the owner.
 
 ---
 
@@ -79,7 +81,11 @@ openssl rand -base64 32
 
 ### Local Development (SQLite)
 
-Alps-CI uses SQLite by default for local development:
+Alps-CI uses SQLite by default for local development. The database stores:
+- **User accounts & sessions** (authentication)
+- **Tenants** (organizations)
+- **Team members & invitations** (multi-tenant management)
+- **Builds** (CI configuration with tenant isolation)
 
 ```bash
 # Create/update database schema
@@ -96,6 +102,8 @@ bun run db:studio
 ```
 
 **Database file location**: `data/local.db`
+
+**Important**: All builds are stored in the database and scoped to tenants. The legacy JSON file storage (`data/config.json`) is deprecated.
 
 ### Production (PostgreSQL)
 
@@ -170,9 +178,13 @@ To monitor GitHub Actions workflows, you need a Personal Access Token (PAT):
 
 2. **Add to Build**:
    - When creating a build in Alps-CI, paste the token in the "Personal Access Token" field
-   - Token is stored encrypted in the database
+   - Token is stored in the database per build
 
-**Security Note**: Each build can use a different token with minimal required permissions.
+**Security Notes**: 
+- Each build can use a different token with minimal required permissions
+- PATs are stored in the database (plain text currently - encryption recommended for production)
+- Only organization members can access builds and their PATs
+- Complete tenant isolation ensures no cross-organization data leakage
 
 ---
 
@@ -264,7 +276,7 @@ cp data/local.db data/backups/backup-$(date +%Y%m%d-%H%M%S).db
 cp data/backups/backup-YYYYMMDD-HHMMSS.db data/local.db
 ```
 
-**Note**: Backups are automatically created before build deletions.
+**Note**: Database backups include all data (users, tenants, builds, etc.). The old JSON-based build backup system has been replaced by database-level backups.
 
 ### Migrations
 

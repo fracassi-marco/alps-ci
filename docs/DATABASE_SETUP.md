@@ -124,19 +124,42 @@ The database includes the following tables:
 - `invitations` - Pending tenant invitations
 
 ### Application Tables
-- `builds` - Build configurations (migrated from config.json)
+- `builds` - Build configurations (tenant-scoped, migrated from config.json)
+  - Each build belongs to one tenant
+  - Complete data isolation between tenants
+  - Unique constraint on (tenant_id, name)
 
 ### Roles
-- **owner** - Full access, can delete tenant
+- **owner** - Full access, can delete tenant, manage all builds
 - **admin** - Manage builds and invite users
-- **member** - Read-only access
+- **member** - Read-only access to builds
 
-## Row Level Security (RLS)
+**Important**: All builds are now stored in the database with tenant isolation. The legacy JSON file storage (`data/config.json`) is deprecated.
 
-The database uses PostgreSQL Row Level Security to ensure data isolation:
-- Users can only access data from tenants they belong to
-- RLS policies are enforced at the database level
-- No application-level filtering needed
+## Data Isolation & Security
+
+### Tenant Isolation (Application-Level)
+
+Alps-CI enforces complete data isolation between tenants:
+- All build queries filter by `tenant_id` in the WHERE clause
+- API routes verify user's tenant membership before allowing access
+- Users can only access builds belonging to their organization
+- Database indexes on `tenant_id` ensure fast filtered queries
+
+### PostgreSQL Row Level Security (RLS)
+
+When using PostgreSQL, you can optionally enable Row Level Security for an additional security layer:
+- RLS policies enforce data isolation at the database level
+- Complements application-level filtering
+- See PostgreSQL documentation for RLS setup
+
+### SQLite Security
+
+SQLite does not support RLS, but Alps-CI ensures security through:
+- Application-level filtering (all queries include tenant_id)
+- Authentication required for all endpoints
+- Session validation on every request
+- Complete tenant isolation in the codebase
 
 ## Seed Data (Development)
 
@@ -234,6 +257,14 @@ cp data/local.db data/backups/local-$(date +%Y%m%d-%H%M%S).db
 # Restore
 cp data/backups/local-20260111-120000.db data/local.db
 ```
+
+**Note**: Database backups include all data:
+- User accounts and sessions
+- Tenants and team members
+- Builds (all configuration and PATs)
+- Invitations
+
+The old JSON-based build backup system (`data/config.json` backups) has been replaced by database-level backups.
 
 ### PostgreSQL Backup
 
@@ -345,10 +376,14 @@ bun run db:test
 ## Next Steps
 
 1. ✅ Set up database (done)
-2. ✅ Push schema with Drizzle
-3. ✅ Seed development data
-4. Create database repositories (see prompt 10.2)
-5. Implement tenant registration (see prompt 10.3)
-6. Build invitation system (see prompt 10.4)
-7. Migrate builds to database (see prompt 10.5)
+2. ✅ Push schema with Drizzle (done)
+3. ✅ Seed development data (optional)
+4. ✅ Create database repositories (done - DatabaseBuildRepository)
+5. ✅ Implement tenant registration (done)
+6. ✅ Build invitation system (done)
+7. ✅ Migrate builds to database (done - complete tenant isolation)
+
+**All core multi-tenant features are now implemented!** 🚀
+
+See `DATABASE_BUILD_MIGRATION_COMPLETE.md` for details on the build storage migration.
 

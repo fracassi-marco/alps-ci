@@ -304,3 +304,11 @@ Clean Architecture under `/src`:
 - **Data Isolation**: Complete tenant separation
 - **Role-Based Access**: Permission checks on all operations
 - **Token Storage**: GitHub PATs stored in database (plain text - recommend encryption for production)
+
+### Build Storage & Access Control
+- **Persistence**: Builds are stored in the application database (not JSON files). Each create/edit/delete operation must go through the database layer.
+- **Tenant Association**: Every Build row references its owning tenant/organization (foreign key).
+- **Visibility**: Only members of a tenant can view, edit, delete, or fetch statistics for that tenant’s builds.
+- **Queries**: All build list/detail/statistics queries must filter by the current user’s tenant ID.
+- **Migrations**: Provide schema migrations for the builds table (with tenant_id FK) and any related indexes.
+- **Legacy JSON**: JSON config persistence is deprecated; repository implementations should read/write from the database only.

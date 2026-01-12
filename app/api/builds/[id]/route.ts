@@ -1,20 +1,49 @@
 import { NextResponse } from 'next/server';
-import { FileSystemBuildRepository } from '@/infrastructure/FileSystemBuildRepository';
+import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { EditBuildUseCase } from '@/use-cases/editBuild';
 import { DeleteBuildUseCase } from '@/use-cases/deleteBuild';
 import { ValidationError } from '@/domain/validation';
+import { getCurrentUser } from '@/infrastructure/auth-session';
+import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 
-const repository = new FileSystemBuildRepository();
+const repository = new DatabaseBuildRepository();
+const tenantMemberRepository = new DatabaseTenantMemberRepository();
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    // Get user's tenant memberships
+    const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
+    const membership = memberships[0];
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
     const { id } = await params;
     const updates = await request.json();
     const useCase = new EditBuildUseCase(repository);
-    const updatedBuild = await useCase.execute(id, updates);
+    const updatedBuild = await useCase.execute(id, updates, membership.tenantId);
 
     return NextResponse.json(updatedBuild);
   } catch (error) {
@@ -41,9 +70,35 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    // Get user's tenant memberships
+    const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
+    const membership = memberships[0];
+    if (!membership) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
     const { id } = await params;
     const useCase = new DeleteBuildUseCase(repository);
-    await useCase.execute(id);
+    await useCase.execute(id, membership.tenantId);
 
     return NextResponse.json({ message: 'Build deleted successfully' });
   } catch (error) {

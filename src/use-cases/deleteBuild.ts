@@ -1,28 +1,24 @@
 import type { Build } from '../domain/models';
 
 export interface BuildRepository {
-  findAll(): Promise<Build[]>;
-  save(builds: Build[]): Promise<void>;
-  backup(): Promise<string>; // Returns backup filename/timestamp
+  findById(id: string, tenantId: string): Promise<Build | null>;
+  delete(id: string, tenantId: string): Promise<void>;
 }
 
 export class DeleteBuildUseCase {
   constructor(private repository: BuildRepository) {}
 
-  async execute(buildId: string): Promise<void> {
-    const builds = await this.repository.findAll();
-    const index = builds.findIndex((b) => b.id === buildId);
+  async execute(buildId: string, tenantId: string): Promise<void> {
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
+    }
 
-    if (index === -1) {
+    const build = await this.repository.findById(buildId, tenantId);
+    if (!build) {
       throw new Error(`Build with id "${buildId}" not found`);
     }
 
-    // Create backup before deletion
-    await this.repository.backup();
-
-    // Remove the build
-    builds.splice(index, 1);
-    await this.repository.save(builds);
+    await this.repository.delete(buildId, tenantId);
   }
 }
 

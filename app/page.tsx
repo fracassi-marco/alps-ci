@@ -107,7 +107,7 @@ export default function Home() {
     setShowAddBuildForm(true);
   };
 
-  const handleSaveBuild = async (build: Build) => {
+  const handleSaveBuild = async (build: Partial<Build>) => {
     try {
       const url = editingBuild ? `/api/builds/${build.id}` : '/api/builds';
       const method = editingBuild ? 'PUT' : 'POST';
@@ -332,7 +332,7 @@ export default function Home() {
       {deletingBuild && !isDeleting && (
         <ConfirmDialog
           title="Delete Build?"
-          message={`Are you sure you want to delete "${deletingBuild.name}"? This action cannot be undone. A backup will be created automatically.`}
+          message={`Are you sure you want to delete "${deletingBuild.name}"? This action cannot be undone.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={handleDeleteConfirm}

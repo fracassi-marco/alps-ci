@@ -15,6 +15,7 @@ global.fetch = mockFetch as any;
 describe('BuildCard - Inactive Health Label', () => {
   const mockBuild: Build = {
     id: 'test-build-id',
+    tenantId: 'tenant-123',
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',
@@ -235,6 +236,7 @@ describe('BuildCard - Inactive Health Label', () => {
 describe('BuildCard - Clickable Repository Link', () => {
   const mockBuild: Build = {
     id: 'test-build-id',
+    tenantId: 'tenant-123',
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',
@@ -379,6 +381,7 @@ describe('BuildCard - Clickable Repository Link', () => {
 describe('BuildCard - Commits and Contributors Statistics', () => {
   const mockBuild: Build = {
     id: 'test-build-id',
+    tenantId: 'tenant-123',
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',
@@ -586,6 +589,7 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
 describe('BuildCard - Last Commit Details', () => {
   const mockBuild: Build = {
     id: 'test-build-id',
+    tenantId: 'tenant-123',
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',

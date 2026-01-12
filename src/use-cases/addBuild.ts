@@ -2,48 +2,42 @@ import type { Build } from '../domain/models';
 import { validateBuild, sanitizeBuild } from '../domain/validation';
 
 export interface BuildRepository {
-  findAll(): Promise<Build[]>;
-  save(builds: Build[]): Promise<void>;
+  findAll(tenantId: string): Promise<Build[]>;
+  create(build: Omit<Build, 'id' | 'createdAt' | 'updatedAt'>, tenantId: string): Promise<Build>;
 }
 
 export class AddBuildUseCase {
   constructor(private repository: BuildRepository) {}
 
-  async execute(newBuild: Partial<Build>): Promise<Build> {
+  async execute(newBuild: Partial<Build>, tenantId: string): Promise<Build> {
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
+    }
+
     // Sanitize input
     const sanitized = sanitizeBuild(newBuild);
 
     // Validate build
     validateBuild(sanitized);
 
-    // Generate ID if not provided
-    const buildToAdd: Build = {
-      ...sanitized,
-      id: sanitized.id || this.generateId(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as Build;
-
-    const builds = await this.repository.findAll();
-
-    // Check for duplicate IDs
-    if (builds.some((b) => b.id === buildToAdd.id)) {
-      throw new Error(`Build with id "${buildToAdd.id}" already exists`);
+    // Check for duplicate names within this tenant
+    const builds = await this.repository.findAll(tenantId);
+    if (builds.some((b) => b.name === sanitized.name?.trim())) {
+      throw new Error(`Build with name "${sanitized.name}" already exists`);
     }
 
-    // Check for duplicate names
-    if (builds.some((b) => b.name === buildToAdd.name)) {
-      throw new Error(`Build with name "${buildToAdd.name}" already exists`);
-    }
+    // Create build with tenant association
+    const buildToAdd: Omit<Build, 'id' | 'createdAt' | 'updatedAt'> = {
+      tenantId,
+      name: sanitized.name!,
+      organization: sanitized.organization!,
+      repository: sanitized.repository!,
+      selectors: sanitized.selectors!,
+      personalAccessToken: sanitized.personalAccessToken!,
+      cacheExpirationMinutes: sanitized.cacheExpirationMinutes!,
+    };
 
-    builds.push(buildToAdd);
-    await this.repository.save(builds);
-
-    return buildToAdd;
-  }
-
-  private generateId(): string {
-    return `build_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return await this.repository.create(buildToAdd, tenantId);
   }
 }
 

@@ -52,7 +52,7 @@ export interface Invitation {
 // Build configuration
 export interface Build {
   id: string;
-  tenantId?: string; // Optional for backward compatibility during migration
+  tenantId: string; // Required - builds are always tenant-scoped
   name: string;
   organization: string;
   repository: string;

@@ -3,8 +3,11 @@ import { EditBuildUseCase } from '../../src/use-cases/editBuild';
 import type { Build } from '../../src/domain/models';
 
 describe('EditBuildUseCase', () => {
+  const tenantId = 'tenant-123';
+
   const existingBuild: Build = {
     id: '1',
+    tenantId,
     name: 'Original Build',
     organization: 'original-org',
     repository: 'original-repo',
@@ -21,86 +24,80 @@ describe('EditBuildUseCase', () => {
       cacheExpirationMinutes: 60,
     };
 
+    const updatedBuild = {
+      ...existingBuild,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
     const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
       findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
+      update: mock(() => Promise.resolve(updatedBuild)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
-    const result = await useCase.execute('1', updates);
+    const result = await useCase.execute('1', updates, tenantId);
 
     expect(result.name).toBe('Updated Build');
     expect(result.cacheExpirationMinutes).toBe(60);
     expect(result.organization).toBe('original-org'); // Unchanged
     expect(result.id).toBe('1'); // ID preserved
-    expect(result.createdAt).toEqual(existingBuild.createdAt); // Creation date preserved
-    expect(result.updatedAt).toBeInstanceOf(Date);
-    expect(result.updatedAt.getTime()).toBeGreaterThan(existingBuild.updatedAt.getTime());
-    expect(mockRepository.save).toHaveBeenCalledTimes(1);
+    expect(result.tenantId).toBe(tenantId); // Tenant preserved
+    expect(mockRepository.findById).toHaveBeenCalledWith('1', tenantId);
+    expect(mockRepository.update).toHaveBeenCalledTimes(1);
   });
 
-  it('should throw error if build does not exist', async () => {
+  it('should throw error if tenantId is not provided', async () => {
     const mockRepository = {
-      findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
+      findById: mock(() => Promise.resolve(existingBuild)),
+      findAll: mock(() => Promise.resolve([])),
+      update: mock(() => Promise.resolve({} as Build)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
 
-    await expect(useCase.execute('999', { name: 'Updated' })).rejects.toThrow(
+    await expect(useCase.execute('1', { name: 'Updated' }, '')).rejects.toThrow('Tenant ID is required');
+    expect(mockRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('should throw error if build does not exist', async () => {
+    const mockRepository = {
+      findById: mock(() => Promise.resolve(null)),
+      findAll: mock(() => Promise.resolve([])),
+      update: mock(() => Promise.resolve({} as Build)),
+    };
+
+    const useCase = new EditBuildUseCase(mockRepository);
+
+    await expect(useCase.execute('999', { name: 'Updated' }, tenantId)).rejects.toThrow(
       'Build with id "999" not found'
     );
-    expect(mockRepository.save).not.toHaveBeenCalled();
+    expect(mockRepository.update).not.toHaveBeenCalled();
   });
 
   it('should throw error for invalid updated build', async () => {
     const invalidUpdates = { cacheExpirationMinutes: -1 };
     const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
       findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
+      update: mock(() => Promise.resolve({} as Build)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
 
-    await expect(useCase.execute('1', invalidUpdates)).rejects.toThrow();
-    expect(mockRepository.save).not.toHaveBeenCalled();
+    await expect(useCase.execute('1', invalidUpdates, tenantId)).rejects.toThrow();
+    expect(mockRepository.update).not.toHaveBeenCalled();
   });
 
-  it('should preserve other builds when updating one', async () => {
+  it('should throw error if new name conflicts with existing build in same tenant', async () => {
     const otherBuild: Build = {
       id: '2',
-      name: 'Other Build',
-      organization: 'other-org',
-      repository: 'other-repo',
-      personalAccessToken: 'ghp_other',
-      cacheExpirationMinutes: 45,
-      selectors: [{ type: 'tag', pattern: 'v*' }],
-      createdAt: new Date('2024-01-02'),
-      updatedAt: new Date('2024-01-02'),
-    };
-
-    const mockRepository = {
-      findAll: mock(() => Promise.resolve([existingBuild, otherBuild])),
-      save: mock((builds: Build[]) => {
-        expect(builds).toHaveLength(2);
-        expect(builds[1]).toEqual(otherBuild); // Other build unchanged
-        return Promise.resolve();
-      }),
-    };
-
-    const useCase = new EditBuildUseCase(mockRepository);
-    await useCase.execute('1', { name: 'Updated Build' });
-
-    expect(mockRepository.save).toHaveBeenCalledTimes(1);
-  });
-
-  it('should throw error if new name conflicts with existing build', async () => {
-    const otherBuild: Build = {
-      id: '2',
+      tenantId,
       name: 'Existing Name',
       organization: 'org',
       repository: 'repo',
-      personalAccessToken: 'token',
+      personalAccessToken: 'ghp_token',
       cacheExpirationMinutes: 30,
       selectors: [{ type: 'branch', pattern: 'main' }],
       createdAt: new Date(),
@@ -108,32 +105,39 @@ describe('EditBuildUseCase', () => {
     };
 
     const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
       findAll: mock(() => Promise.resolve([existingBuild, otherBuild])),
-      save: mock(() => Promise.resolve()),
+      update: mock(() => Promise.resolve({} as Build)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
 
-    await expect(useCase.execute('1', { name: 'Existing Name' })).rejects.toThrow(
+    await expect(useCase.execute('1', { name: 'Existing Name' }, tenantId)).rejects.toThrow(
       'Build with name "Existing Name" already exists'
     );
-    expect(mockRepository.save).not.toHaveBeenCalled();
+    expect(mockRepository.update).not.toHaveBeenCalled();
   });
 
-  it('should allow keeping the same name', async () => {
+  it('should allow updating to same name', async () => {
+    const updates = { cacheExpirationMinutes: 60 };
+    const updatedBuild = {
+      ...existingBuild,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
     const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
       findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
+      update: mock(() => Promise.resolve(updatedBuild)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
-    const result = await useCase.execute('1', {
-      name: 'Original Build',
-      cacheExpirationMinutes: 60,
-    });
+    const result = await useCase.execute('1', updates, tenantId);
 
     expect(result.name).toBe('Original Build');
-    expect(mockRepository.save).toHaveBeenCalledTimes(1);
+    expect(result.cacheExpirationMinutes).toBe(60);
+    expect(mockRepository.update).toHaveBeenCalledTimes(1);
   });
 
   it('should sanitize input before updating', async () => {
@@ -142,40 +146,25 @@ describe('EditBuildUseCase', () => {
       organization: '  updated-org  ',
     };
 
+    const updatedBuild = {
+      ...existingBuild,
+      name: 'Updated Build',
+      organization: 'updated-org',
+      updatedAt: new Date(),
+    };
+
     const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
       findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
+      update: mock(() => Promise.resolve(updatedBuild)),
     };
 
     const useCase = new EditBuildUseCase(mockRepository);
-    const result = await useCase.execute('1', dirtyUpdates);
+    const result = await useCase.execute('1', dirtyUpdates, tenantId);
 
     expect(result.name).toBe('Updated Build');
     expect(result.organization).toBe('updated-org');
   });
-
-  it('should update selectors correctly', async () => {
-    const newSelectors = [
-      { type: 'tag' as const, pattern: 'v*' },
-      { type: 'branch' as const, pattern: 'develop' },
-    ];
-
-    const mockRepository = {
-      findAll: mock(() => Promise.resolve([existingBuild])),
-      save: mock(() => Promise.resolve()),
-    };
-
-    const useCase = new EditBuildUseCase(mockRepository);
-    const result = await useCase.execute('1', {
-      name: 'Original Build',
-      organization: 'original-org',
-      repository: 'original-repo',
-      personalAccessToken: 'ghp_original',
-      selectors: newSelectors,
-      cacheExpirationMinutes: 30,
-    });
-
-    expect(result.selectors).toEqual(newSelectors);
-  });
 });
+
 
