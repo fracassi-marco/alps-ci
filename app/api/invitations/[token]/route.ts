@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AcceptInvitationUseCase } from '@/use-cases/acceptInvitation';
 import { DatabaseInvitationRepository } from '@/infrastructure/InvitationRepository';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
+import { getCurrentUser } from '@/infrastructure/auth-session';
 
 const invitationRepository = new DatabaseInvitationRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
@@ -60,20 +61,19 @@ export async function POST(
   try {
     const { token } = await params;
 
-    // TODO: Get userId from session
-    // For now, we'll get it from the request body
-    const body = await request.json();
-    const { userId } = body;
-
-    if (!userId) {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'Unauthorized. Please sign in to accept the invitation.' },
+        { status: 401 }
       );
     }
 
+    const userId = currentUser.id;
+
     // Accept invitation
-    const { invitation, tenantMember } = await acceptInvitationUseCase.execute({
+    const { tenantMember } = await acceptInvitationUseCase.execute({
       token,
       userId,
     });

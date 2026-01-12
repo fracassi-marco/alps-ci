@@ -2,22 +2,19 @@ CREATE TABLE `accounts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`account_id` text NOT NULL,
-	`provider` text NOT NULL,
-	`provider_account_id` text NOT NULL,
-	`refresh_token` text,
+	`provider_id` text NOT NULL,
 	`access_token` text,
-	`expires_at` integer,
-	`token_type` text,
-	`scope` text,
+	`refresh_token` text,
 	`id_token` text,
+	`expires_at` integer,
+	`password` text,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `idx_accounts_user_id` ON `accounts` (`user_id`);--> statement-breakpoint
-CREATE INDEX `idx_accounts_provider` ON `accounts` (`provider`,`provider_account_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `idx_accounts_provider_unique` ON `accounts` (`provider`,`provider_account_id`);--> statement-breakpoint
+CREATE INDEX `idx_accounts_provider` ON `accounts` (`provider_id`,`account_id`);--> statement-breakpoint
 CREATE TABLE `builds` (
 	`id` text PRIMARY KEY NOT NULL,
 	`tenant_id` text NOT NULL,

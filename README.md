@@ -1,97 +1,66 @@
 # Alps-CI 🏔️
 
-A modern CI dashboard that displays GitHub Actions workflows with real-time statistics, health monitoring, and comprehensive build tracking.
+A modern multi-tenant CI dashboard that displays GitHub Actions workflows with real-time statistics, health monitoring, and comprehensive build tracking.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)
-![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)
-![Tests](https://img.shields.io/badge/tests-199%20unit%20tests-green.svg)
+![Next.js](https://img.shields.io/badge/Next.js-16+-black.svg)
 
 ---
 
 ## 🌟 Features
 
+### 👥 Multi-Tenant Architecture
+- **Team Workspaces** - Each company gets its own isolated tenant
+- **User Authentication** - Email/password and Google OAuth support
+- **Team Invitations** - Invite colleagues to join your workspace
+- **Role-Based Access** - Owner, admin, and member roles
+
 ### 📊 Comprehensive Statistics
 - **Workflow Execution Tracking** - Monitor runs from the last 7 days
 - **Success/Failure Metrics** - Detailed breakdown of build results
-- **Health Badge** - Color-coded health indicators (green/yellow/red)
-- **7-Day Success Chart** - Visual bar chart showing daily trends
+- **Health Badge** - Color-coded health indicators
+- **7-Day Success Chart** - Visual stacked bar chart
 - **Recent Runs** - Links to the last 3 workflow executions
+- **Repository Insights** - Commits, contributors, and last commit details
 
 ### 🎯 Smart Filtering
 - **Multiple Selectors** - Filter by branch, tag, or workflow name
 - **Wildcard Support** - Use patterns like `v*`, `v1.*`, `main`
 - **AND Logic** - Combine branch + tag for precise filtering
-- **Flexible Configuration** - Mix and match selector types
 
 ### ⚡ Performance
-- **Intelligent Caching** - Configurable cache expiration per Build
+- **Intelligent Caching** - Configurable cache expiration per Build (1-1440 minutes)
 - **Manual Refresh** - On-demand statistics updates
-- **Auto-backup** - Automatic config backups before deletions
-- **Real-time Updates** - Instant UI feedback on all operations
-
-### 🎨 Modern UI
-- **Dark Mode** - Full dark mode support
-- **Responsive Design** - Works on all screen sizes
-- **Beautiful Cards** - Clean, organized build display
-- **Interactive Forms** - Intuitive add/edit workflows
-- **Error Recovery** - Clear error messages with actionable CTAs
+- **Real-time Updates** - Instant UI feedback
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- [Bun](https://bun.sh) 1.0 or later
-- Node.js 18+ (for compatibility)
-- GitHub Personal Access Token (PAT)
-
-### Installation
-
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/yourusername/alps-ci.git
 cd alps-ci
-
-# Install dependencies
 bun install
 
-# Set up environment variables
+# Setup environment
 cp .env.example .env.local
-
-# Generate authentication secret
 bun run auth:generate-secret
+# Add generated secret to .env.local
 
-# Add the generated secret to .env.local
-# DATABASE_URL defaults to SQLite (file:data/local.db)
-
-# Push database schema
+# Initialize database
 bun run db:push
 
-# Seed development data (optional)
-bun run db:seed
-
-# Run development server
+# Start development server
 bun run dev
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visit `http://localhost:3000` and register your first account!
 
-> **Note**: Alps-CI uses SQLite by default for local development. For production multi-tenant deployments, PostgreSQL is recommended. See [Database Setup](docs/DATABASE_SETUP.md) and [Authentication Setup](docs/AUTH_SETUP.md) for details.
+📚 **For detailed setup instructions**, see [SETUP.md](./SETUP.md)
 
-### Database Management
-
-```bash
-# Push schema changes
-bun run db:push
-
-# Generate migrations
-bun run db:generate
-
-# Apply migrations
-bun run db:migrate
-
-# Seed development data
+---
 bun run db:seed
 
 # Open Drizzle Studio (database GUI)
@@ -116,149 +85,66 @@ The `-v` flag mounts the data directory to persist your configuration.
 
 ## 📖 Usage
 
-### 1. Create a GitHub Personal Access Token
+### 1. Register Your Account
 
-1. Go to GitHub Settings → Developer settings → Personal access tokens
-2. Generate a new token (classic)
-3. Select scopes: `repo`, `workflow`
-4. Copy the token (you won't see it again!)
+1. Visit `http://localhost:3000/auth/register`
+2. Fill in the registration form:
+   - **Your Name**: Your full name
+   - **Email Address**: Your email
+   - **Password**: Minimum 8 characters
+   - **Company Name**: Your organization's name (creates a tenant)
+3. Click **"Create account"** to register
+4. You'll be automatically signed in and redirected to your dashboard
+
+### 2. Sign In (Returning Users)
+
+## 📖 Usage
+
+### 1. Register Your Account
+Visit `http://localhost:3000/auth/register` and create your company account.
 
 ### 2. Add Your First Build
+1. Get a GitHub Personal Access Token (Settings → Developer settings → PAT with `repo` + `workflow` scopes)
+2. Click "Add Your First Build"
+3. Configure:
+   - Build name, organization, repository
+   - Selectors (branch/tag patterns like `main`, `v*`)
+   - Your GitHub PAT
+   - Cache expiration (minutes)
 
-1. Click **"Add Your First Build"** on the welcome screen
-2. Fill in the form:
-   - **Build Name**: Descriptive name (e.g., "Production Release")
-   - **Organization**: GitHub org name
-   - **Repository**: Repository name
-   - **Selectors**: One or more filters (branch/tag/workflow)
-   - **Personal Access Token**: Your GitHub PAT
-   - **Cache Expiration**: How long to cache data (1-1440 minutes)
+### 3. Monitor Your Workflows
+View real-time statistics, health metrics, and execution history on your dashboard.
 
-3. Click **"Add Build"** to save
-
-### 3. View Statistics
-
-Once created, your Build card will display:
-- Total, successful, and failed execution counts
-- Health percentage with color-coded badge
-- Latest repository tag
-- 7-day success trend chart
-- Links to recent workflow runs
-- Selectors and metadata
-
-### 4. Manage Builds
-
-- **Edit**: Click the edit icon to update configuration
-- **Delete**: Click the delete icon (confirmation + auto-backup)
-- **Refresh**: Click the refresh icon for fresh data
+### 4. Invite Your Team
+Click "Invite Member" to add colleagues. They'll receive an email to join your workspace.
 
 ---
 
 ## 🏗️ Architecture
 
-Alps-CI follows **Clean Architecture** principles:
+Alps-CI follows **Clean Architecture** with strict separation of concerns:
 
 ```
-┌─────────────────────────────────────────┐
-│              UI Layer                    │
-│  (React, Next.js, TailwindCSS)          │
-└───────────────┬─────────────────────────┘
-                │
-                ↓
-┌─────────────────────────────────────────┐
-│         Use-Cases Layer                  │
-│  (Business logic, orchestration)        │
-└───────────────┬─────────────────────────┘
-                │
-                ↓
-┌─────────────────────────────────────────┐
-│      Infrastructure Layer                │
-│  (GitHub API, FileSystem, Cache)        │
-└───────────────┬─────────────────────────┘
-                │
-                ↓
-┌─────────────────────────────────────────┐
-│         Domain Layer                     │
-│  (Models, validation, pure logic)       │
-└─────────────────────────────────────────┘
+app/              → Next.js UI & API routes
+src/domain/       → Pure business logic
+src/use-cases/    → Application orchestration
+src/infrastructure/ → External dependencies (GitHub API, DB, Cache)
 ```
 
-### Directory Structure
-
-```
-alps-ci/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── components/        # React components
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Main page
-├── src/
-│   ├── domain/            # Domain models & validation
-│   ├── use-cases/         # Business logic
-│   └── infrastructure/    # External dependencies
-├── e2e/                   # End-to-end tests
-├── data/                  # Config & backups (gitignored)
-├── Dockerfile             # Docker configuration
-└── playwright.config.ts   # E2E test configuration
-```
-
----
-
-## 🔧 Configuration
-
-### Config File Location
-`data/config.json`
-
-### Config Structure
-```json
-[
-  {
-    "id": "unique-id",
-    "name": "Build Name",
-    "organization": "github-org",
-    "repository": "repo-name",
-    "selectors": [
-      { "type": "branch", "pattern": "main" },
-      { "type": "tag", "pattern": "v*" }
-    ],
-    "personalAccessToken": "ghp_...",
-    "cacheExpirationMinutes": 30,
-    "createdAt": "2026-01-05T10:00:00.000Z",
-    "updatedAt": "2026-01-05T10:00:00.000Z"
-  }
-]
-```
-
-### Backups
-Automatic backups are created before every deletion:
-- Location: `data/backups/`
-- Format: `config_YYYY-MM-DDTHH-MM-SS-SSSZ.json`
-- Restoration: Manual (copy backup to `config.json`)
+For details, see [SETUP.md](./SETUP.md) and [docs/](./docs/)
 
 ---
 
 ## 🧪 Testing
 
-### Unit Tests (199 tests)
 ```bash
-# Run all unit tests
-bun test
-
-# Watch mode
-bun run test:watch
+bun test              # Unit tests
+bun run test:e2e     # E2E tests (local only)
 ```
 
-### End-to-End Tests (2 test files - Local Development Only)
+**Note**: E2E tests are for local development only and not run in CI.
 
-**Note**: E2E tests are for local development and debugging only. They are **not** run in CI/CD pipelines.
-
-```bash
-# Run e2e tests (headless)
-bun run test:e2e
-
-# Interactive UI mode
-bun run test:e2e:ui
+---
 
 # Watch browser execution
 bun run test:e2e:headed
@@ -362,138 +248,75 @@ services:
 ```
 
 ---
-
 ## 🔒 Security
 
-### Personal Access Tokens
-- Tokens are stored in plain text in `config.json`
-- **Keep `data/` directory secure**
-- Add `data/` to `.gitignore` (already configured)
-- Use minimal required permissions (repo, workflow)
-- Rotate tokens regularly
+- ✅ Passwords hashed with bcrypt
+- ✅ Session-based authentication (better-auth)
+- ✅ Multi-tenant data isolation
+- ✅ Role-based access control
+- ⚠️ GitHub tokens stored in database (use PostgreSQL + encryption for production)
 
-### Best Practices
-- **Don't commit** `data/config.json` to version control
-- **Use environment-specific** tokens (dev vs prod)
-- **Limit token scope** to only what's needed
-- **Monitor token usage** in GitHub settings
-- **Revoke tokens** immediately if compromised
+**Best Practices**:
+- Use strong passwords (8+ characters)
+- Enable 2FA on GitHub
+- Limit PAT scope to minimum required
+- Use PostgreSQL in production
 
 ---
 
 ## 🛠️ Development
 
 ### Tech Stack
-- **Runtime**: Bun 1.0+
-- **Framework**: Next.js 15+ (App Router)
-- **Language**: TypeScript 5.0+
-- **Styling**: TailwindCSS 3.4+
+- **Runtime**: Bun
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: TailwindCSS
+- **Database**: Drizzle ORM (SQLite/PostgreSQL)
+- **Auth**: better-auth
 - **Testing**: Bun Test + Playwright
-- **Icons**: Lucide React
 
-### Scripts
+### Available Scripts
 
 ```bash
-# Development
 bun run dev          # Start dev server
-
-# Building
 bun run build        # Production build
 bun run start        # Start production server
-
-# Testing
 bun test             # Unit tests
-bun run test:watch   # Unit tests (watch mode)
 bun run test:e2e     # E2E tests
-
-# Linting
 bun run lint         # ESLint check
+bun run db:studio    # Open database GUI
 ```
-
-### Code Style
-- **Clean Architecture** - Separation of concerns
-- **TypeScript** - Strict mode enabled
-- **ESLint** - Configured for Next.js
-- **Gitmoji** - Semantic commit messages
-- **Tests** - TDD approach with high coverage
-
----
-
-## 📝 API Endpoints
-
-### Builds
-- `GET /api/builds` - List all builds
-- `POST /api/builds` - Create new build
-- `PUT /api/builds/[id]` - Update build
-- `DELETE /api/builds/[id]` - Delete build (with backup)
-
-### Statistics
-- `GET /api/builds/[id]/stats` - Fetch statistics (cached)
-- `POST /api/builds/[id]/stats` - Manual refresh (invalidate cache)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Use [gitmoji](https://gitmoji.dev/) for commits (max 128 chars)
+4. Open a Pull Request
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** with gitmoji (`git commit -m '✨ Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Commit Convention
-Use [gitmoji](https://gitmoji.dev/) for semantic commits:
-- ✨ `:sparkles:` - New feature
-- 🐛 `:bug:` - Bug fix
-- 📝 `:memo:` - Documentation
-- 🎨 `:art:` - UI/styling
-- ♻️ `:recycle:` - Refactoring
-- ✅ `:white_check_mark:` - Tests
-- 🔧 `:wrench:` - Configuration
-
-**Keep commit messages under 128 characters.**
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](./LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## 📚 Documentation
 
-- **Next.js** - The React Framework
-- **TailwindCSS** - Utility-first CSS framework
-- **Lucide** - Beautiful open-source icons
-- **Playwright** - Reliable end-to-end testing
-- **Bun** - Fast JavaScript runtime
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/alps-ci/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/alps-ci/discussions)
-- **Documentation**: This README + inline code comments
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Export statistics to CSV/JSON
-- [ ] Email notifications for build failures
-- [ ] Slack/Discord webhooks
-- [ ] Multi-repository dashboards
-- [ ] Trend analysis and insights
-- [ ] Custom health thresholds
-- [ ] Build templates
+- [SETUP.md](./SETUP.md) - Complete setup guide
+- [docs/AUTH_SETUP.md](./docs/AUTH_SETUP.md) - Authentication details
+- [docs/DATABASE_SETUP.md](./docs/DATABASE_SETUP.md) - Database configuration
+- [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) - Database migrations
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
 
 ---
 
 **Made with ❤️ using Clean Architecture principles**
 
-Visit [Alps-CI Documentation](https://github.com/yourusername/alps-ci) for more details.
 

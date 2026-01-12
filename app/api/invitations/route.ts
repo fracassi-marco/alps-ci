@@ -3,6 +3,7 @@ import { CreateInvitationUseCase } from '@/use-cases/createInvitation';
 import { DatabaseInvitationRepository } from '@/infrastructure/InvitationRepository';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
 import { canInviteMembers, requirePermission } from '@/domain/permissions';
+import { getCurrentUser } from '@/infrastructure/auth-session';
 
 const invitationRepository = new DatabaseInvitationRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
@@ -13,9 +14,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { tenantId, email, role } = body;
 
-    // TODO: Get userId from session
-    // For now, we'll use a placeholder
-    const userId = 'current-user-id'; // This will come from session
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    const userId = currentUser.id;
 
     // Validate required fields
     if (!tenantId || !email || !role) {
@@ -108,8 +116,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Get userId from session and verify permissions
-    const userId = 'current-user-id';
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    const userId = currentUser.id;
 
     // Check if user is a member of the tenant
     const membership = await tenantMemberRepository.findByUserIdAndTenantId(userId, tenantId);

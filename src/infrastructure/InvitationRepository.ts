@@ -4,7 +4,8 @@
  */
 
 import { eq, and, isNull } from 'drizzle-orm';
-import { db, invitations } from './database';
+import { db } from './database/client';
+import { invitations } from './database/schema';
 import type { Invitation } from '../domain/models';
 import type { InvitationRepository } from '../use-cases/createInvitation';
 

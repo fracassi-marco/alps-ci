@@ -44,25 +44,23 @@ export const sessions = pgTable('sessions', {
   expiresAtIdx: index('idx_sessions_expires_at').on(table.expiresAt),
 }));
 
-// Accounts table (OAuth providers)
+// Accounts table (OAuth providers and credentials)
 export const accounts = pgTable('accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   accountId: text('account_id').notNull(),
-  provider: text('provider').notNull(),
-  providerAccountId: text('provider_account_id').notNull(),
-  refreshToken: text('refresh_token'),
+  providerId: text('provider_id').notNull(), // better-auth uses providerId
   accessToken: text('access_token'),
-  expiresAt: timestamp('expires_at', { withTimezone: true }),
-  tokenType: text('token_type'),
-  scope: text('scope'),
+  refreshToken: text('refresh_token'),
   idToken: text('id_token'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  password: text('password'), // For email/password authentication
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index('idx_accounts_user_id').on(table.userId),
-  providerIdx: index('idx_accounts_provider').on(table.provider, table.providerAccountId),
-  providerUnique: uniqueIndex('idx_accounts_provider_unique').on(table.provider, table.providerAccountId),
+  providerIdx: index('idx_accounts_provider').on(table.providerId, table.accountId),
+  providerUnique: uniqueIndex('idx_accounts_provider_unique').on(table.providerId, table.accountId),
 }));
 
 // Verification tokens table
@@ -139,8 +137,9 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
-  tenantMemberships: many(tenantMembers),
-  invitationsSent: many(invitations),
+  tenantMembersList: many(tenantMembers, { relationName: "userMemberships" }),
+  invitedMembers: many(tenantMembers, { relationName: "invitedMembers" }),
+  invitationsSent: many(invitations, { relationName: "invitationsSent" }),
 }));
 
 export const tenantMembersRelations = relations(tenantMembers, ({ one }) => ({
@@ -151,10 +150,12 @@ export const tenantMembersRelations = relations(tenantMembers, ({ one }) => ({
   user: one(users, {
     fields: [tenantMembers.userId],
     references: [users.id],
+    relationName: "userMemberships",
   }),
   inviter: one(users, {
     fields: [tenantMembers.invitedBy],
     references: [users.id],
+    relationName: "invitedMembers",
   }),
 }));
 
@@ -166,6 +167,7 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   inviter: one(users, {
     fields: [invitations.invitedBy],
     references: [users.id],
+    relationName: "invitationsSent",
   }),
 }));
 

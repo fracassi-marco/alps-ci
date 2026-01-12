@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { authClient } from '@/infrastructure/auth-client';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,25 +24,47 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      // Step 1: Sign up with better-auth
+      const signUpResult = await authClient.signUp.email({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+      });
+
+      if (!signUpResult.data || !signUpResult.data.user) {
+        throw new Error('Failed to create account');
+      }
+
+      // If there's an invitation token, redirect to accept it
+      if (inviteToken) {
+        router.push(`/invite/${inviteToken}`);
+        return;
+      }
+
+      const userId = signUpResult.data.user.id;
+
+      // Step 2: Create tenant (only for non-invited users)
+      const tenantResponse = await fetch('/api/tenants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          userId,
+          tenantName: formData.tenantName,
+        }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+      if (!tenantResponse.ok) {
+        const tenantError = await tenantResponse.json();
+        throw new Error(tenantError.error || 'Failed to create tenant');
       }
 
-      // Registration successful - show success message and redirect
-      alert('Account created successfully! Redirecting to sign in...');
-      router.push('/auth/signin');
+      // Registration successful
+      router.push('/');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -62,11 +88,21 @@ export default function RegisterPage() {
             Create your Alps-CI account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Start monitoring your GitHub Actions workflows
+            {inviteToken
+              ? 'Register to accept your team invitation'
+              : 'Start monitoring your GitHub Actions workflows'}
           </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {inviteToken && (
+            <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                📧 You have a pending invitation. Register to join your team!
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
               <div className="text-sm text-red-800 dark:text-red-200">
@@ -131,24 +167,27 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div>
-              <label htmlFor="tenantName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Company Name
-              </label>
-              <input
-                id="tenantName"
-                name="tenantName"
-                type="text"
-                required
-                value={formData.tenantName}
-                onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
-                placeholder="Acme Corporation"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                This will be your team's workspace
-              </p>
-            </div>
+            {/* Only show company name field for non-invited users */}
+            {!inviteToken && (
+              <div>
+                <label htmlFor="tenantName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Company Name
+                </label>
+                <input
+                  id="tenantName"
+                  name="tenantName"
+                  type="text"
+                  required
+                  value={formData.tenantName}
+                  onChange={handleChange}
+                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                  placeholder="Acme Corporation"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  This will be your team's workspace
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

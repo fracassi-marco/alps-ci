@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from '@/infrastructure/auth-client';
 
 interface InvitationDetails {
   email: string;
@@ -13,6 +14,7 @@ interface InvitationDetails {
 
 export default function AcceptInvitationPage({ params }: { params: Promise<{ token: string }> }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,9 +57,28 @@ export default function AcceptInvitationPage({ params }: { params: Promise<{ tok
     setError('');
 
     try {
-      // TODO: Get userId from session
-      // For now, redirect to sign in/register
-      router.push(`/auth/signin?invite=${token}`);
+      // If user is not logged in, redirect to sign in with invite token
+      if (!session) {
+        router.push(`/auth/signin?invite=${token}`);
+        return;
+      }
+
+      // User is logged in, accept the invitation directly
+      const response = await fetch(`/api/invitations/${token}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to accept invitation');
+      }
+
+      // Successfully accepted, redirect to dashboard
+      router.push('/?inviteAccepted=true');
     } catch (err: any) {
       setError(err.message);
       setAccepting(false);

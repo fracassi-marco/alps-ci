@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from '@/infrastructure/auth-client';
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,8 +27,13 @@ export default function SignInPage() {
         password: formData.password,
       });
 
-      // Redirect to dashboard on success
-      router.push('/');
+      // If there's an invitation token, redirect to accept it
+      if (inviteToken) {
+        router.push(`/invite/${inviteToken}`);
+      } else {
+        // Otherwise, redirect to dashboard
+        router.push('/');
+      }
     } catch (err: any) {
       setError(err.message || 'Sign in failed');
     } finally {
@@ -50,9 +58,21 @@ export default function SignInPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Sign in to Alps-CI
           </h2>
+          {inviteToken && (
+            <p className="mt-2 text-center text-sm text-indigo-600 dark:text-indigo-400">
+              Sign in to accept your team invitation
+            </p>
+          )}
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {inviteToken && (
+            <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                📧 You have a pending invitation. Sign in to join your team!
+              </div>
+            </div>
+          )}
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
               <div className="text-sm text-red-800 dark:text-red-200">
@@ -111,7 +131,7 @@ export default function SignInPage() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
               <a
-                href="/auth/register"
+                href={inviteToken ? `/auth/register?invite=${inviteToken}` : '/auth/register'}
                 className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
               >
                 Sign up

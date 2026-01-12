@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e8bf4a81-26b4-4740-a8e6-2facbc29a0d1",
+  "id": "568c81ab-ea88-426e-94cf-ef0a2d1fb2ac",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "accounts": {
@@ -28,18 +28,18 @@
           "notNull": true,
           "autoincrement": false
         },
-        "provider": {
-          "name": "provider",
+        "provider_id": {
+          "name": "provider_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "provider_account_id": {
-          "name": "provider_account_id",
+        "access_token": {
+          "name": "access_token",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "refresh_token": {
@@ -49,8 +49,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "access_token": {
-          "name": "access_token",
+        "id_token": {
+          "name": "id_token",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -63,22 +63,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "token_type": {
-          "name": "token_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "scope": {
-          "name": "scope",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "id_token": {
-          "name": "id_token",
+        "password": {
+          "name": "password",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -110,18 +96,10 @@
         "idx_accounts_provider": {
           "name": "idx_accounts_provider",
           "columns": [
-            "provider",
-            "provider_account_id"
+            "provider_id",
+            "account_id"
           ],
           "isUnique": false
-        },
-        "idx_accounts_provider_unique": {
-          "name": "idx_accounts_provider_unique",
-          "columns": [
-            "provider",
-            "provider_account_id"
-          ],
-          "isUnique": true
         }
       },
       "foreignKeys": {

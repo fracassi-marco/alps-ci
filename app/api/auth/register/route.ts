@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegisterTenantUseCase } from '@/use-cases/registerTenant';
 import { DatabaseTenantRepository, DatabaseTenantMemberRepository } from '@/infrastructure/TenantRepository';
-import { db, users } from '@/infrastructure/database';
+import { db } from '@/infrastructure/database/client';
+import { users, accounts } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
+    // Hash password using bcrypt (same algorithm better-auth uses)
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user in database
@@ -63,6 +64,16 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Create account record with password for better-auth email/password authentication
+    await db
+      .insert(accounts)
+      .values({
+        userId: user.id,
+        accountId: user.email, // Use email as accountId for email/password auth
+        providerId: 'credential', // better-auth uses 'credential' for email/password
+        password: hashedPassword,
+      });
 
     // Create tenant and associate user as owner
     const { tenant } = await registerTenantUseCase.execute({

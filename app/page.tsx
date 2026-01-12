@@ -22,6 +22,7 @@ export default function Home() {
   const [deletingBuild, setDeletingBuild] = useState<Build | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -30,12 +31,19 @@ export default function Home() {
     }
   }, [session, isPending, router]);
 
+  // Fetch user's tenant information
   useEffect(() => {
-    // Fetch builds on mount
     if (session) {
-      fetchBuilds();
+      fetchTenantInfo();
     }
   }, [session]);
+
+  useEffect(() => {
+    // Fetch builds on mount
+    if (session && tenantId) {
+      fetchBuilds();
+    }
+  }, [session, tenantId]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -69,6 +77,21 @@ export default function Home() {
       console.error('Failed to fetch builds:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTenantInfo = async () => {
+    try {
+      const response = await fetch('/api/user/tenant');
+      if (!response.ok) {
+        console.error('Failed to fetch tenant info');
+        return;
+      }
+
+      const data = await response.json();
+      setTenantId(data.tenantId);
+    } catch (error) {
+      console.error('Failed to fetch tenant info:', error);
     }
   };
 
@@ -150,8 +173,9 @@ export default function Home() {
 
   const handleInvite = async (email: string, role: string) => {
     try {
-      // TODO: Get tenantId from session/context
-      const tenantId = 'temp-tenant-id'; // This should come from the user's session
+      if (!tenantId) {
+        throw new Error('No tenant found. Please refresh the page.');
+      }
 
       const response = await fetch('/api/invitations', {
         method: 'POST',

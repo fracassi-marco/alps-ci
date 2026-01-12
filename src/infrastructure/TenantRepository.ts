@@ -4,7 +4,8 @@
  */
 
 import { eq, and } from 'drizzle-orm';
-import { db, tenants, tenantMembers } from './database';
+import { db } from './database/client';
+import { tenants, tenantMembers } from './database/schema';
 import type { Tenant, TenantMember } from '../domain/models';
 import type { TenantRepository, TenantMemberRepository } from '../use-cases/registerTenant';
 
