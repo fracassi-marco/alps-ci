@@ -103,7 +103,12 @@ An isolated workspace for a company/organization. Each tenant has:
 - User menu with:
   - Organization link (to team management page)
   - Sign out option
-- List of all Builds as cards
+- **View Mode Toggle**: Switch between Grid and List views
+  - Toggle button in dashboard header (icon-based: grid icon / list icon)
+  - **Grid View** (default): Builds displayed as full-screen cards with all statistics visible
+  - **List View**: Builds displayed as compact rows in a table format showing key metrics only
+  - User preference saved in browser localStorage
+  - View persists across sessions and page reloads
 
 ### Organization Management
 Accessible via profile menu "Organization" link. Shows:
@@ -153,10 +158,9 @@ Actions:
 
 ---
 
----
-
 ## Build Card UI
 
+### Grid View (Default)
 Each Build appears as a full-screen card with comprehensive statistics:
 
 ### Core Metrics
@@ -213,6 +217,58 @@ Each Build appears as a full-screen card with comprehensive statistics:
 - **Invalid PAT**: Display error banner with "Update Token" CTA
 - **API Failures**: Show error message with retry option
 - **Expired Cache**: Automatic background refresh
+
+---
+
+## List View UI
+
+When List View is selected, Builds are displayed in a table format with expandable rows:
+
+### Table Columns (Collapsed State)
+- **Name**: Build name with org/repo link underneath
+- **Health**: Health badge or "Inactive" label
+- **7-Day Stats**: Total / Success / Failed counts (compact format: "15 / 14 / 1")
+- **Last Tag**: Most recent repository tag
+- **Last Run**: Date/time of most recent workflow run
+- **Actions**: 
+  - Expand/Collapse button (chevron icon)
+  - Refresh button (icon only)
+  - Edit button (icon only)
+  - Delete button (icon only)
+
+### Expanded Row Details
+When a row is expanded, it shows all the same information as Grid View:
+- **7-Day Stacked Bar Chart**: Visual chart showing successful and failed executions
+- **Recent Workflow Runs**: Last 3 runs with links (open in new tab)
+- **Repository Insights** (Collapsible accordion):
+  - Commits in last 7 days
+  - Contributors in last 7 days
+  - Total commits
+  - Total contributors
+- **Last Commit Details** (Collapsible accordion):
+  - Commit message
+  - Date and time
+  - Author name
+  - Commit hash (clickable link)
+- **Last Successful Workflow Duration**
+- **Selectors & Metadata** (Collapsible accordion):
+  - List of all configured selectors
+  - Cache expiration settings
+
+### Behavior
+- **Row Click**: Toggle expand/collapse to show/hide full details
+- **Expand Button**: Explicit button to toggle expansion
+- **Hover State**: Subtle background highlight
+- **Responsive**: Table scrolls horizontally on narrow screens, expanded content flows naturally
+- **Actions**: Same delete confirmation and refresh logic as grid view
+- **Persistence**: Expanded state is not persisted (all rows collapsed on page load)
+
+### Persistence
+- View mode (grid/list) saved in browser localStorage
+- Key: `alps-ci-view-mode`
+- Values: `"grid"` or `"list"`
+- Default: `"grid"` if not set
+- Persists across browser sessions
 
 ---
 

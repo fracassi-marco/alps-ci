@@ -485,6 +485,172 @@ Prompt: Replace JSON-based build storage with database-backed persistence scoped
 
 ---
 
+### 10.11. Add Grid/List View Toggle for Builds (Part 1: List View Component)
+```
+Prompt: Implement a compact List View component for displaying builds in a table format alongside the existing Grid View.
+
+**UI Component** (`/app/components/BuildListView.tsx`):
+- Create a new component that displays builds in a table with columns:
+  - **Name**: Build name (bold) with org/repo as clickable link below (text-sm, muted)
+  - **Health**: Badge showing percentage (color-coded: green ≥80%, yellow 50-79%, red <50%) or "Inactive" label
+  - **7-Day Stats**: Compact format showing "Total / Success / Failed" (e.g., "15 / 14 / 1")
+  - **Last Tag**: Repository tag or "—" if none
+  - **Last Run**: Relative time (e.g., "2 hours ago") or "—" if none
+  - **Actions**: Icon-only buttons (Refresh, Edit, Delete) with tooltips
+- Use Lucide icons: LayoutGrid (grid), LayoutList (list), RefreshCw (refresh), Edit (edit), Trash2 (delete)
+- Apply TailwindCSS styling:
+  - Table: `border`, `rounded`, responsive with `overflow-x-auto`
+  - Rows: Hover state with subtle background
+  - Headers: Bold, slightly larger text
+  - Actions: Icon buttons with hover effects
+- Include same confirmation dialog for delete as grid view
+- Include same refresh logic (loading state, error handling)
+- Props: `builds`, `onRefresh`, `onEdit`, `onDelete`
+
+**Responsive Design**:
+- Horizontal scroll on narrow screens
+- Stack action buttons vertically on mobile if needed
+- Preserve all functionality on mobile
+
+**Tests**:
+- Unit test: Render builds in table format
+- Unit test: Handle empty builds array
+- Unit test: Delete confirmation flow
+- Unit test: Action callbacks are invoked correctly
+```
+
+### 10.12. Add Grid/List View Toggle for Builds (Part 2: View Toggle & localStorage)
+```
+Prompt: Add a view mode toggle button to the dashboard and implement browser localStorage persistence for user preference.
+
+**UI Updates** (`/app/page.tsx`):
+- Add view mode toggle button to dashboard header (next to "Add Build" and "Invite" buttons)
+- Use Lucide icons: `LayoutGrid` for grid view, `LayoutList` for list view
+- Button shows current view mode (e.g., if grid is active, show list icon to switch to list)
+- Toggle button styling:
+  - Icon button with border
+  - Tooltip: "Switch to List View" / "Switch to Grid View"
+  - Active state visual indicator (subtle background color)
+  - Smooth transition on toggle
+
+**State Management**:
+- Create custom hook `useViewMode` in `/app/hooks/useViewMode.ts`:
+  - Returns current view mode (`"grid"` | `"list"`)
+  - Returns toggle function
+  - Manages localStorage persistence
+  - Key: `alps-ci-view-mode`
+  - Default: `"grid"`
+  - Syncs state on mount from localStorage
+  - Updates localStorage on toggle
+
+**localStorage Logic**:
+- Read on component mount (client-side only, check `typeof window !== 'undefined'`)
+- Write immediately on toggle
+- Handle localStorage not available (fallback to memory-only state)
+- No server-side issues (use `useEffect` for initial read)
+
+**Conditional Rendering** (`/app/page.tsx`):
+- If `viewMode === "grid"`: Render existing `BuildCard` components in grid layout
+- If `viewMode === "list"`: Render new `BuildListView` component
+- Pass same props (`builds`, `onRefresh`, `onEdit`, `onDelete`) to both views
+- Both views use same data fetching and state management
+
+**Implementation Details**:
+```typescript
+// Example hook structure
+export function useViewMode() {
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  useEffect(() => {
+    // Read from localStorage on mount
+    const saved = localStorage.getItem("alps-ci-view-mode");
+    if (saved === "list" || saved === "grid") {
+      setViewMode(saved);
+    }
+  }, []);
+  
+  const toggleViewMode = () => {
+    setViewMode((prev) => {
+      const next = prev === "grid" ? "list" : "grid";
+      localStorage.setItem("alps-ci-view-mode", next);
+      return next;
+    });
+  };
+  
+  return { viewMode, toggleViewMode };
+}
+```
+
+**Tests**:
+- Unit test: `useViewMode` hook reads from localStorage
+- Unit test: `useViewMode` hook writes to localStorage on toggle
+- Unit test: `useViewMode` defaults to "grid" when localStorage is empty
+- Unit test: Dashboard renders grid view by default
+- Unit test: Dashboard switches to list view when toggled
+- E2E test: Toggle persists across page reload
+```
+
+### 10.13. Add Grid/List View Toggle for Builds (Part 3: Integration & Polish)
+```
+Prompt: Polish the grid/list view toggle UI, ensure consistent behavior, and add comprehensive tests.
+
+**UI Polish**:
+- Ensure consistent spacing and alignment of toggle button with other dashboard header elements
+- Add smooth fade transition when switching between grid and list views (CSS transition)
+- Ensure both views handle loading states identically:
+  - Show skeleton loaders while fetching builds
+  - Show same error messages for failed fetches
+  - Display welcome screen when no builds exist (regardless of view mode)
+- Verify all icons are properly sized and aligned
+- Test responsive behavior on mobile, tablet, desktop
+- Ensure keyboard navigation works (toggle button should be focusable and activatable with Enter/Space)
+
+**Accessibility**:
+- Add ARIA labels to toggle button: `aria-label="Switch to List View"`
+- Add ARIA live region for view mode changes: "View mode changed to list view"
+- Ensure table in list view has proper ARIA roles
+- Test with keyboard navigation
+- Test with screen reader
+
+**Edge Cases**:
+- Handle localStorage quota exceeded (rare, but possible)
+- Handle corrupted localStorage value (validate before using)
+- Ensure SSR doesn't cause hydration mismatch (view mode determined client-side only)
+- Test with localStorage disabled (private browsing mode)
+
+**Performance**:
+- Memoize build list rendering if needed
+- Ensure switching views doesn't cause unnecessary re-fetches
+- Lazy load heavy components if applicable
+
+**Documentation**:
+- Update README with view mode feature description
+- Add comments in code explaining localStorage usage
+- Document the `useViewMode` hook API
+
+**Tests**:
+- E2E test: Complete flow - toggle view, reload page, verify persistence
+- E2E test: Switch between views multiple times
+- E2E test: Perform actions (refresh, edit, delete) in both views
+- Unit test: Error handling in list view matches grid view
+- Unit test: Welcome screen shows regardless of view mode preference
+- Visual regression test: Compare screenshots of both views
+
+**Integration Checklist**:
+- ✅ Grid view (existing) works without regressions
+- ✅ List view displays all key metrics
+- ✅ Toggle button switches views instantly
+- ✅ Preference persists in localStorage
+- ✅ Both views use same data and actions
+- ✅ Responsive on all screen sizes
+- ✅ Accessible via keyboard and screen reader
+- ✅ No SSR/hydration issues
+- ✅ Error handling consistent across views
+- ✅ Tests cover all user flows
+```
+
+---
+
 # Review & Iteration
 
 - Each step is small, testable, and builds on the previous.

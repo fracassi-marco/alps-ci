@@ -1,19 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, UserPlus, LogOut, User } from 'lucide-react';
+import { Plus, UserPlus, LogOut, User, LayoutGrid, LayoutList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { AddEditBuildForm } from './components/AddEditBuildForm';
 import { BuildCard } from './components/BuildCard';
+import { BuildListView } from './components/BuildListView';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { InviteMemberModal } from './components/InviteMemberModal';
+import { useViewMode } from './hooks/useViewMode';
 import type { Build } from '@/domain/models';
 
 export default function Home() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const { viewMode, toggleViewMode, isClient } = useViewMode();
   const [builds, setBuilds] = useState<Build[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddBuildForm, setShowAddBuildForm] = useState(false);
@@ -244,6 +247,22 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              {builds.length > 0 && isClient && (
+                <button
+                  onClick={toggleViewMode}
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                  title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+                  aria-label={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+                >
+                  {viewMode === 'grid' ? (
+                    <LayoutList className="w-5 h-5" />
+                  ) : (
+                    <LayoutGrid className="w-5 h-5" />
+                  )}
+                </button>
+              )}
+
               {/* Only show buttons for owners and admins */}
               {userRole && (userRole === 'owner' || userRole === 'admin') && (
                 <>
@@ -304,19 +323,32 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Build Cards Grid */}
+      {/* Builds Display */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {builds.map((build) => (
-            <BuildCard
-              key={build.id}
-              build={build}
-              onEdit={handleEditBuild}
-              onDelete={handleDeleteClick}
-              onRefresh={handleRefresh}
-            />
-          ))}
-        </div>
+        {/* Grid View */}
+        {viewMode === 'grid' && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {builds.map((build) => (
+              <BuildCard
+                key={build.id}
+                build={build}
+                onEdit={handleEditBuild}
+                onDelete={handleDeleteClick}
+                onRefresh={handleRefresh}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* List View */}
+        {viewMode === 'list' && (
+          <BuildListView
+            builds={builds}
+            onRefresh={handleRefresh}
+            onEdit={handleEditBuild}
+            onDelete={handleDeleteClick}
+          />
+        )}
       </div>
 
       {/* Add/Edit Build Form */}

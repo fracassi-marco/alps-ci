@@ -16,3 +16,8 @@ Registration must be possible both with email/password and via Google Auth.
 Use better-auth for authentication.
 What cost-effective solution do you recommend for saving data?
 Can you divide these new requirements into small, releasable tasks and write the related prompts in the promt_plan?
+
+# Grid and list view
+I want the builds to be visible both in grids (as is currently the case) and in lists.
+There must be a view selection, and I want the setting to be saved in the user's browser so that it will be displayed the same way next time.
+Update the specifications and generate prompts

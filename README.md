@@ -23,6 +23,10 @@ A modern multi-tenant CI dashboard that displays GitHub Actions workflows with r
 - **7-Day Success Chart** - Visual stacked bar chart
 - **Recent Runs** - Links to the last 3 workflow executions
 - **Repository Insights** - Commits, contributors, and last commit details
+- **Grid & List Views** - Toggle between detailed card layout or compact table view
+  - Grid view shows full statistics with charts and detailed metrics
+  - List view displays builds in a compact table with key metrics at a glance
+  - View preference persists in browser localStorage
 
 ### 🎯 Smart Filtering
 - **Multiple Selectors** - Filter by branch, tag, or workflow name
@@ -113,7 +117,7 @@ Visit `http://localhost:3000/auth/register` and create your company account.
    - Cache expiration (minutes)
 
 ### 3. Monitor Your Workflows
-View real-time statistics, health metrics, and execution history on your dashboard.
+View real-time statistics, health metrics, and execution history on your dashboard. Switch between grid and list views using the toggle button in the header.
 
 ### 4. Invite Your Team
 Click "Invite Member" to add colleagues. They'll receive an email to join your workspace.
@@ -159,7 +163,7 @@ bun run test:e2e:debug
 - **Repository**: 100%
 - **E2E User Flows**: Onboarding & Statistics (local only)
 
-**Total: 199 unit tests (CI) + E2E tests (local)**
+**Total: 294 unit tests (CI) + E2E tests (local)**
 
 ---
 
@@ -197,6 +201,41 @@ Shows only tag runs (v*) - these represent main branch commits that were tagged.
 - `v*` → v1.0.0, v2.3.4, version-1
 - `v1.*` → v1.0, v1.2.3 (not v2.0)
 - `release-?` → release-1, release-a (not release-10)
+
+---
+
+## 📊 View Modes
+
+Alps-CI offers two view modes to suit different workflow preferences:
+
+### Grid View (Default)
+Displays builds as full-screen cards with comprehensive details:
+- Complete statistics (executions, successes, failures)
+- Health badge with percentage
+- Last repository tag
+- 7-day stacked bar chart (successes and failures)
+- Last 3 workflow run links
+- Repository insights (commits, contributors)
+- Last commit details
+- Collapsible accordions for detailed metadata
+
+### List View
+Displays builds in a compact table format with expandable rows:
+- **Collapsed**: Shows key metrics at a glance (name, health, stats, last tag, last run)
+- **Expanded**: Click to reveal full details including:
+  - 7-day stacked bar chart (successes and failures)
+  - Last 3 workflow run links
+  - Repository insights (commits, contributors)
+  - Last commit details
+  - Configured selectors
+- **Actions**: Icon-only buttons (Expand, Refresh, Edit, Delete)
+
+### Switching Views
+Click the view toggle button in the dashboard header:
+- Grid icon (⊞) switches to list view
+- List icon (☰) switches to grid view
+- Your preference is saved automatically in browser localStorage
+- Persists across sessions and page reloads
 
 ---
 
