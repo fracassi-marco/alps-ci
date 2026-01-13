@@ -21,3 +21,19 @@ Can you divide these new requirements into small, releasable tasks and write the
 I want the builds to be visible both in grids (as is currently the case) and in lists.
 There must be a view selection, and I want the setting to be saved in the user's browser so that it will be displayed the same way next time.
 Update the specifications and generate prompts
+
+# Saved PATs
+I want admins and owners to have a section where they can save and edit PATs.
+Each PAT will have an identifying name and can only be used within the organization to which it belongs.
+It will be saved in an encrypted database for security reasons.
+When creating or editing a build, it should be possible to use a PAT already saved for that organization or create a new one.
+Update the specifications and generate prompts
+
+# Saved PATs 2
+Be more concise and break down features into smaller, releasable chunks.
+For example:
+* Add a screen for saving the PAT, accessible from the organization page
+* Allow saving a new PAT linked to the organization
+* Allow selecting an existing PAT in the Build creation screen
+* ...
+  Update the specifications and generate prompts

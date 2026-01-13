@@ -359,7 +359,35 @@ Clean Architecture under `/src`:
 - **Session Management**: Secure HTTP-only cookies
 - **Data Isolation**: Complete tenant separation
 - **Role-Based Access**: Permission checks on all operations
-- **Token Storage**: GitHub PATs stored in database (plain text - recommend encryption for production)
+- **Token Storage**: GitHub PATs encrypted in database (AES-256-GCM)
+
+### PAT (Personal Access Token) Management
+
+#### Overview
+Owners and admins can save GitHub PATs centrally for their organization. PATs are encrypted in database and reusable across builds.
+
+#### Database Schema
+- **Table**: `personal_access_tokens`
+  - `id`, `tenantId`, `name`, `encryptedToken`, `createdBy`, `lastUsed`, `createdAt`, `updatedAt`
+  - Encrypted with AES-256-GCM, key in `ENCRYPTION_KEY` env var
+- **Builds table**: Add `patId` (FK to PATs, nullable), keep existing `personalAccessToken` for backward compatibility
+
+#### UI - PAT Management Page
+- **Location**: Organization page, "GitHub Tokens" section (owners/admins only)
+- **List**: Table with Name, Last Used, Created By, Actions (Edit/Delete)
+- **Add**: Modal with Name (required), Token (password field)
+- **Edit**: Update name, optionally replace token
+- **Delete**: Confirm with warning if builds use it
+
+#### UI - Build Form
+- **Dropdown**: Select saved organization PAT
+- **Inline option**: Enter new token directly (existing behavior)
+- When build fetches stats: resolve token (saved PAT or inline), decrypt, use
+
+#### Security
+- Tokens encrypted (AES-256-GCM), never exposed in API
+- Only owners/admins can manage PATs
+- Members can use saved PATs but not manage them
 
 ### Build Storage & Access Control
 - **Persistence**: Builds are stored in the application database (not JSON files). Each create/edit/delete operation must go through the database layer.

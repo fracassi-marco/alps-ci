@@ -651,6 +651,109 @@ Prompt: Polish the grid/list view toggle UI, ensure consistent behavior, and add
 
 ---
 
+## 15. PAT (Personal Access Token) Management - Feature-Based Slices
+
+### Feature 15.1: View Saved PATs (Read-Only List)
+
+```
+Implement complete vertical slice to VIEW saved organization PATs. Owners/admins can see a list of PATs on the Organization page.
+
+**What Users Can Do**: Navigate to Organization page → See "GitHub Tokens" section → View table with saved PATs
+
+**Implementation (Full Stack)**:
+- **Encryption Service** (`src/infrastructure/encryption.ts`): Basic encrypt/decrypt with AES-256-GCM, read `ENCRYPTION_KEY` from env
+- **Database**: Create `personalAccessTokens` table (id, tenantId, name, encryptedToken, createdBy, lastUsed, createdAt, updatedAt), add indexes, run migration
+- **Domain**: Add `PersonalAccessToken` and `PersonalAccessTokenResponse` interfaces
+- **Repository**: Implement `findByTenantId()` method (joins with users for creator names)
+- **Use Case**: `listPersonalAccessTokens.ts` - verify owner/admin, fetch and return PATs
+- **API**: GET `/api/pats` - returns list (without encrypted tokens)
+- **UI Component**: `PATList.tsx` - table showing Name, Last Used, Created By, Created (read-only, no actions yet)
+- **Organization Page**: Add "GitHub Tokens" section (owners/admins only), render PATList
+
+**Testing**: E2E test - owner logs in, navigates to Organization, sees PAT list (empty state and with data)
+
+**Commit**: ✨ Add view saved PATs feature
+```
+
+### Feature 15.2: Add New PAT
+
+```
+Implement complete vertical slice to ADD a new PAT. Owners/admins can save a GitHub token.
+
+**What Users Can Do**: Click "Add GitHub Token" → Enter name and token → Save → See it in list
+
+**Implementation (Full Stack)**:
+- **Repository**: Add `create()` method to PersonalAccessTokenRepository
+- **Use Case**: `createPersonalAccessToken.ts` - verify owner/admin, validate name uniqueness, encrypt token, save
+- **API**: POST `/api/pats` - accepts {name, token}, creates encrypted PAT
+- **UI Component**: `AddPATModal.tsx` - form with name (text), token (password field with show/hide), save/cancel buttons
+- **Organization Page**: Add "Add GitHub Token" button, opens modal, handles save, refreshes list
+
+**Testing**: E2E test - owner clicks add button, enters name + token, saves, sees new PAT in list
+
+**Commit**: ✨ Add create new PAT feature
+```
+
+### Feature 15.3: Edit Existing PAT
+
+```
+Implement complete vertical slice to EDIT a PAT. Owners/admins can update the name or replace the token.
+
+**What Users Can Do**: Click edit icon on PAT row → Change name and/or token → Save → See updated info
+
+**Implementation (Full Stack)**:
+- **Repository**: Add `update()` method to PersonalAccessTokenRepository
+- **Use Case**: `updatePersonalAccessToken.ts` - verify owner/admin, update name/token, re-encrypt if token changed
+- **API**: PATCH `/api/pats/[id]` - accepts {name?, token?}, updates PAT
+- **UI Component**: Extend `AddPATModal` to support edit mode (pre-fill name, optional token replacement)
+- **PATList**: Add edit icon button in Actions column, opens modal in edit mode
+
+**Testing**: E2E test - owner clicks edit, changes name, saves, sees updated name; owner replaces token, saves successfully
+
+**Commit**: ✨ Add edit PAT feature
+```
+
+### Feature 15.4: Delete PAT
+
+```
+Implement complete vertical slice to DELETE a PAT. Owners/admins can remove unused PATs.
+
+**What Users Can Do**: Click delete icon → See warning if builds use it → Confirm → PAT removed from list
+
+**Implementation (Full Stack)**:
+- **Repository**: Add `delete()` method and `countBuildsUsingPAT()` method
+- **Use Case**: `deletePersonalAccessToken.ts` - verify owner/admin, check builds, delete if unused
+- **API**: DELETE `/api/pats/[id]` - returns 409 if builds use it, otherwise deletes
+- **UI Component**: `DeletePATDialog.tsx` - confirmation dialog, shows warning with build list if in use
+- **PATList**: Add delete icon button in Actions column, opens dialog
+
+**Testing**: E2E test - owner deletes unused PAT successfully; owner tries to delete PAT in use, sees error
+
+**Commit**: ✨ Add delete PAT feature
+```
+
+### Feature 15.5: Use Saved PAT in Build
+
+```
+Implement complete vertical slice to USE a saved PAT when creating a build. Users can select from org PATs.
+
+**What Users Can Do**: Create/edit build → Select saved PAT from dropdown → Save build → Build uses that PAT for API calls
+
+**Implementation (Full Stack)**:
+- **Database**: Add `patId` column to builds table (nullable FK to personalAccessTokens), migration
+- **Build Repository**: Update `create()` and `update()` to accept and save `patId`
+- **Build Use Cases**: Update `addBuild.ts` and `editBuild.ts` to accept patId, validate it exists in org
+- **Token Resolution**: Create `TokenResolutionService` with `resolveToken()` - if patId exists, load PAT from DB, decrypt, update lastUsed; else use inline token
+- **Fetch Stats**: Update `fetchBuildStats.ts` to use TokenResolutionService before GitHub client
+- **Build Form UI**: Add "GitHub Token" dropdown above existing PAT field, fetch org PATs, format as "{name} (Last used: X)", on select store patId
+- **Validation**: Require either patId OR inline token (not both)
+
+**Testing**: E2E test - owner creates build with saved PAT, fetches stats successfully, PAT lastUsed updates
+
+**Commit**: ✨ Add use saved PAT in build feature
+```
+---
+
 # Review & Iteration
 
 - Each step is small, testable, and builds on the previous.
