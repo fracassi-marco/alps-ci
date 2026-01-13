@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw,
   Edit,
@@ -40,27 +40,10 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
   const [deleteTarget, setDeleteTarget] = useState<Build | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    // Initialize stats for all builds
-    builds.forEach((build) => {
-      if (!buildStatsMap.has(build.id)) {
-        setBuildStatsMap((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(build.id, {
-            build,
-            stats: null,
-            error: null,
-            loading: true,
-            refreshing: false,
-          });
-          return newMap;
-        });
-        fetchStats(build);
-      }
-    });
-  }, [builds]);
+  // Memoize build IDs to prevent unnecessary effect triggers
+  const buildIds = useMemo(() => builds.map(b => b.id).join(','), [builds]);
 
-  const fetchStats = async (build: Build) => {
+  const fetchStats = useCallback(async (build: Build) => {
     try {
       const response = await fetch(`/api/builds/${build.id}/stats`);
 
@@ -112,7 +95,31 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
         return newMap;
       });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Initialize stats for all builds
+    builds.forEach((build) => {
+      setBuildStatsMap((prev) => {
+        // Only initialize if not already present
+        if (!prev.has(build.id)) {
+          const newMap = new Map(prev);
+          newMap.set(build.id, {
+            build,
+            stats: null,
+            error: null,
+            loading: true,
+            refreshing: false,
+          });
+          // Fetch stats after setting initial state
+          fetchStats(build);
+          return newMap;
+        }
+        return prev; // No change if already exists
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildIds, fetchStats]);
 
   const handleRefresh = async (build: Build) => {
     setBuildStatsMap((prev) => {

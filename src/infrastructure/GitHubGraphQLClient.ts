@@ -209,6 +209,7 @@ export class GitHubGraphQLClient {
   }
 
   async fetchTags(owner: string, repo: string, limit = 100): Promise<string[]> {
+    console.log(`Fetching ${owner}/${repo} tags from GitHub API`);
     const query = `
       query($owner: String!, $repo: String!, $limit: Int!) {
         repository(owner: $owner, name: $repo) {

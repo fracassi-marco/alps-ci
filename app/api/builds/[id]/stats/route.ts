@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { GitHubGraphQLClient, GitHubAuthenticationError } from '@/infrastructure/GitHubGraphQLClient';
-import { InMemoryGitHubDataCache } from '@/infrastructure/GitHubDataCache';
+import { getGitHubDataCache } from '@/infrastructure/cache-instance';
 import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
 import { FetchBuildStatsUseCase } from '@/use-cases/fetchBuildStats';
 import { getCurrentUser } from '@/infrastructure/auth-session';
@@ -43,9 +43,9 @@ export async function GET(
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
     }
 
-    // Create GitHub client with the build's PAT
+    // Create GitHub client with the build's PAT and use singleton cache
     const githubClient = new GitHubGraphQLClient(build.personalAccessToken);
-    const cache = new InMemoryGitHubDataCache();
+    const cache = getGitHubDataCache();
     const cachedClient = new CachedGitHubClient(githubClient, cache);
 
     // Fetch statistics
@@ -104,9 +104,9 @@ export async function POST(
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
     }
 
-    // Create GitHub client with the build's PAT
+    // Create GitHub client with the build's PAT and use singleton cache
     const githubClient = new GitHubGraphQLClient(build.personalAccessToken);
-    const cache = new InMemoryGitHubDataCache();
+    const cache = getGitHubDataCache();
     const cachedClient = new CachedGitHubClient(githubClient, cache);
 
     // Invalidate cache for this repository
