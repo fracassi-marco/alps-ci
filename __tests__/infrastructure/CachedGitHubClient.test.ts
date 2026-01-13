@@ -295,7 +295,8 @@ describe('CachedGitHubClient', () => {
 
       expect(mockClient.fetchWorkflowRuns).toHaveBeenCalledTimes(1);
       expect(mockClient.fetchTags).toHaveBeenCalledTimes(1);
-      expect(mockClient.fetchLatestTag).toHaveBeenCalledTimes(1);
+      // fetchLatestTag should reuse cached tags, so it won't call the API
+      expect(mockClient.fetchLatestTag).toHaveBeenCalledTimes(0);
 
       // All should be cached now
       await cachedClient.fetchWorkflowRuns('owner', 'repo', 30);
@@ -305,7 +306,8 @@ describe('CachedGitHubClient', () => {
       // No additional API calls
       expect(mockClient.fetchWorkflowRuns).toHaveBeenCalledTimes(1);
       expect(mockClient.fetchTags).toHaveBeenCalledTimes(1);
-      expect(mockClient.fetchLatestTag).toHaveBeenCalledTimes(1);
+      // Still no calls to fetchLatestTag API as it reuses cached tags
+      expect(mockClient.fetchLatestTag).toHaveBeenCalledTimes(0);
     });
   });
 });
