@@ -27,6 +27,7 @@ export default function Home() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | null>(null);
+  const [buildRefreshKeys, setBuildRefreshKeys] = useState<Record<string, number>>({});
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -123,6 +124,26 @@ export default function Home() {
 
       if (response.ok) {
         await fetchBuilds();
+
+        // If editing an existing build, force refresh its statistics
+        if (editingBuild && build.id) {
+          // Increment the refresh key to force BuildCard remount
+          setBuildRefreshKeys(prev => ({
+            ...prev,
+            [build.id!]: (prev[build.id!] || 0) + 1
+          }));
+
+          try {
+            // Call POST endpoint to invalidate cache and fetch fresh data
+            await fetch(`/api/builds/${build.id}/stats`, {
+              method: 'POST',
+            });
+          } catch (refreshError) {
+            console.warn('Failed to refresh build statistics:', refreshError);
+            // Don't throw - the build was saved successfully
+          }
+        }
+
         setShowAddBuildForm(false);
         setEditingBuild(null);
       } else {
@@ -330,7 +351,7 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {builds.map((build) => (
               <BuildCard
-                key={build.id}
+                key={`${build.id}-${buildRefreshKeys[build.id] || 0}`}
                 build={build}
                 onEdit={handleEditBuild}
                 onDelete={handleDeleteClick}
@@ -343,6 +364,7 @@ export default function Home() {
         {/* List View */}
         {viewMode === 'list' && (
           <BuildListView
+            key={Object.values(buildRefreshKeys).join('-')}
             builds={builds}
             onRefresh={handleRefresh}
             onEdit={handleEditBuild}

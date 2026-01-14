@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
+import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
 import { EditBuildUseCase } from '@/use-cases/editBuild';
 import { DeleteBuildUseCase } from '@/use-cases/deleteBuild';
 import { ValidationError } from '@/domain/validation';
@@ -8,6 +9,7 @@ import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantM
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
+const accessTokenRepository = new DatabaseAccessTokenRepository();
 
 export async function PUT(
   request: Request,
@@ -42,7 +44,7 @@ export async function PUT(
 
     const { id } = await params;
     const updates = await request.json();
-    const useCase = new EditBuildUseCase(repository);
+    const useCase = new EditBuildUseCase(repository, accessTokenRepository);
     const updatedBuild = await useCase.execute(id, updates, membership.tenantId);
 
     return NextResponse.json(updatedBuild);

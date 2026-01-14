@@ -6,9 +6,13 @@ import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
 import { FetchBuildStatsUseCase } from '@/use-cases/fetchBuildStats';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
+import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
+import { TokenResolutionService } from '@/infrastructure/TokenResolutionService';
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
+const accessTokenRepository = new DatabaseAccessTokenRepository();
+const tokenResolutionService = new TokenResolutionService(accessTokenRepository);
 
 export async function GET(
   request: Request,
@@ -43,8 +47,15 @@ export async function GET(
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
     }
 
-    // Create GitHub client with the build's PAT and use singleton cache
-    const githubClient = new GitHubGraphQLClient(build.personalAccessToken);
+    // Resolve the GitHub access token (either from saved token or inline)
+    const githubToken = await tokenResolutionService.resolveToken({
+      accessTokenId: build.accessTokenId,
+      inlineToken: build.personalAccessToken,
+      tenantId,
+    });
+
+    // Create GitHub client with the resolved token and use singleton cache
+    const githubClient = new GitHubGraphQLClient(githubToken);
     const cache = getGitHubDataCache();
     const cachedClient = new CachedGitHubClient(githubClient, cache);
 
@@ -104,8 +115,15 @@ export async function POST(
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
     }
 
-    // Create GitHub client with the build's PAT and use singleton cache
-    const githubClient = new GitHubGraphQLClient(build.personalAccessToken);
+    // Resolve the GitHub access token (either from saved token or inline)
+    const githubToken = await tokenResolutionService.resolveToken({
+      accessTokenId: build.accessTokenId,
+      inlineToken: build.personalAccessToken,
+      tenantId,
+    });
+
+    // Create GitHub client with the resolved token and use singleton cache
+    const githubClient = new GitHubGraphQLClient(githubToken);
     const cache = getGitHubDataCache();
     const cachedClient = new CachedGitHubClient(githubClient, cache);
 

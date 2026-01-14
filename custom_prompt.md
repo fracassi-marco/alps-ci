@@ -37,3 +37,6 @@ For example:
 * Allow selecting an existing PAT in the Build creation screen
 * ...
   Update the specifications and generate prompts
+
+# Avoid summary 
+To avoid wasting tokens at the end of the prompt do not generate the summary of what you have done

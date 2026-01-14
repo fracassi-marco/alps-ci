@@ -744,8 +744,6 @@ Implement complete vertical slice to USE a saved PAT when creating a build. User
 - **Build Form UI**: Add "GitHub Token" dropdown above existing PAT field, fetch org PATs, format as "{name} (Last used: X)", on select store patId
 - **Validation**: Require either patId OR inline token (not both)
 
-**Testing**: E2E test - owner creates build with saved PAT, fetches stats successfully, PAT lastUsed updates
-
 **Commit**: ✨ Add use saved PAT in build feature
 ```
 ---

@@ -125,6 +125,7 @@ describe('Validation - Build', () => {
       { type: 'tag', pattern: 'v*.*.*' },
       { type: 'branch', pattern: 'main' },
     ],
+    accessTokenId: null,
     personalAccessToken: 'ghp_test_token_123',
     cacheExpirationMinutes: 60,
   };
@@ -232,15 +233,26 @@ describe('Validation - Build', () => {
 
   describe('Personal Access Token validation', () => {
     test('should throw error for missing token', () => {
-      const build = { ...validBuild, personalAccessToken: undefined };
+      const build = { ...validBuild, personalAccessToken: undefined, accessTokenId: undefined };
       expect(() => validateBuild(build)).toThrow(ValidationError);
-      expect(() => validateBuild(build)).toThrow('Personal Access Token is required');
+      expect(() => validateBuild(build)).toThrow('Either a saved Access Token or Personal Access Token is required');
     });
 
     test('should throw error for empty token', () => {
-      const build = { ...validBuild, personalAccessToken: '   ' };
+      const build = { ...validBuild, personalAccessToken: '   ', accessTokenId: undefined };
       expect(() => validateBuild(build)).toThrow(ValidationError);
-      expect(() => validateBuild(build)).toThrow('Personal Access Token cannot be empty');
+      expect(() => validateBuild(build)).toThrow('Either a saved Access Token or Personal Access Token is required');
+    });
+
+    test('should accept accessTokenId instead of personalAccessToken', () => {
+      const build = { ...validBuild, personalAccessToken: undefined, accessTokenId: 'token-123' };
+      expect(() => validateBuild(build)).not.toThrow();
+    });
+
+    test('should throw error when both accessTokenId and personalAccessToken are provided', () => {
+      const build = { ...validBuild, personalAccessToken: 'ghp_token', accessTokenId: 'token-123' };
+      expect(() => validateBuild(build)).toThrow(ValidationError);
+      expect(() => validateBuild(build)).toThrow('Cannot specify both saved Access Token and inline Personal Access Token');
     });
   });
 

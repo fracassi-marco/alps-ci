@@ -81,7 +81,8 @@ export interface Build {
   organization: string;
   repository: string;
   selectors: Selector[];
-  personalAccessToken: string;
+  accessTokenId?: string | null; // Reference to saved access token
+  personalAccessToken?: string | null; // Inline token (deprecated, use accessTokenId instead)
   cacheExpirationMinutes: number;
   createdAt: Date;
   updatedAt: Date;

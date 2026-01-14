@@ -47,7 +47,8 @@ export class DatabaseBuildRepository implements BuildRepository {
         organization: build.organization,
         repository: build.repository,
         selectors: JSON.stringify(build.selectors),
-        personalAccessToken: build.personalAccessToken,
+        accessTokenId: build.accessTokenId || null,
+        personalAccessToken: build.personalAccessToken || null,
         cacheExpirationMinutes: build.cacheExpirationMinutes,
       })
       .returning();
@@ -67,6 +68,7 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.organization !== undefined) updateData.organization = updates.organization;
     if (updates.repository !== undefined) updateData.repository = updates.repository;
     if (updates.selectors !== undefined) updateData.selectors = JSON.stringify(updates.selectors);
+    if (updates.accessTokenId !== undefined) updateData.accessTokenId = updates.accessTokenId;
     if (updates.personalAccessToken !== undefined) updateData.personalAccessToken = updates.personalAccessToken;
     if (updates.cacheExpirationMinutes !== undefined) updateData.cacheExpirationMinutes = updates.cacheExpirationMinutes;
 
@@ -104,15 +106,27 @@ export class DatabaseBuildRepository implements BuildRepository {
   }
 
   async countByAccessTokenId(tokenId: string, tenantId: string): Promise<number> {
-    // TODO: When builds use accessTokenId instead of inline PATs, implement this
-    // For now, return 0 since builds don't reference access tokens yet
-    return 0;
+    const results = await db
+      .select()
+      .from(builds)
+      .where(and(
+        eq(builds.accessTokenId, tokenId),
+        eq(builds.tenantId, tenantId)
+      ));
+
+    return results.length;
   }
 
   async findByAccessTokenId(tokenId: string, tenantId: string): Promise<Build[]> {
-    // TODO: When builds use accessTokenId instead of inline PATs, implement this
-    // For now, return empty array since builds don't reference access tokens yet
-    return [];
+    const results = await db
+      .select()
+      .from(builds)
+      .where(and(
+        eq(builds.accessTokenId, tokenId),
+        eq(builds.tenantId, tenantId)
+      ));
+
+    return results.map(this.mapToModel.bind(this));
   }
 
   private mapToModel(row: any): Build {
@@ -134,7 +148,8 @@ export class DatabaseBuildRepository implements BuildRepository {
       organization: row.organization,
       repository: row.repository,
       selectors,
-      personalAccessToken: row.personalAccessToken,
+      accessTokenId: row.accessTokenId || null,
+      personalAccessToken: row.personalAccessToken || null,
       cacheExpirationMinutes: row.cacheExpirationMinutes,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),

@@ -1,13 +1,6 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1768324610457,
-      "tag": "0000_awesome_northstar",
-      "breakpoints": true
-    }
-  ]
+  "entries": []
 }
+

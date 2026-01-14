@@ -113,13 +113,16 @@ export function validateBuild(build: Partial<Build>): void {
     }
   });
 
-  // Personal Access Token validation
-  if (!build.personalAccessToken || typeof build.personalAccessToken !== 'string') {
-    throw new ValidationError('Personal Access Token is required and must be a string');
+  // Token validation: Must have either accessTokenId OR personalAccessToken (not both, not neither)
+  const hasAccessTokenId = build.accessTokenId && typeof build.accessTokenId === 'string' && build.accessTokenId.trim().length > 0;
+  const hasPersonalAccessToken = build.personalAccessToken && typeof build.personalAccessToken === 'string' && build.personalAccessToken.trim().length > 0;
+
+  if (!hasAccessTokenId && !hasPersonalAccessToken) {
+    throw new ValidationError('Either a saved Access Token or Personal Access Token is required');
   }
 
-  if (build.personalAccessToken.trim().length === 0) {
-    throw new ValidationError('Personal Access Token cannot be empty');
+  if (hasAccessTokenId && hasPersonalAccessToken) {
+    throw new ValidationError('Cannot specify both saved Access Token and inline Personal Access Token');
   }
 
   // Cache expiration validation
@@ -132,17 +135,26 @@ export function validateBuild(build: Partial<Build>): void {
 
 // Sanitize build input
 export function sanitizeBuild(build: Partial<Build>): Partial<Build> {
-  return {
+  const sanitized: Partial<Build> = {
     ...build,
     name: build.name?.trim(),
     organization: build.organization?.trim(),
     repository: build.repository?.trim(),
-    personalAccessToken: build.personalAccessToken?.trim(),
     selectors: build.selectors?.map((s) => ({
       ...s,
       pattern: s.pattern.trim(),
     })),
   };
+
+  // Only include token fields if they were explicitly provided
+  if ('accessTokenId' in build) {
+    sanitized.accessTokenId = build.accessTokenId?.trim() || null;
+  }
+  if ('personalAccessToken' in build) {
+    sanitized.personalAccessToken = build.personalAccessToken?.trim() || null;
+  }
+
+  return sanitized;
 }
 
 // Check if cache is expired

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
-import type { Build, Selector, SelectorType } from '@/domain/models';
+import type { Build, Selector, SelectorType, AccessTokenResponse } from '@/domain/models';
 import { validateBuild, ValidationError } from '@/domain/validation';
 import { generateBuildId } from '@/domain/utils';
 
@@ -19,9 +19,14 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
     name: build?.name || '',
     organization: build?.organization || '',
     repository: build?.repository || '',
+    accessTokenId: build?.accessTokenId || '',
     personalAccessToken: build?.personalAccessToken || '',
+    tokenName: '', // Name for saving inline token to organization
     cacheExpirationMinutes: build?.cacheExpirationMinutes || 30,
   });
+
+  const [availableTokens, setAvailableTokens] = useState<AccessTokenResponse[]>([]);
+  const [loadingTokens, setLoadingTokens] = useState(false);
 
   const [selectors, setSelectors] = useState<Selector[]>(
     build?.selectors || [{ type: 'branch', pattern: '' }]
@@ -30,8 +35,44 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch available PATs on mount
+  useEffect(() => {
+    const fetchTokens = async () => {
+      setLoadingTokens(true);
+      try {
+        const response = await fetch('/api/tokens');
+        if (response.ok) {
+          const tokens = await response.json();
+          setAvailableTokens(tokens);
+        }
+      } catch (error) {
+        console.error('Failed to fetch access tokens:', error);
+      } finally {
+        setLoadingTokens(false);
+      }
+    };
+
+    fetchTokens();
+  }, []);
+
   const handleInputChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Clear inline token and token name if selecting a saved token
+      if (field === 'accessTokenId' && value) {
+        updated.personalAccessToken = '';
+        updated.tokenName = '';
+      }
+
+      // Clear saved token if entering an inline token
+      if (field === 'personalAccessToken' && value) {
+        updated.accessTokenId = '';
+      }
+
+      return updated;
+    });
+
     // Clear error for this field
     if (errors[field]) {
       setErrors((prev) => {
@@ -68,6 +109,36 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
     setIsSubmitting(true);
 
     try {
+      // If using inline token, token name is required - save it to organization
+      let finalAccessTokenId = formData.accessTokenId;
+
+      if (formData.personalAccessToken && !formData.accessTokenId) {
+        // Validate token name is provided
+        if (!formData.tokenName.trim()) {
+          setErrors({ general: 'Token name is required when using an inline token' });
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Save token to organization
+        const tokenResponse = await fetch('/api/tokens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.tokenName.trim(),
+            token: formData.personalAccessToken.trim(),
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const error = await tokenResponse.json();
+          throw new Error(error.error || 'Failed to save token to organization');
+        }
+
+        const savedToken = await tokenResponse.json();
+        finalAccessTokenId = savedToken.id;
+      }
+
       const buildData: Partial<Build> = {
         id: build?.id || generateBuildId(),
         name: formData.name.trim(),
@@ -77,7 +148,8 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
           type: s.type,
           pattern: s.pattern.trim(),
         })),
-        personalAccessToken: formData.personalAccessToken.trim(),
+        accessTokenId: finalAccessTokenId || null,
+        personalAccessToken: null, // Always use saved token
         cacheExpirationMinutes: formData.cacheExpirationMinutes,
         createdAt: build?.createdAt || new Date(),
         updatedAt: new Date(),
@@ -90,6 +162,8 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
       await onSave(buildData);
     } catch (error) {
       if (error instanceof ValidationError) {
+        setErrors({ general: error.message });
+      } else if (error instanceof Error) {
         setErrors({ general: error.message });
       } else {
         setErrors({ general: 'Failed to save build. Please try again.' });
@@ -233,25 +307,75 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
             </p>
           </div>
 
-          {/* Personal Access Token */}
+          {/* GitHub Token Selection */}
           <div>
-            <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Personal Access Token (PAT) <span className="text-red-500">*</span>
+            <label htmlFor="accessToken" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              GitHub Token
             </label>
-            <input
-              type="password"
-              id="token"
-              value={formData.personalAccessToken}
-              onChange={(e) => handleInputChange('personalAccessToken', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white font-mono"
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-              required
-            />
+            <select
+              id="accessToken"
+              value={formData.accessTokenId}
+              onChange={(e) => handleInputChange('accessTokenId', e.target.value)}
+              disabled={loadingTokens}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">-- Use new token --</option>
+              {availableTokens.map((token) => (
+                <option key={token.id} value={token.id}>
+                  {token.name}
+                  {token.lastUsed && ` (Last used: ${new Date(token.lastUsed).toLocaleDateString()})`}
+                </option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              GitHub Personal Access Token with <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">repo</code> and{' '}
-              <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">workflow</code> permissions
+              Select a saved GitHub token from your organization or create a new one
             </p>
           </div>
+
+          {/* Personal Access Token (New Token) */}
+          {!formData.accessTokenId && (
+            <>
+              <div>
+                <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Personal Access Token (PAT) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="token"
+                  value={formData.personalAccessToken}
+                  onChange={(e) => handleInputChange('personalAccessToken', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white font-mono"
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  GitHub Personal Access Token with repo and workflow scopes
+                </p>
+              </div>
+
+              {/* Token Name (for saving new token) */}
+              {formData.personalAccessToken && (
+                <div>
+                  <label htmlFor="tokenName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Token Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="tokenName"
+                    value={formData.tokenName}
+                    onChange={(e) => handleInputChange('tokenName', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="e.g., Production Token"
+                    maxLength={100}
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This token will be saved to your organization for reuse in other builds.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Cache Expiration */}
           <div>

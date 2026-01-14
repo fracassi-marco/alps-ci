@@ -9,6 +9,7 @@ describe('AddBuildUseCase', () => {
     name: 'Test Build',
     organization: 'test-org',
     repository: 'test-repo',
+    accessTokenId: null,
     personalAccessToken: 'ghp_test123',
     cacheExpirationMinutes: 30,
     selectors: [{ type: 'branch', pattern: 'main' }],

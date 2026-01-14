@@ -11,6 +11,7 @@ describe('EditBuildUseCase', () => {
     name: 'Original Build',
     organization: 'original-org',
     repository: 'original-repo',
+    accessTokenId: null,
     personalAccessToken: 'ghp_original',
     cacheExpirationMinutes: 30,
     selectors: [{ type: 'branch', pattern: 'main' }],

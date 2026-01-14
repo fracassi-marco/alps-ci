@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
+import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
 import { AddBuildUseCase } from '@/use-cases/addBuild';
 import { ListBuildsUseCase } from '@/use-cases/listBuilds';
 import { ValidationError } from '@/domain/validation';
@@ -8,6 +9,7 @@ import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantM
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
+const accessTokenRepository = new DatabaseAccessTokenRepository();
 
 export async function GET() {
   try {
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
     }
 
     const newBuild = await request.json();
-    const useCase = new AddBuildUseCase(repository);
+    const useCase = new AddBuildUseCase(repository, accessTokenRepository);
     const savedBuild = await useCase.execute(newBuild, membership.tenantId);
 
     return NextResponse.json(savedBuild, { status: 201 });
