@@ -9,6 +9,8 @@ export interface BuildRepository {
   create(build: Omit<Build, 'id' | 'createdAt' | 'updatedAt'>, tenantId: string): Promise<Build>;
   update(id: string, updates: Partial<Build>, tenantId: string): Promise<Build>;
   delete(id: string, tenantId: string): Promise<void>;
+  countByAccessTokenId(tokenId: string, tenantId: string): Promise<number>;
+  findByAccessTokenId(tokenId: string, tenantId: string): Promise<Build[]>;
 }
 
 export class DatabaseBuildRepository implements BuildRepository {
@@ -99,6 +101,18 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (result.length === 0) {
       throw new Error(`Build with id "${id}" not found or access denied`);
     }
+  }
+
+  async countByAccessTokenId(tokenId: string, tenantId: string): Promise<number> {
+    // TODO: When builds use accessTokenId instead of inline PATs, implement this
+    // For now, return 0 since builds don't reference access tokens yet
+    return 0;
+  }
+
+  async findByAccessTokenId(tokenId: string, tenantId: string): Promise<Build[]> {
+    // TODO: When builds use accessTokenId instead of inline PATs, implement this
+    // For now, return empty array since builds don't reference access tokens yet
+    return [];
   }
 
   private mapToModel(row: any): Build {

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { AccessTokenResponse } from '@/domain/models';
 import AddAccessTokenModal from './AddAccessTokenModal';
+import DeleteAccessTokenDialog from './DeleteAccessTokenDialog';
 
 export function TokenList() {
   const [tokens, setTokens] = useState<AccessTokenResponse[]>([]);
@@ -11,6 +12,9 @@ export function TokenList() {
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingToken, setEditingToken] = useState<AccessTokenResponse | null>(null);
+  const [deletingToken, setDeletingToken] = useState<AccessTokenResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [buildsUsingToken, setBuildsUsingToken] = useState<string[]>([]);
 
   useEffect(() => {
     fetchTokens();
@@ -108,6 +112,52 @@ export function TokenList() {
 
   const handleEditClick = (token: AccessTokenResponse) => {
     setEditingToken(token);
+  };
+
+  const handleDeleteClick = (token: AccessTokenResponse) => {
+    setDeletingToken(token);
+    setBuildsUsingToken([]);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingToken) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/tokens/${deletingToken.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.status === 409) {
+        // Token is in use by builds
+        setBuildsUsingToken(data.buildsUsingToken || []);
+        setIsDeleting(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete token');
+      }
+
+      // Success - close dialog and refresh list
+      setDeletingToken(null);
+      setBuildsUsingToken([]);
+      await fetchTokens();
+    } catch (err) {
+      console.error('Failed to delete token:', err);
+      alert(err instanceof Error ? err.message : 'Failed to delete token');
+      setDeletingToken(null);
+      setBuildsUsingToken([]);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeletingToken(null);
+    setBuildsUsingToken([]);
   };
 
   const handleCloseModal = () => {
@@ -208,14 +258,24 @@ export function TokenList() {
                 {formatDate(token.createdAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <button
-                  onClick={() => handleEditClick(token)}
-                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center gap-1"
-                  title="Edit token"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleEditClick(token)}
+                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                    title="Edit token"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(token)}
+                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center gap-1"
+                    title="Delete token"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -227,6 +287,14 @@ export function TokenList() {
         onClose={handleCloseModal}
         onSave={handleSaveToken}
         editToken={editingToken}
+      />
+      <DeleteAccessTokenDialog
+        isOpen={!!deletingToken}
+        tokenName={deletingToken?.name || ''}
+        buildsUsingToken={buildsUsingToken.length > 0 ? buildsUsingToken : undefined}
+        isDeleting={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
     </>
   );

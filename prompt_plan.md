@@ -725,8 +725,6 @@ Implement complete vertical slice to DELETE a PAT. Owners/admins can remove unus
 - **UI Component**: `DeletePATDialog.tsx` - confirmation dialog, shows warning with build list if in use
 - **PATList**: Add delete icon button in Actions column, opens dialog
 
-**Testing**: E2E test - owner deletes unused PAT successfully; owner tries to delete PAT in use, sees error
-
 **Commit**: ✨ Add delete PAT feature
 ```
 
