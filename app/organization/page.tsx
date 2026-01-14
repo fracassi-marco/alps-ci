@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
-import { Users, Mail, UserCheck, X, AlertCircle, User, LogOut } from 'lucide-react';
+import { Users, Mail, UserCheck, X, AlertCircle, User, LogOut, Key } from 'lucide-react';
+import { TokenList } from '../components/TokenList';
 
 interface Member {
   id: string;
@@ -521,6 +522,24 @@ export default function OrganizationPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* GitHub Tokens Section (Owners/Admins only) */}
+        {(userRole === 'owner' || userRole === 'admin') && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                <Key className="h-5 w-5 mr-2" />
+                GitHub Tokens
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Manage GitHub Personal Access Tokens for your organization. These tokens can be reused across multiple builds.
+              </p>
+            </div>
+            <div className="p-6">
+              <TokenList />
+            </div>
           </div>
         )}
       </div>

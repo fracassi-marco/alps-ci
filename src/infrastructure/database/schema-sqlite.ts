@@ -123,11 +123,27 @@ export const builds = sqliteTable('builds', {
   uniqueTenantName: uniqueIndex('idx_builds_unique').on(table.tenantId, table.name),
 }));
 
+// Access Tokens table
+export const accessTokens = sqliteTable('access_tokens', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  encryptedToken: text('encrypted_token').notNull(),
+  createdBy: text('created_by').notNull().references(() => users.id, { onDelete: 'set null' }),
+  lastUsed: integer('last_used', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  tenantIdIdx: index('idx_access_tokens_tenant_id').on(table.tenantId),
+  uniqueTenantName: uniqueIndex('idx_access_tokens_unique').on(table.tenantId, table.name),
+}));
+
 // Relations
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   members: many(tenantMembers),
   invitations: many(invitations),
   builds: many(builds),
+  accessTokens: many(accessTokens),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -136,6 +152,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   tenantMembersList: many(tenantMembers, { relationName: "userMemberships" }),
   invitedMembers: many(tenantMembers, { relationName: "invitedMembers" }),
   invitationsSent: many(invitations, { relationName: "invitationsSent" }),
+  createdTokens: many(accessTokens),
 }));
 
 export const tenantMembersRelations = relations(tenantMembers, ({ one }) => ({
@@ -188,3 +205,13 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   }),
 }));
 
+export const accessTokensRelations = relations(accessTokens, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [accessTokens.tenantId],
+    references: [tenants.id],
+  }),
+  creator: one(users, {
+    fields: [accessTokens.createdBy],
+    references: [users.id],
+  }),
+}));

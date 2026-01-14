@@ -96,7 +96,7 @@ export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
                   Add Your First Build
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Click the button below to add a new Build. Provide your repository details, PAT, and configure selectors to filter workflows.
+                  Click the button below to add a new Build. Provide your repository details, Access Token, and configure selectors to filter workflows.
                 </p>
               </div>
             </div>

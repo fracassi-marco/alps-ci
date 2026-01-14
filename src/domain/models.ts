@@ -49,6 +49,30 @@ export interface Invitation {
   createdAt: Date;
 }
 
+// Access Token (GitHub PAT)
+export interface AccessToken {
+  id: string;
+  tenantId: string;
+  name: string;
+  encryptedToken: string; // Never expose in API responses
+  createdBy: string;
+  lastUsed: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Access Token response (without encrypted token)
+export interface AccessTokenResponse {
+  id: string;
+  tenantId: string;
+  name: string;
+  createdBy: string;
+  createdByName?: string; // Populated with user name from join
+  lastUsed: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Build configuration
 export interface Build {
   id: string;

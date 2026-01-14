@@ -8,7 +8,12 @@ export type {
   WorkflowRun,
   WorkflowRunStatus,
   DailySuccess,
+  AccessToken,
+  AccessTokenResponse,
 } from './models';
+
+// Export repository interfaces
+export type { AccessTokenRepository } from './AccessTokenRepository';
 
 // Export validation functions and constants
 export {

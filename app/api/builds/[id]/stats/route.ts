@@ -58,7 +58,7 @@ export async function GET(
 
     if (error instanceof GitHubAuthenticationError) {
       return NextResponse.json(
-        { error: 'Invalid or expired Personal Access Token. Please update your PAT.' },
+        { error: 'Invalid or expired Access Token. Please update it.' },
         { status: 401 }
       );
     }
