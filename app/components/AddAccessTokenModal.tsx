@@ -1,24 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
+import type { AccessTokenResponse } from '@/domain/models';
 
 interface AddAccessTokenModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, token: string) => Promise<void>;
+  editToken?: AccessTokenResponse | null;
 }
 
 export default function AddAccessTokenModal({
   isOpen,
   onClose,
   onSave,
+  editToken,
 }: AddAccessTokenModalProps) {
   const [name, setName] = useState('');
   const [token, setToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isEditMode = !!editToken;
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (editToken) {
+      setName(editToken.name);
+      setToken(''); // Don't pre-fill token for security
+    } else {
+      setName('');
+      setToken('');
+    }
+    setShowToken(false);
+    setError(null);
+  }, [editToken, isOpen]);
 
   if (!isOpen) return null;
 
@@ -31,7 +49,9 @@ export default function AddAccessTokenModal({
       return;
     }
 
-    if (!token.trim()) {
+    // In edit mode, token is optional (only update if provided)
+    // In add mode, token is required
+    if (!isEditMode && !token.trim()) {
       setError('Token is required');
       return;
     }
@@ -66,7 +86,9 @@ export default function AddAccessTokenModal({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Add GitHub Token</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {isEditMode ? 'Edit GitHub Token' : 'Add GitHub Token'}
+          </h2>
           <button
             onClick={handleClose}
             disabled={isSaving}
@@ -107,7 +129,7 @@ export default function AddAccessTokenModal({
           {/* Token Input */}
           <div>
             <label htmlFor="token-value" className="block text-sm font-medium text-gray-700 mb-1">
-              GitHub Personal Access Token *
+              GitHub Personal Access Token {isEditMode ? '(Optional - leave empty to keep current)' : '*'}
             </label>
             <div className="relative">
               <input
@@ -115,7 +137,7 @@ export default function AddAccessTokenModal({
                 type={showToken ? 'text' : 'password'}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                placeholder={isEditMode ? 'Enter new token to replace...' : 'ghp_xxxxxxxxxxxxxxxxxxxx'}
                 disabled={isSaving}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
@@ -129,7 +151,9 @@ export default function AddAccessTokenModal({
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              This token will be encrypted and stored securely
+              {isEditMode
+                ? 'Leave empty to keep the existing token, or enter a new one to replace it'
+                : 'This token will be encrypted and stored securely'}
             </p>
           </div>
 
@@ -145,10 +169,10 @@ export default function AddAccessTokenModal({
             </button>
             <button
               type="submit"
-              disabled={isSaving || !name.trim() || !token.trim()}
+              disabled={isSaving || !name.trim() || (!isEditMode && !token.trim())}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? 'Saving...' : 'Save Token'}
+              {isSaving ? 'Saving...' : (isEditMode ? 'Update Token' : 'Save Token')}
             </button>
           </div>
         </form>

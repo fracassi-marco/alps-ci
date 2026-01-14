@@ -708,8 +708,6 @@ Implement complete vertical slice to EDIT a PAT. Owners/admins can update the na
 - **UI Component**: Extend `AddPATModal` to support edit mode (pre-fill name, optional token replacement)
 - **PATList**: Add edit icon button in Actions column, opens modal in edit mode
 
-**Testing**: E2E test - owner clicks edit, changes name, saves, sees updated name; owner replaces token, saves successfully
-
 **Commit**: ✨ Add edit PAT feature
 ```
 

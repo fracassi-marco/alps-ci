@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Edit } from 'lucide-react';
 import type { AccessTokenResponse } from '@/domain/models';
 import AddAccessTokenModal from './AddAccessTokenModal';
 
@@ -10,6 +10,7 @@ export function TokenList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingToken, setEditingToken] = useState<AccessTokenResponse | null>(null);
 
   useEffect(() => {
     fetchTokens();
@@ -60,22 +61,58 @@ export function TokenList() {
     return `${Math.floor(diffDays / 365)} years ago`;
   };
 
-  const handleAddToken = async (name: string, token: string) => {
-    const response = await fetch('/api/tokens', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, token }),
-    });
+  const handleSaveToken = async (name: string, token: string) => {
+    if (editingToken) {
+      // Update existing token
+      const body: { name: string; token?: string } = { name };
+      // Only include token if it's not empty (user wants to update it)
+      if (token && token.trim()) {
+        body.token = token;
+      }
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to create token');
+      const response = await fetch(`/api/tokens/${editingToken.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update token');
+      }
+
+      setEditingToken(null);
+    } else {
+      // Create new token
+      const response = await fetch('/api/tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, token }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create token');
+      }
+
+      setShowAddModal(false);
     }
 
     // Refresh the list
     await fetchTokens();
+  };
+
+  const handleEditClick = (token: AccessTokenResponse) => {
+    setEditingToken(token);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingToken(null);
   };
 
   if (loading) {
@@ -116,8 +153,8 @@ export function TokenList() {
         </div>
         <AddAccessTokenModal
           isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddToken}
+          onClose={handleCloseModal}
+          onSave={handleSaveToken}
         />
       </>
     );
@@ -150,6 +187,9 @@ export function TokenList() {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Created
             </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -167,15 +207,26 @@ export function TokenList() {
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {formatDate(token.createdAt)}
               </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <button
+                  onClick={() => handleEditClick(token)}
+                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                  title="Edit token"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       </div>
       <AddAccessTokenModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddToken}
+        isOpen={showAddModal || !!editingToken}
+        onClose={handleCloseModal}
+        onSave={handleSaveToken}
+        editToken={editingToken}
       />
     </>
   );
