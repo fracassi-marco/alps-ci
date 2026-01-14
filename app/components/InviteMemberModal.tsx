@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import Button from './Button';
 
 interface InviteMemberModalProps {
   onClose: () => void;
@@ -94,20 +95,23 @@ export function InviteMemberModal({ onClose, onInvite }: InviteMemberModalProps)
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+              variant="outline"
+              fullWidth
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading || !email}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={loading}
+              fullWidth
+              className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
             >
-              {loading ? 'Sending...' : 'Send Invitation'}
-            </button>
+              Send Invitation
+            </Button>
           </div>
         </form>
       </div>

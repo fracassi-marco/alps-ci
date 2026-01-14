@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle } from 'lucide-react';
+import Button from './Button';
 
 interface ConfirmDialogProps {
   title: string;
@@ -43,22 +44,21 @@ export function ConfirmDialog({
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
+          <Button
             onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+            variant="outline"
+            fullWidth
           >
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
-            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-              isDestructive
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            }`}
+            variant={isDestructive ? 'danger' : 'primary'}
+            fullWidth
+            className={isDestructive ? '' : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

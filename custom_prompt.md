@@ -40,3 +40,6 @@ For example:
 
 # Avoid summary 
 To avoid wasting tokens at the end of the prompt do not generate the summary of what you have done
+
+# Button
+They're starting to have a design system. Extract the button component with all its variations and use it consistently across the various points.

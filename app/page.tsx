@@ -9,6 +9,7 @@ import { AddEditBuildForm } from './components/AddEditBuildForm';
 import { BuildCard } from './components/BuildCard';
 import { BuildListView } from './components/BuildListView';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import Button from './components/Button';
 import { InviteMemberModal } from './components/InviteMemberModal';
 import { useViewMode } from './hooks/useViewMode';
 import type { Build } from '@/domain/models';

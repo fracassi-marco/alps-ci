@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
 import { Users, Mail, UserCheck, X, AlertCircle, User, LogOut, Key } from 'lucide-react';
 import { TokenList } from '../components/TokenList';
+import Button from '../components/Button';
 
 interface Member {
   id: string;
@@ -556,18 +557,20 @@ export default function OrganizationPage() {
               This action cannot be undone.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
                 onClick={handleRevokeCancel}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                variant="outline"
+                fullWidth
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleRevokeConfirm}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                variant="danger"
+                fullWidth
               >
                 Revoke
-              </button>
+              </Button>
             </div>
           </div>
         </div>

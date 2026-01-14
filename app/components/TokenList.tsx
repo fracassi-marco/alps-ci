@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { AccessTokenResponse } from '@/domain/models';
 import AddAccessTokenModal from './AddAccessTokenModal';
 import DeleteAccessTokenDialog from './DeleteAccessTokenDialog';
+import Button from './Button';
 
 export function TokenList() {
   const [tokens, setTokens] = useState<AccessTokenResponse[]>([]);
@@ -193,13 +194,12 @@ export function TokenList() {
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             No GitHub tokens saved yet. Add one to get started.
           </p>
-          <button
+          <Button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            icon={<Plus className="w-5 h-5" />}
           >
-            <Plus className="w-5 h-5" />
             Add GitHub Token
-          </button>
+          </Button>
         </div>
         <AddAccessTokenModal
           isOpen={showAddModal}
@@ -213,13 +213,12 @@ export function TokenList() {
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <button
+        <Button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          icon={<Plus className="w-5 h-5" />}
         >
-          <Plus className="w-5 h-5" />
           Add GitHub Token
-        </button>
+        </Button>
       </div>
       <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -1,6 +1,7 @@
 'use client';
 
 import { PlusCircle, GitBranch, BarChart3 } from 'lucide-react';
+import Button from './Button';
 
 interface WelcomeScreenProps {
   onAddBuild: () => void;
@@ -118,13 +119,15 @@ export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
 
           {/* CTA Button - Only show for owners and admins */}
           {canAddBuilds ? (
-            <button
+            <Button
               onClick={onAddBuild}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 text-lg"
+              icon={<PlusCircle className="w-6 h-6" />}
+              size="lg"
+              fullWidth
+              className="bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl text-lg py-4"
             >
-              <PlusCircle className="w-6 h-6" />
               Add Your First Build
-            </button>
+            </Button>
           ) : (
             <div className="text-center py-4 px-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <p className="text-gray-600 dark:text-gray-400">

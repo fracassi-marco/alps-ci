@@ -1,6 +1,7 @@
 'use client';
 
 import { X, AlertTriangle } from 'lucide-react';
+import Button from './Button';
 
 interface DeleteAccessTokenDialogProps {
   isOpen: boolean;
@@ -87,21 +88,24 @@ export default function DeleteAccessTokenDialog({
 
         {/* Actions */}
         <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-          <button
+          <Button
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline"
+            fullWidth
           >
             {hasBuildsUsing ? 'Close' : 'Cancel'}
-          </button>
+          </Button>
           {!hasBuildsUsing && (
-            <button
+            <Button
               onClick={onConfirm}
               disabled={isDeleting}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={isDeleting}
+              variant="danger"
+              fullWidth
             >
-              {isDeleting ? 'Deleting...' : 'Delete Token'}
-            </button>
+              Delete Token
+            </Button>
           )}
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import type { AccessTokenResponse } from '@/domain/models';
+import Button from './Button';
 
 interface AddAccessTokenModalProps {
   isOpen: boolean;
@@ -158,22 +159,24 @@ export default function AddAccessTokenModal({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <button
+          <div className="flex gap-3">
+            <Button
               type="button"
               onClick={handleClose}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline"
+              fullWidth
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSaving || !name.trim() || (!isEditMode && !token.trim())}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={isSaving}
+              fullWidth
             >
-              {isSaving ? 'Saving...' : (isEditMode ? 'Update Token' : 'Save Token')}
-            </button>
+              {isEditMode ? 'Update Token' : 'Save Token'}
+            </Button>
           </div>
         </form>
       </div>

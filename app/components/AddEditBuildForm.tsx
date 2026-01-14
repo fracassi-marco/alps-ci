@@ -5,6 +5,7 @@ import { X, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
 import type { Build, Selector, SelectorType, AccessTokenResponse } from '@/domain/models';
 import { validateBuild, ValidationError } from '@/domain/validation';
 import { generateBuildId } from '@/domain/utils';
+import Button from './Button';
 
 interface AddEditBuildFormProps {
   build?: Build;
@@ -399,31 +400,27 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
+            <Button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
               disabled={isSubmitting}
+              variant="outline"
+              size="lg"
+              fullWidth
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={isSubmitting}
+              icon={<Save className="w-5 h-5" />}
+              size="lg"
+              fullWidth
+              className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
             >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  {isEditMode ? 'Update Build' : 'Add Build'}
-                </>
-              )}
-            </button>
+              {isEditMode ? 'Update Build' : 'Add Build'}
+            </Button>
           </div>
         </form>
       </div>
