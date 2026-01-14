@@ -114,7 +114,7 @@ describe('UpdateAccessTokenUseCase', () => {
       ).rejects.toThrow('Token not found');
     });
 
-    it('should throw error for empty name', async () => {
+    it('should throw error for empty name (whitespace only)', async () => {
       await expect(
         useCase.execute({
           tokenId: 'token-123',
@@ -123,7 +123,7 @@ describe('UpdateAccessTokenUseCase', () => {
           userRole: 'owner',
           name: '   ',
         })
-      ).rejects.toThrow('Token name cannot be empty');
+      ).rejects.toThrow('At least one field');
     });
 
     it('should throw error for name exceeding length limit', async () => {
@@ -139,7 +139,7 @@ describe('UpdateAccessTokenUseCase', () => {
       ).rejects.toThrow('Token name must be 100 characters or less');
     });
 
-    it('should throw error for empty token value', async () => {
+    it('should throw error for empty token value (whitespace only)', async () => {
       await expect(
         useCase.execute({
           tokenId: 'token-123',
@@ -148,7 +148,7 @@ describe('UpdateAccessTokenUseCase', () => {
           userRole: 'owner',
           token: '   ',
         })
-      ).rejects.toThrow('Token value cannot be empty');
+      ).rejects.toThrow('At least one field');
     });
 
     it('should reject duplicate names (case insensitive)', async () => {

@@ -9,9 +9,11 @@ const tokenRepository = new DatabaseAccessTokenRepository();
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     // Get current user from session
     const currentUser = await getCurrentUser();
     if (!currentUser) {
@@ -49,7 +51,7 @@ export async function PATCH(
     // Update token using use case
     const useCase = new UpdateAccessTokenUseCase(tokenRepository);
     const updatedToken = await useCase.execute({
-      tokenId: params.id,
+      tokenId: id,
       tenantId,
       userId: currentUser.id,
       userRole,
