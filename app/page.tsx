@@ -271,52 +271,50 @@ export default function Home() {
             <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
               {builds.length > 0 && isClient && (
-                <button
+                <Button
                   onClick={toggleViewMode}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                  variant="secondary"
                   title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
                   aria-label={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+                  className="px-3"
                 >
-                  {viewMode === 'grid' ? (
-                    <LayoutList className="w-5 h-5" />
-                  ) : (
-                    <LayoutGrid className="w-5 h-5" />
-                  )}
-                </button>
+                  {viewMode === 'grid' ? <LayoutList className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+                </Button>
               )}
 
               {/* Only show buttons for owners and admins */}
               {userRole && (userRole === 'owner' || userRole === 'admin') && (
                 <>
-                  <button
+                  <Button
                     onClick={() => setShowInviteModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                    variant="secondary"
+                    icon={<UserPlus className="w-5 h-5" />}
                   >
-                    <UserPlus className="w-5 h-5" />
                     Invite Member
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleAddBuild}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                    icon={<Plus className="w-5 h-5" />}
+                    className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
                   >
-                    <Plus className="w-5 h-5" />
                     Add Build
-                  </button>
+                  </Button>
                 </>
               )}
 
               {/* User Menu */}
               <div className="relative">
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowUserMenu(!showUserMenu);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                  variant="secondary"
+                  icon={<User className="w-5 h-5" />}
+                  className="gap-2"
                 >
-                  <User className="w-5 h-5" />
                   <span className="text-sm font-medium">{session.user?.name || session.user?.email}</span>
-                </button>
+                </Button>
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">

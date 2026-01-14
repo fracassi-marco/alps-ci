@@ -278,12 +278,12 @@ export default function OrganizationPage() {
             Error Loading Organization
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-          <button
+          <Button
             onClick={fetchOrganizationData}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -309,25 +309,26 @@ export default function OrganizationPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                variant="secondary"
               >
                 ← Dashboard
-              </button>
+              </Button>
 
               {/* User Menu */}
               <div className="relative">
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowUserMenu(!showUserMenu);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                  variant="secondary"
+                  icon={<User className="w-5 h-5" />}
+                  className="gap-2"
                 >
-                  <User className="w-5 h-5" />
                   <span className="text-sm font-medium">{session.user?.name || session.user?.email}</span>
-                </button>
+                </Button>
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
@@ -454,12 +455,13 @@ export default function OrganizationPage() {
                 <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">
                   Invite team members to grow your organization
                 </p>
-                <button
+                <Button
                   onClick={() => router.push('/')}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
                 >
                   Go to Dashboard
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
