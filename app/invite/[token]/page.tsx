@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/infrastructure/auth-client';
+import Button from '../../components/Button';
 
 interface InvitationDetails {
   email: string;
@@ -129,12 +130,11 @@ export default function AcceptInvitationPage({ params }: { params: Promise<{ tok
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             This invitation has already been accepted
           </p>
-          <a
-            href="/auth/signin"
-            className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          <Button
+            onClick={() => router.push('/auth/signin')}
           >
             Sign in
-          </a>
+          </Button>
         </div>
       </div>
     );
@@ -196,13 +196,15 @@ export default function AcceptInvitationPage({ params }: { params: Promise<{ tok
           </div>
         </div>
 
-        <button
+        <Button
           onClick={handleAccept}
           disabled={accepting}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={accepting}
+          fullWidth
+          size="lg"
         >
-          {accepting ? 'Accepting...' : 'Accept Invitation'}
-        </button>
+          Accept Invitation
+        </Button>
 
         <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
           By accepting, you'll be able to sign in or create an account

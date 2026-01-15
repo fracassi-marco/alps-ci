@@ -17,6 +17,7 @@ import {
   GitCommit
 } from 'lucide-react';
 import type { Build, Selector, BuildStats } from '@/domain/models';
+import Button from './Button';
 
 interface BuildCardProps {
   build: Build;

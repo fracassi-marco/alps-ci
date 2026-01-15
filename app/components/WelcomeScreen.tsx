@@ -124,7 +124,6 @@ export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
               icon={<PlusCircle className="w-6 h-6" />}
               size="lg"
               fullWidth
-              className="bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl text-lg py-4"
             >
               Add Your First Build
             </Button>

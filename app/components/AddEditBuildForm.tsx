@@ -417,7 +417,6 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
               icon={<Save className="w-5 h-5" />}
               size="lg"
               fullWidth
-              className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
             >
               {isEditMode ? 'Update Build' : 'Add Build'}
             </Button>

@@ -295,7 +295,7 @@ export default function Home() {
                   <Button
                     onClick={handleAddBuild}
                     icon={<Plus className="w-5 h-5" />}
-                    className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                    variant="primary"
                   >
                     Add Build
                   </Button>

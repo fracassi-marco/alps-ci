@@ -2,7 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { authClient } from '@/infrastructure/auth-client';
+import { signUp } from '@/infrastructure/auth-client';
+import Button from '../../components/Button';
 
 function RegisterForm() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function RegisterForm() {
 
     try {
       // Step 1: Sign up with better-auth
-      const signUpResult = await authClient.signUp.email({
+      const signUpResult = await signUp.email({
         email: formData.email,
         password: formData.password,
         name: formData.name,
@@ -191,13 +192,14 @@ function RegisterForm() {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={loading}
+              fullWidth
             >
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
+              Create account
+            </Button>
           </div>
 
           <div className="text-center">

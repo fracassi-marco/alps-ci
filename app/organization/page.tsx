@@ -280,7 +280,6 @@ export default function OrganizationPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <Button
             onClick={fetchOrganizationData}
-            className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
           >
             Retry
           </Button>
@@ -458,7 +457,7 @@ export default function OrganizationPage() {
                 <Button
                   onClick={() => router.push('/')}
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                  variant="secondary"
                 >
                   Go to Dashboard
                 </Button>

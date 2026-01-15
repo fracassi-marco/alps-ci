@@ -108,7 +108,6 @@ export function InviteMemberModal({ onClose, onInvite }: InviteMemberModalProps)
               disabled={loading || !email}
               loading={loading}
               fullWidth
-              className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
             >
               Send Invitation
             </Button>
