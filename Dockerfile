@@ -57,12 +57,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["bun", "run", "server.js"]
-
-EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
 # Next.js standalone creates server.js in the root
 # Use Bun instead of Node for better performance
