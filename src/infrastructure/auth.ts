@@ -13,13 +13,7 @@ try {
   // Directory already exists
 }
 
-// Detect if we're running with Bun or Node.js
-const isBun = typeof Bun !== 'undefined';
-
-// Use appropriate SQLite implementation
-const Database = isBun
-  ? require('bun:sqlite').Database
-  : require('better-sqlite3');
+const Database = require('bun:sqlite').Database;
 
 export const auth = betterAuth({
   database: new Database(dbPath),
