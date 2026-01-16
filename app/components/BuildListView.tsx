@@ -19,6 +19,7 @@ import {
 import type { Build, BuildStats, Selector } from '@/domain/models';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Tooltip } from './Tooltip';
+import React from "react";
 
 interface BuildListViewProps {
   builds: Build[];
@@ -282,20 +283,6 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
     });
   };
 
-  const formatDuration = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${seconds % 60}s`;
-    }
-    return `${seconds}s`;
-  };
-
   const handleDeleteClick = (build: Build) => {
     setDeleteTarget(build);
   };
@@ -353,7 +340,7 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                   : 1;
 
                 return (
-                  <>
+                  <React.Fragment key={build.id}>
                     {/* Main Row */}
                     <tr
                       key={build.id}
@@ -570,13 +557,13 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                                   Last 7 Days
                                 </h4>
                                 <div className="space-y-1 text-sm">
-                                  <div className="flex justify-between">
+                                  <div key="7d-commits" className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Commits:</span>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">
                                       {stats.commitsLast7Days}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between">
+                                  <div key="7d-contributors" className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Contributors:</span>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">
                                       {stats.contributorsLast7Days}
@@ -589,13 +576,13 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                                   All Time
                                 </h4>
                                 <div className="space-y-1 text-sm">
-                                  <div className="flex justify-between">
+                                  <div key="total-commits" className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Commits:</span>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">
                                       {stats.totalCommits}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between">
+                                  <div key="total-contributors" className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Contributors:</span>
                                     <span className="font-medium text-gray-900 dark:text-gray-100">
                                       {stats.totalContributors}
@@ -662,7 +649,7 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </tbody>

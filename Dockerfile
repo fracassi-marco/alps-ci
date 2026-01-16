@@ -4,13 +4,6 @@ WORKDIR /app
 
 # Install dependencies only when needed
 FROM base AS deps
-# Install build dependencies for better-sqlite3
-# Only needed if DATABASE_URL uses SQLite (file:)
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
@@ -59,6 +52,6 @@ ENV HOSTNAME="0.0.0.0"
 
 
 # Next.js standalone creates server.js in the root
-# Use Bun instead of Node for better performance
-CMD ["bun", "run", "server.js"]
+# Use Bun's native runtime for bun:sqlite support
+CMD ["bun", "--bun", "run", "server.js"]
 

@@ -1,31 +1,31 @@
 /**
- * Database client wrapper that uses the appropriate SQLite implementation:
- * - bun:sqlite when running with Bun directly (scripts)
- * - better-sqlite3 when running with Next.js (Node.js runtime)
+ * Database client using Bun's native SQLite implementation (bun:sqlite).
  *
- * Uses singleton pattern to ensure only one database connection is created.
+ * Uses singleton pattern with globalThis to persist across Next.js HMR reloads.
+ * Requires running with: bun --bun dev (or bunfig.toml with bun = true)
  */
 
-import { drizzle as drizzleBetterSqlite } from 'drizzle-orm/better-sqlite3';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import * as schema from './schema';
+import { Database } from "bun:sqlite";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import * as schema from "./schema";
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 
-type DrizzleDB = BetterSQLite3Database<typeof schema>;
+type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
 
-// Singleton instance
-let dbInstance: DrizzleDB | null = null;
-let isInitialized = false;
+// Store singleton in globalThis to persist across HMR reloads in development
+declare global {
+  var __db: DrizzleDB | undefined;
+}
 
 /**
  * Initialize and return the database client.
  * This function is idempotent - calling it multiple times returns the same instance.
  */
 function initializeDatabase(): DrizzleDB {
-  // Return existing instance if already initialized
-  if (dbInstance && isInitialized) {
-    return dbInstance;
+  // Return existing instance if already initialized (persists across HMR)
+  if (globalThis.__db) {
+    return globalThis.__db;
   }
 
   const databaseUrl = process.env.DATABASE_URL || 'file:data/local.db';
@@ -39,39 +39,14 @@ function initializeDatabase(): DrizzleDB {
     // Directory already exists
   }
 
-  // Detect if we're running with Bun or Node.js
-  const isBun = typeof Bun !== 'undefined';
+  console.log('💾 Initializing Bun SQLite (bun:sqlite)...');
+  const sqlite = new Database(dbPath);
+  const dbInstance = drizzle(sqlite, { schema });
 
-  if (isBun) {
-    // Use Bun's native SQLite (for scripts run with `bun run`)
-    console.log('💾 Initializing Bun SQLite (bun:sqlite)...');
-    try {
-      // Dynamic import to avoid bundler issues
-      const { Database } = require('bun:sqlite');
-      const { drizzle: drizzleBunSqlite } = require('drizzle-orm/bun-sqlite');
-      const sqlite = new Database(dbPath);
-      dbInstance = drizzleBunSqlite(sqlite, { schema }) as DrizzleDB;
-    } catch (e) {
-      // Fallback to better-sqlite3 if bun:sqlite fails
-      console.log('⚠️  bun:sqlite failed, falling back to better-sqlite3');
-      const Database = require('better-sqlite3');
-      const sqlite = new Database(dbPath);
-      sqlite.pragma('journal_mode = WAL');
-      dbInstance = drizzleBetterSqlite(sqlite, { schema });
-    }
-  } else {
-    // Use better-sqlite3 (for Next.js/Node.js runtime)
-    console.log('💾 Initializing better-sqlite3 (Next.js runtime)...');
-    const Database = require('better-sqlite3');
-    const sqlite = new Database(dbPath);
-    sqlite.pragma('journal_mode = WAL');
-    dbInstance = drizzleBetterSqlite(sqlite, { schema });
-  }
-
-  isInitialized = true;
-  return dbInstance!;
+  // Store in globalThis to survive HMR reloads in development
+  globalThis.__db = dbInstance;
+  return dbInstance;
 }
 
 // Initialize once and export the singleton instance
 export const db = initializeDatabase();
-

@@ -10,3 +10,6 @@ exclude = [
   ".next/**/*"
 ]
 
+[run]
+# Use Bun's native runtime instead of Node.js compatibility mode
+bun = true

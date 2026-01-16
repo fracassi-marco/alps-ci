@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest) {
       .where(eq(tenantMembers.userId, currentUser.id))
       .limit(1);
 
-    if (!userMembership || userMembership.length === 0) {
+    if (!userMembership || !userMembership[0]) {
       return NextResponse.json(
         { error: 'No organization membership found' },
         { status: 404 }
