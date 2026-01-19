@@ -10,6 +10,7 @@ export type {
   DailySuccess,
   AccessToken,
   AccessTokenResponse,
+  TestStats,
 } from './models';
 
 // Export repository interfaces

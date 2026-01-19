@@ -1,6 +1,7 @@
-import type {Build, BuildStats, DailySuccess, WorkflowRun} from '../domain/models';
+import type {Build, BuildStats, DailySuccess, WorkflowRun, TestStats} from '../domain/models';
 import type {CachedGitHubClient} from '../infrastructure/CachedGitHubClient';
 import {calculateHealthPercentage, formatDateYYYYMMDD, getLastNDaysRange} from '../domain/utils';
+import { parseJUnitXML, isTestArtifact } from '../infrastructure/junit-parser';
 
 export class FetchBuildStatsUseCase {
   constructor(private githubClient: CachedGitHubClient) {}
@@ -108,6 +109,16 @@ export class FetchBuildStatsUseCase {
 
       console.log(`[FetchBuildStats] Total commits: ${totalCommits}, Total contributors: ${totalContributors}`);
 
+      // Fetch test statistics from the most recent run's artifacts
+      let testStats: TestStats | null = null;
+      if (allRuns.length > 0 && allRuns[0]) {
+        testStats = await this.fetchTestStatsFromArtifacts(
+          build.organization,
+          build.repository,
+          allRuns[0].id
+        );
+      }
+
       return {
         totalExecutions,
         successfulExecutions,
@@ -122,6 +133,7 @@ export class FetchBuildStatsUseCase {
         lastCommit,
         totalCommits,
         totalContributors,
+        testStats,
       };
     } catch (error) {
       throw error;
@@ -188,7 +200,6 @@ export class FetchBuildStatsUseCase {
     return filteredRuns;
   }
 
-
   private matchesPattern(value: string, pattern: string): boolean {
     // Convert wildcard pattern to regex
     // Support * (match any characters) and ? (match single character)
@@ -199,6 +210,50 @@ export class FetchBuildStatsUseCase {
 
     const regex = new RegExp(`^${regexPattern}$`, 'i'); // Case insensitive
     return regex.test(value);
+  }
+
+  private async fetchTestStatsFromArtifacts(
+    owner: string,
+    repo: string,
+    runId: number
+  ): Promise<TestStats | null> {
+    try {
+      const artifacts = await this.githubClient.fetchArtifacts(owner, repo, runId);
+      if (!artifacts || artifacts.length === 0) {
+        return null;
+      }
+
+      const testArtifacts = artifacts.filter((artifact: { id: number; name: string; size_in_bytes: number }) =>
+        isTestArtifact(artifact.name)
+      );
+
+      if (testArtifacts.length === 0) {
+        return null;
+      }
+
+      for (const artifact of testArtifacts) {
+        try {
+          const content = await this.githubClient.downloadArtifact(owner, repo, artifact.id);
+          if (!content) {
+            continue;
+          }
+
+          const testStats = parseJUnitXML(content);
+          console.log(`Parsed test stats from artifact ${artifact.name}:`, testStats);
+
+          if (testStats) {
+            return testStats;
+          }
+        } catch (error) {
+          console.error(`Failed to download/parse artifact ${artifact.name}:`, error);
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`Failed to fetch test statistics:`, error);
+      return null;
+    }
   }
 }
 

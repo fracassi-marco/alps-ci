@@ -129,6 +129,14 @@ export interface BuildStats {
   lastCommit: CommitDetails | null;
   totalCommits: number;
   totalContributors: number;
+  testStats: TestStats | null;
+}
+
+export interface TestStats {
+  totalTests: number;
+  failedTests: number;
+  passedTests: number;
+  skippedTests: number;
 }
 
 // Daily success and failure count for stacked bar chart

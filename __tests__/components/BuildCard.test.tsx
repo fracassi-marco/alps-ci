@@ -51,6 +51,7 @@ describe('BuildCard - Inactive Health Label', () => {
     },
     totalCommits: 450,
     totalContributors: 18,
+    testStats: null,
   };
 
   const mockStatsWithZeroExecutions: BuildStats = {
@@ -67,6 +68,7 @@ describe('BuildCard - Inactive Health Label', () => {
     lastCommit: null,
     totalCommits: 0,
     totalContributors: 0,
+    testStats: null,
   };
 
   const mockOnEdit = mock(() => {});
@@ -265,6 +267,7 @@ describe('BuildCard - Clickable Repository Link', () => {
     lastCommit: null,
     totalCommits: 200,
     totalContributors: 10,
+    testStats: null,
   };
 
   const mockOnEdit = mock(() => {});
@@ -416,6 +419,7 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
     },
     totalCommits: 850,
     totalContributors: 32,
+    testStats: null,
   };
 
   const mockOnEdit = mock(() => {});
@@ -624,6 +628,7 @@ describe('BuildCard - Last Commit Details', () => {
     },
     totalCommits: 1250,
     totalContributors: 45,
+    testStats: null,
   };
 
   const mockOnEdit = mock(() => {});

@@ -257,6 +257,7 @@ describe('Utils - Has Stats', () => {
       },
       totalCommits: 500,
       totalContributors: 25,
+      testStats: null,
     };
 
     expect(hasStats(stats)).toBe(true);
@@ -281,6 +282,7 @@ describe('Utils - Has Stats', () => {
       lastCommit: null,
       totalCommits: 500,
       totalContributors: 25,
+      testStats: null,
     };
 
     if (hasStats(statsOrNull)) {

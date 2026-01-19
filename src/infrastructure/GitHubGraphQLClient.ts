@@ -1,4 +1,5 @@
 import type { WorkflowRun, WorkflowRunStatus } from '../domain/models';
+import AdmZip from 'adm-zip';
 
 export class GitHubAuthenticationError extends Error {
   constructor(message: string) {
@@ -209,7 +210,6 @@ export class GitHubGraphQLClient {
   }
 
   async fetchTags(owner: string, repo: string, limit = 100): Promise<string[]> {
-    console.log(`Fetching ${owner}/${repo} tags from GitHub API`);
     const query = `
       query($owner: String!, $repo: String!, $limit: Int!) {
         repository(owner: $owner, name: $repo) {
@@ -585,6 +585,108 @@ export class GitHubGraphQLClient {
       throw new GitHubAPIError(`Failed to fetch last commit: ${error}`);
     }
   }
+
+  /**
+   * Fetch artifacts from a workflow run
+   */
+  async fetchArtifacts(owner: string, repo: string, runId: number): Promise<Array<{ id: number; name: string; size_in_bytes: number }>> {
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}/artifacts`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const result = await response.json();
+      return result.artifacts || [];
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch artifacts: ${error}`);
+    }
+  }
+
+  /**
+   * Download and extract XML files from artifact
+   */
+  async downloadArtifact(owner: string, repo: string, artifactId: number): Promise<string | null> {
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts/${artifactId}/zip`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (response.status === 410) {
+        // Artifact expired or deleted
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      // Download the ZIP file
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Extract XML files from the ZIP
+      try {
+        const zip = new AdmZip(buffer);
+        const zipEntries = zip.getEntries();
+
+        // Find the first XML file in the ZIP
+        for (const entry of zipEntries) {
+          if (!entry.isDirectory && entry.entryName.toLowerCase().endsWith('.xml')) {
+            // Extract and return the XML content as string
+            const xmlContent = entry.getData().toString('utf8');
+            return xmlContent;
+          }
+        }
+
+        // No XML files found in the ZIP
+        console.warn(`No XML files found in artifact ${artifactId}`);
+        return null;
+      } catch (zipError) {
+        console.error(`Failed to extract ZIP for artifact ${artifactId}:`, zipError);
+        return null;
+      }
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      console.error(`Failed to download artifact: ${error}`);
+      return null;
+    }
+  }
 }
+
 
 

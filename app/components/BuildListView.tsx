@@ -517,6 +517,41 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                               </div>
                             </div>
 
+                            {/* Test Statistics */}
+                            {stats.testStats && (
+                              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-3">
+                                  Test Results (Last Run)
+                                </h4>
+                                <div className="grid grid-cols-4 gap-3">
+                                  <div className="text-center">
+                                    <div className="text-xs text-purple-600 dark:text-purple-400 mb-1">Total</div>
+                                    <div className="text-xl font-bold text-purple-900 dark:text-purple-200">
+                                      {stats.testStats.totalTests}
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-green-600 dark:text-green-400 mb-1">Passed</div>
+                                    <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                                      {stats.testStats.passedTests}
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-red-600 dark:text-red-400 mb-1">Failed</div>
+                                    <div className="text-xl font-bold text-red-700 dark:text-red-300">
+                                      {stats.testStats.failedTests}
+                                    </div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Skipped</div>
+                                    <div className="text-xl font-bold text-gray-700 dark:text-gray-300">
+                                      {stats.testStats.skippedTests}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Recent Workflow Runs */}
                             {stats.recentRuns.length > 0 && (
                               <div>

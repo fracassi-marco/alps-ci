@@ -77,6 +77,7 @@ describe('BuildListView', () => {
     },
     totalCommits: 500,
     totalContributors: 25,
+    testStats: null,
   };
 
   const mockStats2: BuildStats = {
@@ -93,6 +94,7 @@ describe('BuildListView', () => {
     lastCommit: null,
     totalCommits: 0,
     totalContributors: 0,
+    testStats: null,
   };
 
   const mockOnRefresh = mock(() => {});

@@ -68,3 +68,4 @@ backup-*.sql
 # Drizzle (keep migrations in git, but ignore temp files)
 .drizzle/
 
+test-results.xml

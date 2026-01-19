@@ -344,5 +344,28 @@ export class CachedGitHubClient {
 
     return count;
   }
+
+  /**
+   * Fetch artifacts from a workflow run (no caching for artifacts)
+   */
+  async fetchArtifacts(
+    owner: string,
+    repo: string,
+    runId: number
+  ): Promise<Array<{ id: number; name: string; size_in_bytes: number }>> {
+    return this.client.fetchArtifacts(owner, repo, runId);
+  }
+
+  /**
+   * Download artifact content (no caching for artifact content)
+   */
+  async downloadArtifact(
+    owner: string,
+    repo: string,
+    artifactId: number
+  ): Promise<string | null> {
+    return this.client.downloadArtifact(owner, repo, artifactId);
+  }
 }
+
 

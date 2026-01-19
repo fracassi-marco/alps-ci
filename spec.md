@@ -218,6 +218,14 @@ Each Build appears as a full-screen card with comprehensive statistics:
 - **API Failures**: Show error message with retry option
 - **Expired Cache**: Automatic background refresh
 
+### Build Card Enhancements
+
+- **Test Statistics**:
+  - Display the number of tests in the last run and the number of failed tests for each build.
+  - Check if the uploaded artifacts contain files matching the `*test*.xml` pattern.
+  - Extract test data using the JUnit format.
+  - If no data is found, hide the test section in the build card.
+
 ---
 
 ## List View UI
