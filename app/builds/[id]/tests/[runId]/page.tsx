@@ -47,13 +47,15 @@ interface WorkflowRun {
 export default function TestResultsPage({
   params,
 }: {
-  params: Promise<{ buildId: string; runId: string }>;
+  params: Promise<{ id: string; runId: string }>;
 }) {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [buildId, setBuildId] = useState<string>('');
   const [runId, setRunId] = useState<string>('');
   const [buildName, setBuildName] = useState<string>('');
+  const [organization, setOrganization] = useState<string>('');
+  const [repository, setRepository] = useState<string>('');
   const [workflowRun, setWorkflowRun] = useState<WorkflowRun | null>(null);
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,14 +74,20 @@ export default function TestResultsPage({
   // Unwrap params
   useEffect(() => {
     params.then((p) => {
-      setBuildId(p.buildId);
+      console.log('[TestResultsPage] Params received:', p);
+      setBuildId(p.id);
       setRunId(p.runId);
     });
   }, [params]);
 
   // Fetch test results
   useEffect(() => {
-    if (!session || !buildId || !runId) return;
+    if (!session || !buildId || !runId) {
+      console.log('[TestResultsPage] Skipping fetch:', { session: !!session, buildId, runId });
+      return;
+    }
+
+    console.log('[TestResultsPage] Fetching data for:', { buildId, runId });
 
     const fetchData = async () => {
       setLoading(true);
@@ -91,6 +99,8 @@ export default function TestResultsPage({
         if (buildResponse.ok) {
           const buildStats = await buildResponse.json();
           setBuildName(buildStats.buildName || 'Build');
+          setOrganization(buildStats.organization || '');
+          setRepository(buildStats.repository || '');
 
           // Find the workflow run info
           const run = buildStats.recentRuns?.find((r: any) => r.id.toString() === runId);
@@ -107,16 +117,24 @@ export default function TestResultsPage({
         const testResponse = await fetch(`/api/builds/${buildId}/tests/${runId}`);
 
         if (!testResponse.ok) {
+          const errorData = await testResponse.json().catch(() => ({}));
+          console.error('Test results API error:', {
+            status: testResponse.status,
+            statusText: testResponse.statusText,
+            error: errorData,
+          });
+
           if (testResponse.status === 401) {
             throw new Error('Authentication failed. Please sign in again.');
           }
           if (testResponse.status === 404) {
             throw new Error('Test results not found.');
           }
-          throw new Error('Failed to fetch test results.');
+          throw new Error(errorData.error || 'Failed to fetch test results.');
         }
 
         const data = await testResponse.json();
+        console.log('[TestResultsPage] Received data:', data);
         setTestResults(data);
       } catch (err) {
         console.error('Error fetching test results:', err);
@@ -303,11 +321,55 @@ export default function TestResultsPage({
         ) : testResults ? (
           <div className="space-y-6">
             {/* Message if no test results */}
-            {testResults.message && testResults.summary.total === 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                  <p className="text-yellow-800 dark:text-yellow-200">{testResults.message}</p>
+            {testResults.summary.total === 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                      No Test Results Found
+                    </h3>
+                    <p className="text-yellow-800 dark:text-yellow-200 mb-2">
+                      {testResults.message || 'No test artifacts were found for this workflow run.'}
+                    </p>
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300 space-y-2">
+                      <p>
+                        <strong>Possible reasons:</strong>
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Test artifacts may have expired (GitHub keeps artifacts for 90 days by default)</li>
+                        <li>The workflow didn't upload test results as artifacts</li>
+                        <li>Artifacts don't contain files matching the *test*.xml pattern</li>
+                        <li>The artifact name doesn't contain "test"</li>
+                      </ul>
+                      <p className="mt-3">
+                        <strong>To fix this:</strong> Make sure your CI workflow uploads test results as artifacts:
+                      </p>
+                      <pre className="bg-yellow-100 dark:bg-yellow-900/40 p-2 rounded text-xs overflow-x-auto mt-2">
+{`- name: Upload test results
+  uses: actions/upload-artifact@v4
+  with:
+    name: test-results
+    path: test-results.xml`}
+                      </pre>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => router.back()}
+                        variant="secondary"
+                      >
+                        Back to Dashboard
+                      </Button>
+                      {organization && repository && (
+                        <Button
+                          onClick={() => window.open(`https://github.com/${organization}/${repository}/actions/runs/${runId}`, '_blank')}
+                          variant="ghost"
+                        >
+                          View Run on GitHub
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

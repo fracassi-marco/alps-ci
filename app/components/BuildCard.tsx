@@ -264,7 +264,7 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
             {/* Test Statistics */}
             {stats.testStats && stats.recentRuns && stats.recentRuns.length > 0 && (
               <button
-                onClick={() => router.push(`/builds/${build.id}/tests/${stats.recentRuns[0].id}`)}
+                onClick={() => router.push(`/builds/${build.id}/tests/${stats.recentRuns[0]!.id}`)}
                 className="w-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors cursor-pointer group"
                 title="View test results details"
               >

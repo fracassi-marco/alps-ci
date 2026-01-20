@@ -1,13 +1,17 @@
-import {NextResponse} from 'next/server';
-import {getCurrentUser} from '@/infrastructure/auth-session.ts';
-import {DatabaseBuildRepository} from '@/infrastructure/DatabaseBuildRepository.ts';
-import {DatabaseTenantMemberRepository} from '@/infrastructure/DatabaseTenantMemberRepository.ts';
-import {parseJUnitXML} from '@/infrastructure/junit-parser.ts';
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/infrastructure/auth-session';
+import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
+import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
+import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
+import { TokenResolutionService } from '@/infrastructure/TokenResolutionService';
+import { parseJUnitXML } from '@/infrastructure/junit-parser';
 import JSZip from 'jszip';
-import {XMLParser} from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
 const buildRepository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
+const accessTokenRepository = new DatabaseAccessTokenRepository();
+const tokenResolutionService = new TokenResolutionService(accessTokenRepository);
 
 // In-memory cache for test results (1 hour TTL)
 const testResultsCache = new Map<string, { data: any; timestamp: number }>();
@@ -142,29 +146,75 @@ function parseTestCases(xmlContent: string): TestCase[] {
 
     const result = parser.parse(xmlContent);
 
+    console.log('[TestResults] Parsed XML structure keys:', Object.keys(result));
+
     // Handle both single testsuite and testsuites wrapper
     let testsuites = [];
     if (result.testsuites) {
+      console.log('[TestResults] Found testsuites wrapper');
       // Multiple test suites
-      testsuites = Array.isArray(result.testsuites.testsuite)
-        ? result.testsuites.testsuite
-        : [result.testsuites.testsuite];
+      if (result.testsuites.testsuite) {
+        testsuites = Array.isArray(result.testsuites.testsuite)
+          ? result.testsuites.testsuite
+          : [result.testsuites.testsuite];
+      }
+      console.log(`[TestResults] Found ${testsuites.length} test suite(s)`);
     } else if (result.testsuite) {
+      console.log('[TestResults] Found single testsuite');
       // Single test suite
       testsuites = [result.testsuite];
     }
 
+    if (testsuites.length === 0) {
+      console.log('[TestResults] No testsuites found in XML');
+      return testCases;
+    }
+
     // Process each test suite
     for (const testsuite of testsuites) {
-      if (!testsuite || !testsuite.testcase) continue;
+      if (!testsuite) {
+        console.log('[TestResults] Skipping null/undefined testsuite');
+        continue;
+      }
+
+      const suiteName = testsuite['@_name'] || testsuite['@_file'] || 'Unknown Suite';
+      console.log(`[TestResults] Processing suite: ${suiteName}`);
+
+      if (!testsuite.testcase) {
+        // Bun JUnit format doesn't include individual test cases, only suite-level stats
+        // Create synthetic test case entries from suite-level data
+        console.log(`[TestResults] Suite ${suiteName} has no testcase property - using suite-level stats`);
+
+        const suiteTests = parseInt(testsuite['@_tests']?.toString() || '0', 10);
+        const suiteFailures = parseInt(testsuite['@_failures']?.toString() || '0', 10);
+        const suiteSkipped = parseInt(testsuite['@_skipped']?.toString() || '0', 10);
+        const suitePassed = suiteTests - suiteFailures - suiteSkipped;
+        const suiteTime = parseFloat(testsuite['@_time']?.toString() || '0');
+
+        console.log(`[TestResults] Suite ${suiteName}: ${suiteTests} tests, ${suitePassed} passed, ${suiteFailures} failed, ${suiteSkipped} skipped`);
+
+        // Create a summary entry for this suite
+        if (suiteTests > 0) {
+          testCases.push({
+            name: suiteName,
+            suite: 'Test Suite',
+            status: suiteFailures > 0 ? 'failed' : (suiteSkipped > 0 ? 'skipped' : 'passed'),
+            duration: suiteTime,
+            errorMessage: suiteFailures > 0 ? `${suiteFailures} test(s) failed in this suite` : undefined,
+          });
+        }
+        continue;
+      }
 
       const testcases = Array.isArray(testsuite.testcase)
         ? testsuite.testcase
         : [testsuite.testcase];
 
+      console.log(`[TestResults] Suite ${suiteName} has ${testcases.length} test case(s)`);
+
       for (const testcase of testcases) {
         const name = testcase['@_name'] || 'Unknown Test';
-        const className = testcase['@_classname'] || testcase['@_class'] || testsuite['@_name'] || 'Unknown Suite';
+        const className = testcase['@_classname'] || testcase['@_class'] || suiteName;
         const timeStr = testcase['@_time'] || '0';
         const duration = parseFloat(timeStr.toString());
 
@@ -254,11 +304,18 @@ export async function GET(
       );
     }
 
-    // Get PAT for GitHub API
-    const token = build.personalAccessToken;
-    if (!token) {
+    // Resolve GitHub access token
+    let token: string;
+    try {
+      token = await tokenResolutionService.resolveToken({
+        accessTokenId: build.accessTokenId,
+        inlineToken: build.personalAccessToken,
+        tenantId: membership.tenantId,
+      });
+    } catch (error) {
+      console.error('[TestResults] Token resolution error:', error);
       return NextResponse.json(
-        {error: 'No Personal Access Token configured for this build'},
+        {error: 'Failed to resolve access token. Please check your token configuration.'},
         {status: 400}
       );
     }
@@ -268,7 +325,10 @@ export async function GET(
     // Fetch artifacts from GitHub
     const artifacts = await fetchArtifacts(token, build.organization, build.repository, runId);
 
+    console.log(`[TestResults] Found ${artifacts.length} total artifacts`);
+
     if (artifacts.length === 0) {
+      console.log(`[TestResults] No artifacts found, returning empty results`);
       return NextResponse.json({
         summary: {total: 0, passed: 0, failed: 0, skipped: 0},
         testCases: [],
@@ -281,7 +341,10 @@ export async function GET(
       artifact.name.toLowerCase().includes('test')
     );
 
+    console.log(`[TestResults] Found ${testArtifacts.length} test artifacts:`, testArtifacts.map((a: any) => a.name));
+
     if (testArtifacts.length === 0) {
+      console.log(`[TestResults] No test artifacts found`);
       return NextResponse.json({
         summary: {total: 0, passed: 0, failed: 0, skipped: 0},
         testCases: [],
@@ -305,9 +368,20 @@ export async function GET(
           // Try using existing parseJUnitXML utility first
           const junitStats = parseJUnitXML(xmlContent);
 
+          console.log(`[TestResults] parseJUnitXML returned:`, junitStats);
+
           if (junitStats) {
             // If parseJUnitXML works, extract detailed test cases
+            console.log(`[TestResults] Parsing detailed test cases from XML (length: ${xmlContent.length} chars)`);
             const testCases = parseTestCases(xmlContent);
+            console.log(`[TestResults] Extracted ${testCases.length} test cases`);
+
+            if (testCases.length > 0) {
+              console.log(`[TestResults] Sample test case:`, testCases[0]);
+            } else {
+              console.log(`[TestResults] No test cases extracted. XML preview:`, xmlContent.substring(0, 500));
+            }
+
             allTestCases.push(...testCases);
           }
         }
