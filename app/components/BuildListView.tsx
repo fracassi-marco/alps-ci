@@ -19,6 +19,7 @@ import {
 import type { Build, BuildStats, Selector } from '@/domain/models';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Tooltip } from './Tooltip';
+import { groupBuildsByLabel } from '@/domain/utils';
 import React from "react";
 
 interface BuildListViewProps {
@@ -43,6 +44,11 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
 
   // Memoize build IDs to prevent unnecessary effect triggers
   const buildIds = useMemo(() => builds.map(b => b.id).join(','), [builds]);
+
+  // Group builds by label
+  const groupedBuilds = useMemo(() => {
+    return groupBuildsByLabel(builds);
+  }, [builds]);
 
   const fetchStats = useCallback(async (build: Build) => {
     try {
@@ -300,33 +306,54 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Health
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  7-Day Stats
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Last Tag
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Last Run
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {builds.map((build) => {
+      <div className="space-y-8">
+        {Array.from(groupedBuilds.entries()).map(([labelKey, buildsInGroup]) => {
+          // Determine display label
+          const displayLabel = labelKey === '' ? 'Unlabeled' :
+            buildsInGroup[0]?.label || 'Unlabeled';
+
+          return (
+            <div key={labelKey || 'unlabeled'}>
+              {/* Group Header */}
+              <div className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-300 dark:border-gray-600 py-3 px-4 rounded-t-lg">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {displayLabel}
+                  </h2>
+                  <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    {buildsInGroup.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Builds Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-b-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          Health
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          7-Day Stats
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          Last Tag
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          Last Run
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {buildsInGroup.map((build) => {
                 const buildData = buildStatsMap.get(build.id);
                 const stats = buildData?.stats ?? null;
                 const error = buildData?.error ?? null;
@@ -690,13 +717,10 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
             </tbody>
           </table>
         </div>
-
-        {/* Empty State */}
-        {builds.length === 0 && (
-          <div className="px-6 py-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400">No builds to display</p>
-          </div>
-        )}
+      </div>
+    </div>
+          );
+        })}
       </div>
 
       {/* Delete Confirmation Dialog */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, UserPlus, LogOut, User, LayoutGrid, LayoutList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
@@ -12,6 +12,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import Button from './components/Button';
 import { InviteMemberModal } from './components/InviteMemberModal';
 import { useViewMode } from './hooks/useViewMode';
+import { groupBuildsByLabel } from '@/domain/utils';
 import type { Build } from '@/domain/models';
 
 export default function Home() {
@@ -235,6 +236,11 @@ export default function Home() {
     router.push('/auth/signin');
   };
 
+  // Group builds by label for grid view
+  const groupedBuilds = useMemo(() => {
+    return groupBuildsByLabel(builds);
+  }, [builds]);
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -345,18 +351,43 @@ export default function Home() {
 
       {/* Builds Display */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Grid View */}
+        {/* Grid View with Grouped Labels */}
         {viewMode === 'grid' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {builds.map((build) => (
-              <BuildCard
-                key={`${build.id}-${buildRefreshKeys[build.id] || 0}`}
-                build={build}
-                onEdit={handleEditBuild}
-                onDelete={handleDeleteClick}
-                onRefresh={handleRefresh}
-              />
-            ))}
+          <div className="space-y-8">
+            {Array.from(groupedBuilds.entries()).map(([labelKey, buildsInGroup]) => {
+              // Determine display label
+              const displayLabel = labelKey === '' ? 'Unlabeled' :
+                buildsInGroup[0]?.label || 'Unlabeled';
+
+              return (
+                <div key={labelKey || 'unlabeled'} className="space-y-4">
+                  {/* Group Header */}
+                  <div className="bg-gray-100 dark:bg-gray-800 border-b-2 border-gray-300 dark:border-gray-600 py-3 px-4 rounded-t-lg">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {displayLabel}
+                      </h2>
+                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {buildsInGroup.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Builds Grid */}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {buildsInGroup.map((build) => (
+                      <BuildCard
+                        key={`${build.id}-${buildRefreshKeys[build.id] || 0}`}
+                        build={build}
+                        onEdit={handleEditBuild}
+                        onDelete={handleDeleteClick}
+                        onRefresh={handleRefresh}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
