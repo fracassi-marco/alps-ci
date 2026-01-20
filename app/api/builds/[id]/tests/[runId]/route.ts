@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/infrastructure/auth-session';
-import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
-import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
-import { parseJUnitXML } from '@/infrastructure/junit-parser';
+import {NextResponse} from 'next/server';
+import {getCurrentUser} from '@/infrastructure/auth-session.ts';
+import {DatabaseBuildRepository} from '@/infrastructure/DatabaseBuildRepository.ts';
+import {DatabaseTenantMemberRepository} from '@/infrastructure/DatabaseTenantMemberRepository.ts';
+import {parseJUnitXML} from '@/infrastructure/junit-parser.ts';
 import JSZip from 'jszip';
-import { XMLParser } from 'fast-xml-parser';
+import {XMLParser} from 'fast-xml-parser';
 
 const buildRepository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
@@ -208,22 +208,22 @@ function parseTestCases(xmlContent: string): TestCase[] {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ buildId: string; runId: string }> }
+  {params}: { params: Promise<{ id: string; runId: string }> }
 ) {
   try {
     // Get current user
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json(
-        { error: 'Unauthorized. Please sign in.' },
-        { status: 401 }
+        {error: 'Unauthorized. Please sign in.'},
+        {status: 401}
       );
     }
 
-    const { buildId, runId } = await params;
+    const {id, runId} = await params;
 
     // Check cache first
-    const cachedResults = getCachedResults(buildId, runId);
+    const cachedResults = getCachedResults(id, runId);
     if (cachedResults) {
       return NextResponse.json(cachedResults);
     }
@@ -232,25 +232,25 @@ export async function GET(
     const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
     if (memberships.length === 0) {
       return NextResponse.json(
-        { error: 'No tenant membership found' },
-        { status: 404 }
+        {error: 'No tenant membership found'},
+        {status: 404}
       );
     }
 
     const membership = memberships[0];
     if (!membership) {
       return NextResponse.json(
-        { error: 'No tenant membership found' },
-        { status: 404 }
+        {error: 'No tenant membership found'},
+        {status: 404}
       );
     }
 
     // Fetch build and verify tenant ownership
-    const build = await buildRepository.findById(buildId, membership.tenantId);
+    const build = await buildRepository.findById(id, membership.tenantId);
     if (!build) {
       return NextResponse.json(
-        { error: 'Build not found or access denied' },
-        { status: 404 }
+        {error: 'Build not found or access denied'},
+        {status: 404}
       );
     }
 
@@ -258,8 +258,8 @@ export async function GET(
     const token = build.personalAccessToken;
     if (!token) {
       return NextResponse.json(
-        { error: 'No Personal Access Token configured for this build' },
-        { status: 400 }
+        {error: 'No Personal Access Token configured for this build'},
+        {status: 400}
       );
     }
 
@@ -270,7 +270,7 @@ export async function GET(
 
     if (artifacts.length === 0) {
       return NextResponse.json({
-        summary: { total: 0, passed: 0, failed: 0, skipped: 0 },
+        summary: {total: 0, passed: 0, failed: 0, skipped: 0},
         testCases: [],
         message: 'No artifacts found for this workflow run',
       });
@@ -283,7 +283,7 @@ export async function GET(
 
     if (testArtifacts.length === 0) {
       return NextResponse.json({
-        summary: { total: 0, passed: 0, failed: 0, skipped: 0 },
+        summary: {total: 0, passed: 0, failed: 0, skipped: 0},
         testCases: [],
         message: 'No test artifacts found for this workflow run',
       });
@@ -331,7 +331,7 @@ export async function GET(
     };
 
     // Cache the results
-    setCachedResults(buildId, runId, results);
+    setCachedResults(id, runId, results);
 
     console.log(
       `[TestResults] Parsed ${summary.total} test cases (${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped)`
@@ -344,25 +344,25 @@ export async function GET(
     if (error instanceof Error) {
       if (error.message.includes('Authentication failed')) {
         return NextResponse.json(
-          { error: error.message },
-          { status: 401 }
+          {error: error.message},
+          {status: 401}
         );
       }
       if (error.message.includes('not found')) {
         return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
+          {error: error.message},
+          {status: 404}
         );
       }
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        {error: error.message},
+        {status: 500}
       );
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch test results' },
-      { status: 500 }
+      {error: 'Failed to fetch test results'},
+      {status: 500}
     );
   }
 }
