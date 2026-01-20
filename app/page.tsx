@@ -31,6 +31,11 @@ export default function Home() {
   const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | null>(null);
   const [buildRefreshKeys, setBuildRefreshKeys] = useState<Record<string, number>>({});
 
+  // Group builds by label for grid view (must be before useEffect hooks)
+  const groupedBuilds = useMemo(() => {
+    return groupBuildsByLabel(builds);
+  }, [builds]);
+
   // Redirect to signin if not authenticated
   useEffect(() => {
     if (!isPending && !session) {
@@ -236,10 +241,6 @@ export default function Home() {
     router.push('/auth/signin');
   };
 
-  // Group builds by label for grid view
-  const groupedBuilds = useMemo(() => {
-    return groupBuildsByLabel(builds);
-  }, [builds]);
 
   if (loading) {
     return (

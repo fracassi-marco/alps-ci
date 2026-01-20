@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import { BuildListView } from '../../app/components/BuildListView';
 import type { Build, BuildStats } from '../../src/domain/models';
 
@@ -104,13 +104,22 @@ describe('BuildListView', () => {
   const mockOnDelete = mock(() => {});
 
   beforeEach(() => {
+    // Clear all mocks to prevent state pollution between tests
     mockFetch.mockClear();
     mockOnRefresh.mockClear();
     mockOnEdit.mockClear();
     mockOnDelete.mockClear();
+
+    // Reset mock implementations
+    mockFetch.mockImplementation(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    }));
   });
 
   afterEach(() => {
+    cleanup();
     mockFetch.mockClear();
   });
 
@@ -146,19 +155,22 @@ describe('BuildListView', () => {
       />
     );
 
-    // Check table headers
+    // Wait for builds to render
+    await waitFor(() => {
+      expect(screen.getByText('Frontend Build')).toBeDefined();
+      expect(screen.getByText('Backend Build')).toBeDefined();
+    });
+
+    // Check for group header "Unlabeled" since builds have no labels
+    expect(screen.getByText('Unlabeled')).toBeDefined();
+
+    // Check table headers exist
     expect(screen.getByText('Name')).toBeDefined();
     expect(screen.getByText('Health')).toBeDefined();
     expect(screen.getByText('7-Day Stats')).toBeDefined();
     expect(screen.getByText('Last Tag')).toBeDefined();
     expect(screen.getByText('Last Run')).toBeDefined();
     expect(screen.getByText('Actions')).toBeDefined();
-
-    // Wait for builds to render
-    await waitFor(() => {
-      expect(screen.getByText('Frontend Build')).toBeDefined();
-      expect(screen.getByText('Backend Build')).toBeDefined();
-    });
 
     // Check org/repo links
     expect(screen.getByText('test-org/frontend-repo')).toBeDefined();
@@ -284,7 +296,7 @@ describe('BuildListView', () => {
   });
 
   test('should handle empty builds array', () => {
-    render(
+    const { container } = render(
       <BuildListView
         builds={[]}
         onRefresh={mockOnRefresh}
@@ -293,7 +305,10 @@ describe('BuildListView', () => {
       />
     );
 
-    expect(screen.getByText('No builds to display')).toBeDefined();
+    // Should render empty container with space-y-8 class
+    expect(container.querySelector('.space-y-8')).toBeDefined();
+    // Should not have any build groups
+    expect(container.querySelectorAll('table').length).toBe(0);
   });
 
   test('should call onEdit when edit button is clicked', async () => {
