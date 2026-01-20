@@ -51,3 +51,7 @@ I have ssh and scp access to the server. Generate a deployment script.
 # Group by label
 I want to be able to give each build a label, and I want the build list in the UI to be grouped by label, with builds without labels last.
 Update the specifications in spec.md and generate prompts in prompt_plan.md
+
+# Test report
+When I click on the tests run, a new page opens with the details of the tests run, whether they passed or failed, the execution time, and any failure details.
+Update the specifications in spec.md and generate prompts in prompt_plan.md

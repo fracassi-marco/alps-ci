@@ -600,24 +600,143 @@ Prompt: Update the List View to display builds grouped by label. Show group head
 **Commit**: ✨ Display grouped builds in list view
 ```
 
-### 5.6. Update Tests and Documentation
+---
+
+## 6. Test Results Detail Page
+
+### 6.1. Create API Endpoint for Test Results
 ```
-Prompt: Update all existing tests to handle the new label field. Add tests for grouping logic and UI rendering of grouped builds. Update documentation to reflect the new grouping feature.
+Prompt: Create an API endpoint to fetch and parse test results from GitHub workflow run artifacts.
 
 **Implementation**:
-- Update unit tests for Build model to include label field
-- Add tests for `groupBuildsByLabel()` utility function
-- Update integration tests for API endpoints (test label CRUD)
-- Update component tests for BuildCard, BuildListView to handle label
-- Update E2E tests to test adding builds with labels
-- Update `spec.md` with grouping behavior (already done)
-- Add example screenshots or descriptions if needed
+- Create `app/api/builds/[buildId]/tests/[runId]/route.ts`
+- Accept buildId and runId as parameters
+- Authenticate user and verify tenant membership
+- Fetch build from database to get organization and repository
+- Use GitHub API to fetch workflow run artifacts
+- Download artifacts containing `*test*.xml` pattern
+- Unzip and extract XML files
+- Use existing `parseJUnitXML` utility to parse test cases
+- Return structured data: { summary: { total, passed, failed, skipped }, testCases: [...] }
+- Each test case: { name, suite, status, duration, errorMessage?, stackTrace? }
+- Handle errors: no artifacts, download failure, parsing errors
+- Cache results for 1 hour using same caching infrastructure
 
-**Commit**: ✅ Update tests for label grouping feature
+**Commit**: ✨ Add test results API endpoint
+```
+
+### 6.2. Create Test Results Page UI
+```
+Prompt: Create a page to display detailed test results for a workflow run.
+
+**Implementation**:
+- Create `app/builds/[buildId]/tests/[runId]/page.tsx`
+- Protect route with authentication middleware
+- Fetch test results from API endpoint
+- Show loading state while fetching
+- Display header with:
+  - Build name
+  - Workflow run name  
+  - Run date/time formatted
+  - Duration
+  - Back to dashboard link (using router.back() or explicit link)
+- Display summary cards:
+  - Total tests (blue)
+  - Passed tests (green)
+  - Failed tests (red)
+  - Skipped tests (yellow)
+  - Success rate with percentage badge
+- Use responsive grid layout for summary cards
+- Add spacing and proper styling with TailwindCSS
+- Handle error states (no data, fetch failure)
+
+**Commit**: ✨ Add test results detail page layout
+```
+
+### 6.3. Add Test Results Table with Filtering
+```
+Prompt: Add an interactive table to display individual test cases with filtering and sorting.
+
+**Implementation**:
+- Create table component in test results page
+- Columns: Status Icon, Test Name, Test Suite, Duration, Actions
+- Status icons using Lucide: CheckCircle (green), XCircle (red), MinusCircle (yellow for skipped)
+- Add filter buttons above table: All / Passed / Failed / Skipped
+- Implement client-side filtering based on selected filter
+- Show active filter with highlight styling
+- Add sort controls for Name and Duration columns
+- Format duration in human-readable format (e.g., "1.2s", "450ms")
+- Truncate long test names with ellipsis and tooltip on hover
+- Empty state when no tests match filter
+- Responsive table with horizontal scroll on mobile
+
+**Commit**: ✨ Add test results table with filtering
+```
+
+### 6.4. Add Expandable Failed Test Details
+```
+Prompt: Implement expandable rows for failed tests to show error details and stack traces.
+
+**Implementation**:
+- Add expand/collapse icon to Actions column for failed tests
+- Use ChevronDown/ChevronUp icons from Lucide
+- Implement expand state using React useState
+- When expanded, show additional row with:
+  - Full error message (if available)
+  - Stack trace in monospace font with proper formatting
+  - Wrap in code block with syntax highlighting if possible
+  - Max height with scroll for long traces
+- Collapse button to hide details
+- Smooth expand/collapse animation
+- Style expanded section with light background
+- Handle tests without error messages gracefully
+
+**Commit**: ✨ Add expandable error details for failed tests
+```
+
+### 6.5. Link Build Card Test Stats to Detail Page
+```
+Prompt: Make the test statistics section in Build cards clickable to navigate to the test results detail page.
+
+**Implementation**:
+- Update BuildCard component
+- Find test statistics section (shows "X / Y / Z" format)
+- Wrap in clickable element (button or link)
+- Add onClick handler that navigates to `/builds/[buildId]/tests/[lastRunId]`
+- Use Next.js router.push() for navigation
+- Add hover state and cursor pointer
+- Add title/tooltip: "View test results details"
+- Only make clickable if test stats exist
+- Style to indicate it's clickable (subtle underline or highlight on hover)
+- Also update BuildListView component similarly
+
+**Commit**: ✨ Link test stats to detail page
+```
+
+### 6.6. Add Test Results Caching and Error Handling
+```
+Prompt: Implement proper caching and comprehensive error handling for test results.
+
+**Implementation**:
+- Cache parsed test results in memory for 1 hour
+- Cache key: `test-results:${buildId}:${runId}`
+- Add retry button on API errors
+- Handle missing artifacts gracefully:
+  - Show message: "No test results available for this workflow run"
+  - Suggest checking if test results are being uploaded as artifacts
+- Handle XML parsing errors:
+  - Show error message
+  - Offer to download raw XML file
+- Handle GitHub API rate limiting
+- Show appropriate error messages for 401, 403, 404 errors
+- Add loading skeleton for better UX
+- Test error scenarios and add unit tests
+
+**Commit**: ✨ Add caching and error handling for test results
 ```
 
 ---
-
+    
 # Review & Iteration
 
 - Each step is small, testable, and builds on the previous.

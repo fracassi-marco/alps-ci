@@ -408,7 +408,74 @@ Owners and admins can save GitHub PATs centrally for their organization. PATs ar
 ### Build Storage & Access Control
 - **Persistence**: Builds are stored in the application database (not JSON files). Each create/edit/delete operation must go through the database layer.
 - **Tenant Association**: Every Build row references its owning tenant/organization (foreign key).
-- **Visibility**: Only members of a tenant can view, edit, delete, or fetch statistics for that tenant’s builds.
-- **Queries**: All build list/detail/statistics queries must filter by the current user’s tenant ID.
+- **Visibility**: Only members of a tenant can view, edit, delete, or fetch statistics for that tenant's builds.
+- **Queries**: All build list/detail/statistics queries must filter by the current user's tenant ID.
 - **Migrations**: Provide schema migrations for the builds table (with tenant_id FK) and any related indexes.
 - **Legacy JSON**: JSON config persistence is deprecated; repository implementations should read/write from the database only.
+
+### Test Results Detail Page
+
+#### Overview
+When users click on test statistics in a Build card (e.g., "25 / 23 / 2" showing total/passed/failed tests), they are navigated to a dedicated page that displays detailed test results from the JUnit XML artifacts.
+
+#### Navigation
+- **Trigger**: Click on test stats section in Build card
+- **URL**: `/builds/[buildId]/tests/[runId]`
+- **Target**: Opens in current window (not new tab)
+- **Breadcrumb**: Show navigation back to dashboard
+
+#### Page Layout
+**Header**:
+- Build name
+- Workflow run name
+- Run date and time
+- Duration
+- Link back to dashboard
+
+**Summary Section**:
+- Total tests
+- Passed tests (green)
+- Failed tests (red)
+- Skipped tests (yellow)
+- Success rate percentage with visual indicator
+
+**Test Results Table**:
+- Columns: Status (icon), Test Name, Test Suite, Duration, Error Message (if failed)
+- Sortable by: Status, Name, Duration
+- Filterable by: All / Passed / Failed / Skipped
+- Color-coded status indicators
+- Expandable rows for failed tests to show full error details and stack trace
+
+**Failure Details** (for failed tests):
+- Full error message
+- Stack trace (formatted and syntax-highlighted if possible)
+- File and line number (if available in XML)
+
+#### Data Source
+- Fetch workflow run artifacts from GitHub API
+- Download and unzip artifacts containing `*test*.xml` files
+- Parse JUnit XML using existing `parseJUnitXML` utility
+- Display parsed test case details
+
+#### Error Handling
+- If no test artifacts found: Show message "No test results available for this run"
+- If artifact download fails: Show error with retry button
+- If XML parsing fails: Show raw error and allow download of XML file
+
+#### Permissions
+- Only authenticated users
+- Only members of the build's tenant can access
+- Return 403 if user doesn't belong to the build's tenant
+
+#### API Endpoints
+- `GET /api/builds/[buildId]/tests/[runId]`: Fetch and parse test results
+  - Downloads artifacts from GitHub
+  - Extracts and parses XML files
+  - Returns structured test case data
+  - Caches results for 1 hour
+
+#### Performance
+- Cache parsed test results to avoid repeated GitHub API calls
+- Show loading state while fetching/parsing
+- Lazy load full stack traces for failed tests
+
