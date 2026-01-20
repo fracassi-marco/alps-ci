@@ -735,6 +735,62 @@ Prompt: Implement proper caching and comprehensive error handling for test resul
 **Commit**: ✨ Add caching and error handling for test results
 ```
 
+### 6.7. Add Accordion for Test Suite Details
+```
+Prompt: Replace the flat test results table with an accordion-based layout where each test suite file can be expanded to show individual test details.
+
+**Implementation**:
+- **Test Suite Rows** (collapsed state):
+  - Display test suite file name (e.g., `__tests__/components/BuildCard.test.tsx`)
+  - Show aggregate status icon (green if all passed, red if any failed, yellow if any skipped)
+  - Display total test count for the suite (e.g., "18 tests")
+  - Show aggregate duration for all tests in suite
+  - Add expand/collapse icon (ChevronDown when collapsed, ChevronUp when expanded)
+  - Make entire row clickable to toggle expansion
+  - Apply hover state styling
+
+- **Test Suite Rows** (expanded state):
+  - Keep the suite header row visible with ChevronUp icon
+  - Below the header, show a nested table or list of individual tests
+  - Each test shows:
+    - Status icon (CheckCircle green, XCircle red, MinusCircle yellow)
+    - Test name
+    - Duration (formatted: "1.2s", "450ms", etc.)
+    - For failed tests: error message preview
+  - Add padding/indentation to visually show nesting
+  - Light background color to distinguish from suite header
+
+- **Expandable Error Details** (for failed tests within suite):
+  - Add another level of expansion for failed tests
+  - Click on failed test row to show full error message and stack trace
+  - Format stack trace in monospace font
+  - Syntax highlight if possible
+  - Add scroll for long stack traces
+
+- **State Management**:
+  - Use React useState to track which suites are expanded
+  - Store as Set of suite IDs or suite names
+  - Persist expanded state during filter/sort operations
+  - Default: all suites collapsed
+
+- **Filtering & Sorting**:
+  - Apply filters at both suite and individual test level
+  - If a suite has no matching tests after filtering, hide it
+  - Sort suites alphabetically by default
+  - Within expanded suite, sort tests by status (failed first, then skipped, then passed)
+
+- **Empty States**:
+  - If suite has no individual test data (Bun XML format), show message: "Individual test details not available in this format"
+  - Still show suite-level statistics
+
+- **Responsive Design**:
+  - Ensure accordion works well on mobile
+  - Use appropriate touch targets for expand/collapse
+  - Consider collapsing all suites by default on mobile
+
+**Commit**: ✨ Add accordion layout for test suite details
+```
+
 ---
     
 # Review & Iteration

@@ -444,7 +444,22 @@ When users click on test statistics in a Build card (e.g., "25 / 23 / 2" showing
 - Sortable by: Status, Name, Duration
 - Filterable by: All / Passed / Failed / Skipped
 - Color-coded status indicators
-- Expandable rows for failed tests to show full error details and stack trace
+- **Accordion for Test Suites**: Each test suite file (e.g., `__tests__/components/BuildCard.test.tsx`) is displayed as a collapsible accordion row
+  - **Collapsed state**: Shows suite name, overall status, total test count, and aggregate duration
+  - **Expanded state**: Shows all individual tests within that suite with full details
+  - Click to toggle between collapsed/expanded
+  - Expand icon changes (ChevronDown/ChevronUp) based on state
+- **Individual Test Details** (within expanded accordion):
+  - Test name
+  - Status icon (CheckCircle/XCircle/MinusCircle)
+  - Duration
+  - Error message and stack trace for failed tests
+  - Formatted and syntax-highlighted stack traces
+
+**Bun JUnit XML Compatibility**:
+- Handles Bun's JUnit XML format which only provides suite-level statistics
+- When individual test cases are not available in XML, displays suite-level summary
+- When test runner provides individual test case details, shows full granular data
 
 **Failure Details** (for failed tests):
 - Full error message
