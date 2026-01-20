@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle, XCircle, MinusCircle, Clock, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  MinusCircle,
+  Clock,
+  AlertCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { useSession } from '@/infrastructure/auth-client';
 import Button from '../../../../components/Button';
 
@@ -48,6 +58,9 @@ export default function TestResultsPage({
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'passed' | 'failed' | 'skipped'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'duration' | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -141,6 +154,71 @@ export default function TestResultsPage({
       minute: '2-digit',
     }).format(date);
   };
+
+  // Format test duration
+  const formatTestDuration = (seconds: number): string => {
+    if (seconds < 0.001) return '< 1ms';
+    if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+    if (seconds < 10) return `${seconds.toFixed(2)}s`;
+    return `${seconds.toFixed(1)}s`;
+  };
+
+  // Filter test cases
+  const getFilteredTests = (): TestCase[] => {
+    if (!testResults) return [];
+
+    let filtered = testResults.testCases;
+
+    if (filter !== 'all') {
+      filtered = filtered.filter((test) => test.status === filter);
+    }
+
+    return filtered;
+  };
+
+  // Sort test cases
+  const getSortedTests = (): TestCase[] => {
+    const filtered = getFilteredTests();
+
+    if (!sortBy) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'duration') {
+        comparison = a.duration - b.duration;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  };
+
+  // Handle sort
+  const handleSort = (column: 'name' | 'duration') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
+
+  // Get filter counts
+  const getFilterCounts = () => {
+    if (!testResults) return { all: 0, passed: 0, failed: 0, skipped: 0 };
+
+    return {
+      all: testResults.testCases.length,
+      passed: testResults.summary.passed,
+      failed: testResults.summary.failed,
+      skipped: testResults.summary.skipped,
+    };
+  };
+
+  const filterCounts = getFilterCounts();
+  const displayedTests = getSortedTests();
 
   if (isPending || !session) {
     return (
@@ -342,14 +420,162 @@ export default function TestResultsPage({
                   </div>
                 </div>
 
-                {/* Test Cases Table - Placeholder for next step */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Test Cases ({testResults.testCases.length})
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Test cases table will be implemented in the next step.
-                  </p>
+                {/* Test Cases Table */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  {/* Header and Filters */}
+                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Test Cases ({displayedTests.length})
+                    </h2>
+
+                    {/* Filter Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setFilter('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          filter === 'all'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        All ({filterCounts.all})
+                      </button>
+                      <button
+                        onClick={() => setFilter('passed')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          filter === 'passed'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Passed ({filterCounts.passed})
+                      </button>
+                      <button
+                        onClick={() => setFilter('failed')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          filter === 'failed'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Failed ({filterCounts.failed})
+                      </button>
+                      <button
+                        onClick={() => setFilter('skipped')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          filter === 'skipped'
+                            ? 'bg-yellow-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Skipped ({filterCounts.skipped})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  {displayedTests.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                              <button
+                                onClick={() => handleSort('name')}
+                                className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              >
+                                Test Name
+                                {sortBy === 'name' ? (
+                                  sortOrder === 'asc' ? (
+                                    <ArrowUp className="w-4 h-4" />
+                                  ) : (
+                                    <ArrowDown className="w-4 h-4" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown className="w-4 h-4 opacity-50" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                              Test Suite
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                              <button
+                                onClick={() => handleSort('duration')}
+                                className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              >
+                                Duration
+                                {sortBy === 'duration' ? (
+                                  sortOrder === 'asc' ? (
+                                    <ArrowUp className="w-4 h-4" />
+                                  ) : (
+                                    <ArrowDown className="w-4 h-4" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown className="w-4 h-4 opacity-50" />
+                                )}
+                              </button>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {displayedTests.map((testCase, index) => (
+                            <tr
+                              key={`${testCase.suite}-${testCase.name}-${index}`}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
+                              {/* Status Icon */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {testCase.status === 'passed' ? (
+                                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                ) : testCase.status === 'failed' ? (
+                                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                ) : (
+                                  <MinusCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                )}
+                              </td>
+
+                              {/* Test Name */}
+                              <td className="px-6 py-4">
+                                <div
+                                  className="text-sm text-gray-900 dark:text-white truncate max-w-md"
+                                  title={testCase.name}
+                                >
+                                  {testCase.name}
+                                </div>
+                              </td>
+
+                              {/* Test Suite */}
+                              <td className="px-6 py-4">
+                                <div
+                                  className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs"
+                                  title={testCase.suite}
+                                >
+                                  {testCase.suite}
+                                </div>
+                              </td>
+
+                              {/* Duration */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-sm text-gray-900 dark:text-white font-mono">
+                                  {formatTestDuration(testCase.duration)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="px-6 py-12 text-center">
+                      <p className="text-gray-500 dark:text-gray-400">
+                        No tests match the selected filter
+                      </p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
