@@ -115,6 +115,7 @@ export const builds = sqliteTable('builds', {
   accessTokenId: text('access_token_id').references(() => accessTokens.id, { onDelete: 'set null' }),
   personalAccessToken: text('personal_access_token'),
   cacheExpirationMinutes: integer('cache_expiration_minutes').notNull(),
+  label: text('label'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
@@ -122,6 +123,7 @@ export const builds = sqliteTable('builds', {
   organizationIdx: index('idx_builds_organization').on(table.organization),
   repositoryIdx: index('idx_builds_repository').on(table.repository),
   accessTokenIdIdx: index('idx_builds_access_token_id').on(table.accessTokenId),
+  labelIdx: index('idx_builds_label').on(table.label),
   uniqueTenantName: uniqueIndex('idx_builds_unique').on(table.tenantId, table.name),
 }));
 

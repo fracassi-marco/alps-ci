@@ -268,6 +268,40 @@ describe('Validation - Build', () => {
       expect(() => validateBuild(build)).toThrow(ValidationError);
     });
   });
+
+  describe('Label validation', () => {
+    test('should accept valid label', () => {
+      const build = { ...validBuild, label: 'Production' };
+      expect(() => validateBuild(build)).not.toThrow();
+    });
+
+    test('should accept null label', () => {
+      const build = { ...validBuild, label: null };
+      expect(() => validateBuild(build)).not.toThrow();
+    });
+
+    test('should accept undefined label (optional field)', () => {
+      const build = { ...validBuild, label: undefined };
+      expect(() => validateBuild(build)).not.toThrow();
+    });
+
+    test('should throw error for label exceeding max length', () => {
+      const build = { ...validBuild, label: 'a'.repeat(51) };
+      expect(() => validateBuild(build)).toThrow(ValidationError);
+      expect(() => validateBuild(build)).toThrow('must not exceed 50 characters');
+    });
+
+    test('should accept label with exactly 50 characters', () => {
+      const build = { ...validBuild, label: 'a'.repeat(50) };
+      expect(() => validateBuild(build)).not.toThrow();
+    });
+
+    test('should throw error for non-string label', () => {
+      const build = { ...validBuild, label: 123 as any };
+      expect(() => validateBuild(build)).toThrow(ValidationError);
+      expect(() => validateBuild(build)).toThrow('Label must be a string');
+    });
+  });
 });
 
 describe('Validation - Sanitize Build', () => {
@@ -311,6 +345,47 @@ describe('Validation - Sanitize Build', () => {
     const sanitized = sanitizeBuild(build);
     expect(sanitized.selectors?.[0]?.type).toBe('tag');
     expect(sanitized.selectors?.[1]?.type).toBe('branch');
+  });
+
+  test('should trim and truncate label to max length', () => {
+    const build: Partial<Build> = {
+      name: 'Test',
+      label: '  Production Environment  ',
+    };
+
+    const sanitized = sanitizeBuild(build);
+    expect(sanitized.label).toBe('Production Environment');
+  });
+
+  test('should set empty label to null', () => {
+    const build: Partial<Build> = {
+      name: 'Test',
+      label: '   ',
+    };
+
+    const sanitized = sanitizeBuild(build);
+    expect(sanitized.label).toBeNull();
+  });
+
+  test('should truncate label exceeding max length', () => {
+    const longLabel = 'a'.repeat(60);
+    const build: Partial<Build> = {
+      name: 'Test',
+      label: longLabel,
+    };
+
+    const sanitized = sanitizeBuild(build);
+    expect(sanitized.label?.length).toBe(50);
+  });
+
+  test('should preserve null label', () => {
+    const build: Partial<Build> = {
+      name: 'Test',
+      label: null,
+    };
+
+    const sanitized = sanitizeBuild(build);
+    expect(sanitized.label).toBeNull();
   });
 });
 

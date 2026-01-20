@@ -149,6 +149,7 @@ describe('Utils - Create Build', () => {
     selectors,
     personalAccessToken: 'token123',
     cacheExpirationMinutes: 60,
+    accessTokenId: 'ignore',
   };
 
   test('should create a build with generated ID', () => {
@@ -203,6 +204,7 @@ describe('Utils - Update Build Timestamp', () => {
       cacheExpirationMinutes: 60,
       createdAt: originalDate,
       updatedAt: originalDate,
+      accessTokenId: 'ignore',
     };
 
     const updated = updateBuildTimestamp(build);
@@ -223,6 +225,7 @@ describe('Utils - Update Build Timestamp', () => {
       cacheExpirationMinutes: 60,
       createdAt: new Date(),
       updatedAt: new Date(),
+      accessTokenId: 'ignore',
     };
 
     const updated = updateBuildTimestamp(build);

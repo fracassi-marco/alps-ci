@@ -80,9 +80,10 @@ export interface Build {
   name: string;
   organization: string;
   repository: string;
+  label?: string | null;
   selectors: Selector[];
-  accessTokenId?: string | null; // Reference to saved access token
-  personalAccessToken?: string | null; // Inline token (deprecated, use accessTokenId instead)
+  accessTokenId: string | null;
+  personalAccessToken: string | null;
   cacheExpirationMinutes: number;
   createdAt: Date;
   updatedAt: Date;

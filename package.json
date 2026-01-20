@@ -17,11 +17,8 @@
     "test:e2e:debug": "playwright test --debug",
     "auth:generate-secret": "bun run scripts/generate-auth-secret.ts",
     "db:generate": "bun run scripts/drizzle.ts generate",
-    "db:migrate": "bun run scripts/drizzle.ts migrate",
-    "db:push": "bun run scripts/drizzle.ts push",
-    "db:studio": "bun run scripts/drizzle.ts studio",
-    "db:seed": "bun run scripts/seed-db.ts",
-    "db:test": "bun run scripts/test-db.ts"
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:push": "bun run scripts/drizzle.ts push"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",

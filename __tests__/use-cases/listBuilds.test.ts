@@ -16,6 +16,7 @@ describe('ListBuildsUseCase', () => {
     selectors: [{ type: 'branch', pattern: 'main' }],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    accessTokenId: 'ignore',
   };
 
   const mockBuild2: Build = {
@@ -29,6 +30,7 @@ describe('ListBuildsUseCase', () => {
     selectors: [{ type: 'tag', pattern: 'v*' }],
     createdAt: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-02'),
+    accessTokenId: 'ignore',
   };
 
   it('should return all builds from repository for tenant', async () => {

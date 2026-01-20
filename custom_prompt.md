@@ -43,3 +43,11 @@ To avoid wasting tokens at the end of the prompt do not generate the summary of 
 
 # Button
 They're starting to have a design system. Extract the button component with all its variations and use it consistently across the various points.
+
+# Deploy
+I want to deploy the application on a VPS that already has bun installed.
+I have ssh and scp access to the server. Generate a deployment script.
+
+# Group by label
+I want to be able to give each build a label, and I want the build list in the UI to be grouped by label, with builds without labels last.
+Update the specifications in spec.md and generate prompts in prompt_plan.md

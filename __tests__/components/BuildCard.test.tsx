@@ -26,6 +26,7 @@ describe('BuildCard - Inactive Health Label', () => {
     cacheExpirationMinutes: 60,
     createdAt: new Date('2025-01-01T00:00:00Z'),
     updatedAt: new Date('2025-01-01T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockStatsWithExecutions: BuildStats = {
@@ -249,6 +250,7 @@ describe('BuildCard - Clickable Repository Link', () => {
     cacheExpirationMinutes: 60,
     createdAt: new Date('2025-01-01T00:00:00Z'),
     updatedAt: new Date('2025-01-01T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockStats: BuildStats = {
@@ -395,6 +397,7 @@ describe('BuildCard - Commits and Contributors Statistics', () => {
     cacheExpirationMinutes: 60,
     createdAt: new Date('2025-01-01T00:00:00Z'),
     updatedAt: new Date('2025-01-01T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockStats: BuildStats = {
@@ -604,6 +607,7 @@ describe('BuildCard - Last Commit Details', () => {
     cacheExpirationMinutes: 60,
     createdAt: new Date('2025-01-01T00:00:00Z'),
     updatedAt: new Date('2025-01-01T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockStats: BuildStats = {

@@ -44,6 +44,7 @@ export class AddBuildUseCase {
       name: sanitized.name!,
       organization: sanitized.organization!,
       repository: sanitized.repository!,
+      label: sanitized.label || null,
       selectors: sanitized.selectors!,
       accessTokenId: sanitized.accessTokenId || null,
       personalAccessToken: sanitized.personalAccessToken || null,
@@ -53,4 +54,3 @@ export class AddBuildUseCase {
     return await this.repository.create(buildToAdd, tenantId);
   }
 }
-

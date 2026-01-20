@@ -20,6 +20,7 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
     name: build?.name || '',
     organization: build?.organization || '',
     repository: build?.repository || '',
+    label: build?.label || '',
     accessTokenId: build?.accessTokenId || '',
     personalAccessToken: build?.personalAccessToken || '',
     tokenName: '', // Name for saving inline token to organization
@@ -145,6 +146,7 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
         name: formData.name.trim(),
         organization: formData.organization.trim(),
         repository: formData.repository.trim(),
+        label: formData.label.trim() || null,
         selectors: selectors.map((s) => ({
           type: s.type,
           pattern: s.pattern.trim(),
@@ -255,6 +257,30 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               GitHub repository name
             </p>
+          </div>
+
+          {/* Label */}
+          <div>
+            <label htmlFor="label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Label
+            </label>
+            <input
+              type="text"
+              id="label"
+              value={formData.label}
+              onChange={(e) => handleInputChange('label', e.target.value)}
+              maxLength={50}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              placeholder="e.g., Production, Staging, Development"
+            />
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Optional label to categorize this build
+              </p>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formData.label.length}/50
+              </span>
+            </div>
           </div>
 
           {/* Selectors */}

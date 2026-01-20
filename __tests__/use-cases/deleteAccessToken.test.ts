@@ -108,6 +108,7 @@ describe('DeleteAccessTokenUseCase', () => {
           cacheExpirationMinutes: 60,
           createdAt: new Date(),
           updatedAt: new Date(),
+          accessTokenId: 'ignore',
         },
         {
           id: 'build-2',
@@ -120,6 +121,7 @@ describe('DeleteAccessTokenUseCase', () => {
           cacheExpirationMinutes: 60,
           createdAt: new Date(),
           updatedAt: new Date(),
+          accessTokenId: 'ignore',
         },
       ];
 

@@ -46,6 +46,7 @@ export class DatabaseBuildRepository implements BuildRepository {
         name: build.name,
         organization: build.organization,
         repository: build.repository,
+        label: build.label || null,
         selectors: JSON.stringify(build.selectors),
         accessTokenId: build.accessTokenId || null,
         personalAccessToken: build.personalAccessToken || null,
@@ -67,6 +68,7 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.organization !== undefined) updateData.organization = updates.organization;
     if (updates.repository !== undefined) updateData.repository = updates.repository;
+    if (updates.label !== undefined) updateData.label = updates.label;
     if (updates.selectors !== undefined) updateData.selectors = JSON.stringify(updates.selectors);
     if (updates.accessTokenId !== undefined) updateData.accessTokenId = updates.accessTokenId;
     if (updates.personalAccessToken !== undefined) updateData.personalAccessToken = updates.personalAccessToken;
@@ -147,6 +149,7 @@ export class DatabaseBuildRepository implements BuildRepository {
       name: row.name,
       organization: row.organization,
       repository: row.repository,
+      label: row.label || null,
       selectors,
       accessTokenId: row.accessTokenId || null,
       personalAccessToken: row.personalAccessToken || null,

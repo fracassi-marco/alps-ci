@@ -26,6 +26,7 @@ describe('BuildListView', () => {
     cacheExpirationMinutes: 60,
     createdAt: new Date('2025-01-01T00:00:00Z'),
     updatedAt: new Date('2025-01-01T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockBuild2: Build = {
@@ -41,6 +42,7 @@ describe('BuildListView', () => {
     cacheExpirationMinutes: 30,
     createdAt: new Date('2025-01-02T00:00:00Z'),
     updatedAt: new Date('2025-01-02T00:00:00Z'),
+    accessTokenId: 'ignore',
   };
 
   const mockStats1: BuildStats = {

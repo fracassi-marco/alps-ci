@@ -21,7 +21,7 @@ export default isPostgres
       schema: './src/infrastructure/database/schema-sqlite.ts',
       out: './src/infrastructure/database/migrations',
       dbCredentials: {
-        url: databaseUrl.replace('file:', ''),
+        url: databaseUrl/*.replace('file:', '')*/,
       },
       verbose: true,
       strict: true,

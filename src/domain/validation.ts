@@ -12,6 +12,9 @@ export class ValidationError extends Error {
 export const CACHE_EXPIRATION_MIN = 1; // 1 minute
 export const CACHE_EXPIRATION_MAX = 1440; // 1 day (24 hours)
 
+// Label constraints
+export const LABEL_MAX_LENGTH = 50;
+
 // Selector validation
 export function validateSelectorType(type: string): type is SelectorType {
   return ['tag', 'branch', 'workflow'].includes(type);
@@ -131,6 +134,17 @@ export function validateBuild(build: Partial<Build>): void {
   }
 
   validateCacheExpiration(build.cacheExpirationMinutes);
+
+  // Label validation (optional field)
+  if (build.label !== undefined && build.label !== null) {
+    if (typeof build.label !== 'string') {
+      throw new ValidationError('Label must be a string');
+    }
+
+    if (build.label.trim().length > LABEL_MAX_LENGTH) {
+      throw new ValidationError(`Label must not exceed ${LABEL_MAX_LENGTH} characters`);
+    }
+  }
 }
 
 // Sanitize build input
@@ -152,6 +166,12 @@ export function sanitizeBuild(build: Partial<Build>): Partial<Build> {
   }
   if ('personalAccessToken' in build) {
     sanitized.personalAccessToken = build.personalAccessToken?.trim() || null;
+  }
+
+  // Sanitize label: trim whitespace and set to null if empty
+  if (build.label !== undefined) {
+    const trimmed = build.label?.trim();
+    sanitized.label = trimmed && trimmed.length > 0 ? trimmed.slice(0, 50) : null;
   }
 
   return sanitized;

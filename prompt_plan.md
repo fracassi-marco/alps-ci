@@ -507,6 +507,117 @@ Prompt: Display the number of tests in the last run and the number of failed tes
 ```
 ---
 
+## 5. Build Label Grouping
+
+### 5.1. Add Label Field to Build Model
+```
+Prompt: Add an optional `label` field to the Build interface in the domain models. Update the database schema to include a `label` column (nullable string) in the builds table. Create and run a migration to add this column. Update the Build validation logic to accept and sanitize the label field (trim whitespace, max length 50 characters).
+
+**Implementation**:
+- Update `src/domain/models.ts`: Add `label?: string | null` to Build interface
+- Update database schema in `src/infrastructure/database/schema.ts`
+- Create migration file to add `label` column to builds table
+- Update validation in `src/domain/validation.ts` to handle label field
+- Write unit tests for label validation (max length, whitespace trimming)
+
+**Commit**: ✨ Add label field to Build model
+```
+
+### 5.2. Update Build Form to Include Label Field
+```
+Prompt: Add a label input field to the Add/Edit Build form. The field should be optional with placeholder text "e.g., Production, Staging, Development". Display it after the repository name field and before selectors. Include validation for max length (50 chars) and show character count. Update the API endpoints to accept and save the label field.
+
+**Implementation**:
+- Update `app/components/AddEditBuildForm.tsx`: Add label input field
+- Add character counter below input (e.g., "25/50")
+- Update form validation to enforce max length
+- Update API routes (`/api/builds` POST/PATCH) to handle label field
+- Update use-cases (`addBuild.ts`, `editBuild.ts`) to accept label
+- Update database repository to save/update label field
+- Write unit tests for label field handling in use-cases
+
+**Commit**: ✨ Add label field to build form
+```
+
+### 5.3. Implement Build Grouping Logic
+```
+Prompt: Implement grouping logic for builds by label. Create a utility function that takes an array of builds and returns them grouped by label, with groups sorted alphabetically and unlabeled builds last. Within each group, builds should be sorted by name.
+
+**Implementation**:
+- Create `src/domain/utils.ts` function: `groupBuildsByLabel(builds: Build[]): Map<string, Build[]>`
+- Logic:
+  - Group builds by label (case-insensitive)
+  - Sort groups alphabetically by label name
+  - Place unlabeled builds (null/empty label) in last group with key ""
+  - Sort builds within each group by name
+- Return Map<string, Build[]> where key is label and value is array of builds
+- Write comprehensive unit tests covering:
+  - Multiple labeled groups
+  - Unlabeled builds
+  - Mixed labeled and unlabeled
+  - Empty builds array
+  - Single group
+  - Case-insensitive grouping
+
+**Commit**: ✨ Add build grouping by label logic
+```
+
+### 5.4. Update Grid View to Display Grouped Builds
+```
+Prompt: Update the Grid View to display builds grouped by label. Show group headers with label name and build count. Style group headers distinctly (larger text, background color, border). Unlabeled builds should appear last under "Unlabeled" or "No Label" header.
+
+**Implementation**:
+- Update `app/page.tsx` (dashboard): Use `groupBuildsByLabel()` to group builds
+- Render groups in order (labeled groups alphabetically, then unlabeled)
+- Add group header component with:
+  - Label name (or "Unlabeled" for empty label)
+  - Build count badge (e.g., "(3)")
+  - Styling: bg-gray-100 dark:bg-gray-800, border-b, py-2, px-4
+  - Text: font-semibold, text-lg
+- Grid of builds below each header
+- Maintain existing responsive grid layout within groups
+- Update empty state handling
+
+**Commit**: ✨ Display grouped builds in grid view
+```
+
+### 5.5. Update List View to Display Grouped Builds
+```
+Prompt: Update the List View to display builds grouped by label. Show group headers before each group of builds in the table. Use table section styling to separate groups visually.
+
+**Implementation**:
+- Update `app/components/BuildListView.tsx`: Use `groupBuildsByLabel()` to group builds
+- Render groups in order (labeled groups alphabetically, then unlabeled)
+- Add group header rows in table:
+  - Use `<tr>` with special styling
+  - Colspan to span all columns
+  - Show label name and count
+  - Styling: bg-gray-100 dark:bg-gray-800, font-semibold
+- Maintain existing table structure within groups
+- Update sorting to respect grouping
+- Handle empty groups gracefully
+
+**Commit**: ✨ Display grouped builds in list view
+```
+
+### 5.6. Update Tests and Documentation
+```
+Prompt: Update all existing tests to handle the new label field. Add tests for grouping logic and UI rendering of grouped builds. Update documentation to reflect the new grouping feature.
+
+**Implementation**:
+- Update unit tests for Build model to include label field
+- Add tests for `groupBuildsByLabel()` utility function
+- Update integration tests for API endpoints (test label CRUD)
+- Update component tests for BuildCard, BuildListView to handle label
+- Update E2E tests to test adding builds with labels
+- Update `spec.md` with grouping behavior (already done)
+- Add example screenshots or descriptions if needed
+
+**Commit**: ✅ Update tests for label grouping feature
+```
+
+---
+
 # Review & Iteration
 
 - Each step is small, testable, and builds on the previous.

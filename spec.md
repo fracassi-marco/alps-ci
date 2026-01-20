@@ -149,12 +149,20 @@ When adding a Build, specify:
 - **Selectors**: One or more filters (mixed types allowed)
 - **Personal Access Token**: GitHub PAT
 - **Cache Expiration**: 1-1440 minutes
+- **Label** (optional): Label for grouping builds in the UI
 
 Actions:
 - **Add**: Create new Build
 - **Edit**: Update configuration (triggers immediate refresh)
 - **Delete**: Confirmation required, creates backup
 - **Refresh**: Manual refresh button for fresh statistics
+
+### Build Grouping
+- **Builds are grouped by label** in both Grid and List views
+- **Groups are sorted alphabetically** by label name
+- **Builds without labels appear last** in a separate "Unlabeled" group
+- **Within each group**, builds are sorted by name
+- **Group headers** show the label name and count of builds in that group
 
 ---
 

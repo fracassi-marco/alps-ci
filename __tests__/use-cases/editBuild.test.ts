@@ -103,6 +103,7 @@ describe('EditBuildUseCase', () => {
       selectors: [{ type: 'branch', pattern: 'main' }],
       createdAt: new Date(),
       updatedAt: new Date(),
+      accessTokenId: 'ignore',
     };
 
     const mockRepository = {
@@ -165,6 +166,53 @@ describe('EditBuildUseCase', () => {
 
     expect(result.name).toBe('Updated Build');
     expect(result.organization).toBe('updated-org');
+  });
+
+  it('should update label field correctly', async () => {
+    const updates = {
+      label: '  Staging  ',
+    };
+
+    const updatedBuild = {
+      ...existingBuild,
+      label: 'Staging',
+      updatedAt: new Date(),
+    };
+
+    const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
+      findAll: mock(() => Promise.resolve([existingBuild])),
+      update: mock(() => Promise.resolve(updatedBuild)),
+    };
+
+    const useCase = new EditBuildUseCase(mockRepository);
+    const result = await useCase.execute('1', updates, tenantId);
+
+    expect(result.label).toBe('Staging');
+    expect(mockRepository.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('should set empty label to null when updating', async () => {
+    const updates = {
+      label: '   ',
+    };
+
+    const updatedBuild = {
+      ...existingBuild,
+      label: null,
+      updatedAt: new Date(),
+    };
+
+    const mockRepository = {
+      findById: mock(() => Promise.resolve(existingBuild)),
+      findAll: mock(() => Promise.resolve([existingBuild])),
+      update: mock(() => Promise.resolve(updatedBuild)),
+    };
+
+    const useCase = new EditBuildUseCase(mockRepository);
+    const result = await useCase.execute('1', updates, tenantId);
+
+    expect(result.label).toBeNull();
   });
 });
 

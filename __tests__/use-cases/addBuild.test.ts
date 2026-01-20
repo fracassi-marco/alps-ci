@@ -65,6 +65,7 @@ describe('AddBuildUseCase', () => {
       selectors: [{ type: 'branch', pattern: 'main' }],
       createdAt: new Date(),
       updatedAt: new Date(),
+      accessTokenId: 'ignore',
     };
 
     const mockRepository = {
@@ -145,6 +146,53 @@ describe('AddBuildUseCase', () => {
 
     expect(result.name).toBe('Test Build');
     expect(result.organization).toBe('test-org');
+  });
+
+  it('should handle label field correctly', async () => {
+    const buildWithLabel = {
+      ...validBuildInput,
+      label: '  Production  ',
+    };
+
+    const mockRepository = {
+      findAll: mock(() => Promise.resolve([])),
+      create: mock((build: any) => Promise.resolve({
+        ...build,
+        id: 'generated-id',
+        tenantId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    };
+
+    const useCase = new AddBuildUseCase(mockRepository);
+    const result = await useCase.execute(buildWithLabel, tenantId);
+
+    expect(result.label).toBe('Production');
+  });
+
+  it('should set empty label to null', async () => {
+    const buildWithEmptyLabel = {
+      ...validBuildInput,
+      label: '   ',
+    };
+
+    const mockRepository = {
+      findAll: mock(() => Promise.resolve([])),
+      create: mock((build: any) => Promise.resolve({
+        ...build,
+        id: 'generated-id',
+        tenantId,
+        label: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    };
+
+    const useCase = new AddBuildUseCase(mockRepository);
+    const result = await useCase.execute(buildWithEmptyLabel, tenantId);
+
+    expect(result.label).toBeNull();
   });
 });
 
