@@ -10,6 +10,7 @@ import {
   hasStats,
   getLastNDaysRange,
   formatDateYYYYMMDD,
+  groupBuildsByLabel,
 } from '../../src/domain/utils';
 import type { Build, BuildStats, Selector } from '../../src/domain/models';
 
@@ -393,6 +394,232 @@ describe('Utils - Format Date YYYYMMDD', () => {
     expect(formatDateYYYYMMDD(date1)).toBe('2024-01-15');
     expect(formatDateYYYYMMDD(date2)).toBe('2024-02-15');
     expect(formatDateYYYYMMDD(date3)).toBe('2025-01-15');
+  });
+});
+
+describe('Utils - Group Builds By Label', () => {
+  const createTestBuild = (name: string, label: string | null, tenantId = 'tenant-1'): Build => ({
+    id: `build-${name}`,
+    tenantId,
+    name,
+    organization: 'test-org',
+    repository: 'test-repo',
+    label,
+    selectors: [{ type: 'branch', pattern: 'main' }],
+    accessTokenId: null,
+    personalAccessToken: 'token',
+    cacheExpirationMinutes: 30,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  test('should group builds by label', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Production'),
+      createTestBuild('Build B', 'Production'),
+      createTestBuild('Build C', 'Staging'),
+      createTestBuild('Build D', 'Development'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(3);
+    expect(grouped.get('development')?.length).toBe(1);
+    expect(grouped.get('production')?.length).toBe(2);
+    expect(grouped.get('staging')?.length).toBe(1);
+  });
+
+  test('should sort groups alphabetically', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Staging'),
+      createTestBuild('Build B', 'Production'),
+      createTestBuild('Build C', 'Development'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+    const keys = Array.from(grouped.keys());
+
+    expect(keys).toEqual(['development', 'production', 'staging']);
+  });
+
+  test('should place unlabeled builds last', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Staging'),
+      createTestBuild('Build B', null),
+      createTestBuild('Build C', 'Production'),
+      createTestBuild('Build D', null),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+    const keys = Array.from(grouped.keys());
+
+    expect(keys[keys.length - 1]).toBe('');
+    expect(grouped.get('')?.length).toBe(2);
+  });
+
+  test('should sort builds within each group by name', () => {
+    const builds: Build[] = [
+      createTestBuild('Zebra Build', 'Production'),
+      createTestBuild('Alpha Build', 'Production'),
+      createTestBuild('Beta Build', 'Production'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+    const productionBuilds = grouped.get('production');
+
+    expect(productionBuilds?.length).toBe(3);
+    expect(productionBuilds?.[0]?.name).toBe('Alpha Build');
+    expect(productionBuilds?.[1]?.name).toBe('Beta Build');
+    expect(productionBuilds?.[2]?.name).toBe('Zebra Build');
+  });
+
+  test('should handle case-insensitive grouping', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'production'),
+      createTestBuild('Build B', 'PRODUCTION'),
+      createTestBuild('Build C', 'Production'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(1);
+    expect(grouped.get('production')?.length).toBe(3);
+  });
+
+  test('should handle empty builds array', () => {
+    const builds: Build[] = [];
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(0);
+  });
+
+  test('should handle all unlabeled builds', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', null),
+      createTestBuild('Build B', null),
+      createTestBuild('Build C', null),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(1);
+    expect(grouped.get('')?.length).toBe(3);
+  });
+
+  test('should handle single group', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Production'),
+      createTestBuild('Build B', 'Production'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(1);
+    expect(grouped.get('production')?.length).toBe(2);
+  });
+
+  test('should handle mixed labeled and unlabeled builds', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Production'),
+      createTestBuild('Build B', null),
+      createTestBuild('Build C', 'Staging'),
+      createTestBuild('Build D', null),
+      createTestBuild('Build E', 'Development'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+    const keys = Array.from(grouped.keys());
+
+    expect(grouped.size).toBe(4);
+    expect(keys).toEqual(['development', 'production', 'staging', '']);
+    expect(grouped.get('')?.length).toBe(2);
+  });
+
+  test('should trim whitespace from labels', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', '  Production  '),
+      createTestBuild('Build B', 'Production'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(1);
+    expect(grouped.get('production')?.length).toBe(2);
+  });
+
+  test('should treat empty string labels as unlabeled', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', ''),
+      createTestBuild('Build B', null),
+      createTestBuild('Build C', '   '),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(1);
+    expect(grouped.get('')?.length).toBe(3);
+  });
+
+  test('should maintain build order within groups after sorting', () => {
+    const builds: Build[] = [
+      createTestBuild('Charlie', 'Production'),
+      createTestBuild('Alpha', 'Production'),
+      createTestBuild('Delta', 'Staging'),
+      createTestBuild('Bravo', 'Production'),
+      createTestBuild('Echo', 'Staging'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+    const productionBuilds = grouped.get('production');
+    const stagingBuilds = grouped.get('staging');
+
+    expect(productionBuilds?.map(b => b.name)).toEqual(['Alpha', 'Bravo', 'Charlie']);
+    expect(stagingBuilds?.map(b => b.name)).toEqual(['Delta', 'Echo']);
+  });
+
+  test('should handle labels with special characters', () => {
+    const builds: Build[] = [
+      createTestBuild('Build A', 'Prod-US-East'),
+      createTestBuild('Build B', 'Prod-EU-West'),
+      createTestBuild('Build C', 'Dev/Test'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(3);
+    expect(grouped.get('dev/test')?.length).toBe(1);
+    expect(grouped.get('prod-us-east')?.length).toBe(1);
+    expect(grouped.get('prod-eu-west')?.length).toBe(1);
+  });
+
+  test('should handle large number of groups', () => {
+    const builds: Build[] = [];
+    for (let i = 0; i < 26; i++) {
+      const label = String.fromCharCode(65 + i); // A-Z
+      builds.push(createTestBuild(`Build ${label}`, label));
+    }
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(26);
+    const keys = Array.from(grouped.keys());
+    expect(keys[0]).toBe('a');
+    expect(keys[25]).toBe('z');
+  });
+
+  test('should handle multiple builds with same name in different groups', () => {
+    const builds: Build[] = [
+      createTestBuild('CI Build', 'Production'),
+      createTestBuild('CI Build', 'Staging'),
+      createTestBuild('CI Build', 'Development'),
+    ];
+
+    const grouped = groupBuildsByLabel(builds);
+
+    expect(grouped.size).toBe(3);
+    expect(grouped.get('production')?.[0]?.name).toBe('CI Build');
+    expect(grouped.get('staging')?.[0]?.name).toBe('CI Build');
+    expect(grouped.get('development')?.[0]?.name).toBe('CI Build');
   });
 });
 

@@ -91,3 +91,38 @@ export function formatDateYYYYMMDD(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Group builds by label with proper sorting
+export function groupBuildsByLabel(builds: Build[]): Map<string, Build[]> {
+  // First, group builds by label (case-insensitive)
+  const groups = new Map<string, Build[]>();
+
+  builds.forEach((build) => {
+    // Normalize label: use empty string for null/undefined, lowercase for case-insensitive grouping
+    const labelKey = build.label?.trim().toLowerCase() || '';
+
+    if (!groups.has(labelKey)) {
+      groups.set(labelKey, []);
+    }
+    groups.get(labelKey)!.push(build);
+  });
+
+  // Sort builds within each group by name
+  groups.forEach((buildsInGroup) => {
+    buildsInGroup.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  // Convert to array, sort by label, then convert back to Map
+  // Unlabeled builds (empty string key) should be last
+  const sortedEntries = Array.from(groups.entries()).sort(([labelA], [labelB]) => {
+    // Empty string (unlabeled) always goes last
+    if (labelA === '' && labelB === '') return 0;
+    if (labelA === '') return 1;
+    if (labelB === '') return -1;
+
+    // Otherwise, sort alphabetically
+    return labelA.localeCompare(labelB);
+  });
+
+  return new Map(sortedEntries);
+}
+

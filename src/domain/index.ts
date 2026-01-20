@@ -41,5 +41,6 @@ export {
   hasStats,
   getLastNDaysRange,
   formatDateYYYYMMDD,
+  groupBuildsByLabel,
 } from './utils';
 
