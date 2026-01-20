@@ -3,6 +3,24 @@ import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/re
 import { BuildListView } from '../../app/components/BuildListView';
 import type { Build, BuildStats } from '../../src/domain/models';
 
+// Mock useRouter from next/navigation
+const mockPush = mock(() => {});
+const mockRouter = {
+  push: mockPush,
+  replace: mock(() => {}),
+  back: mock(() => {}),
+  forward: mock(() => {}),
+  refresh: mock(() => {}),
+  prefetch: mock(() => {}),
+};
+
+// Mock next/navigation module
+mock.module('next/navigation', () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // Mock fetch globally
 const mockFetch = mock(() => Promise.resolve({
   ok: true,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   RefreshCw,
   Edit,
@@ -38,6 +39,7 @@ interface BuildWithStats {
 }
 
 export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildListViewProps) {
+  const router = useRouter();
   const [buildStatsMap, setBuildStatsMap] = useState<Map<string, BuildWithStats>>(new Map());
   const [deleteTarget, setDeleteTarget] = useState<Build | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -545,11 +547,18 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                             </div>
 
                             {/* Test Statistics */}
-                            {stats.testStats && (
-                              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                                <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-3">
-                                  Test Results (Last Run)
-                                </h4>
+                            {stats.testStats && stats.recentRuns.length > 0 && (
+                              <button
+                                onClick={() => router.push(`/builds/${build.id}/tests/${stats.recentRuns[0].id}`)}
+                                className="w-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors cursor-pointer group text-left"
+                                title="View test results details"
+                              >
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 group-hover:underline">
+                                    Test Results (Last Run)
+                                  </h4>
+                                  <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
                                 <div className="grid grid-cols-4 gap-3">
                                   <div className="text-center">
                                     <div className="text-xs text-purple-600 dark:text-purple-400 mb-1">Total</div>
@@ -576,7 +585,7 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
                                     </div>
                                   </div>
                                 </div>
-                              </div>
+                              </button>
                             )}
 
                             {/* Recent Workflow Runs */}
