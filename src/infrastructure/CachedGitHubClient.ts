@@ -57,12 +57,9 @@ export class CachedGitHubClient {
     // Check cache first
     const cached = this.cache.getWorkflowRuns(cacheKey);
     if (this.isCacheValid(cached, cacheExpirationMinutes)) {
-      console.log(`[Cache HIT] Workflow runs for ${owner}/${repo} (cached at ${cached.cachedAt.toISOString()})`);
       return cached.data;
     }
 
-    // Cache miss or expired, fetch from API
-    console.log(`[Cache MISS] Workflow runs for ${owner}/${repo} - fetching from API`);
     const runs = await this.client.fetchWorkflowRuns(owner, repo, filters);
 
     // Cache the result
@@ -85,12 +82,9 @@ export class CachedGitHubClient {
     // Check cache first
     const cached = this.cache.getTags(cacheKey);
     if (this.isCacheValid(cached, cacheExpirationMinutes)) {
-      console.log(`[Cache HIT] Tags for ${owner}/${repo} (cached at ${cached.cachedAt.toISOString()})`);
       return cached.data;
     }
 
-    // Cache miss or expired, fetch from API
-    console.log(`[Cache MISS] Tags for ${owner}/${repo} - fetching from API`);
     const tags = await this.client.fetchTags(owner, repo, limit);
 
     // Cache the result
@@ -113,7 +107,6 @@ export class CachedGitHubClient {
     const cachedTags = this.cache.getTags(mainTagsCacheKey);
 
     if (this.isCacheValid(cachedTags, cacheExpirationMinutes)) {
-      console.log(`[Cache HIT] Latest tag for ${owner}/${repo} (reused from tags cache)`);
       return cachedTags.data.length > 0 ? cachedTags.data[0] ?? null : null;
     }
 
@@ -121,17 +114,11 @@ export class CachedGitHubClient {
     const cacheKey = this.getCacheKey(owner, repo, 'latest-tag');
     const cached = this.cache.getLatestTag(cacheKey);
     if (this.isCacheValid(cached, cacheExpirationMinutes)) {
-      console.log(`[Cache HIT] Latest tag for ${owner}/${repo} (cached at ${cached.cachedAt.toISOString()})`);
       return cached.data;
     }
 
-    // Cache miss or expired, fetch from API
-    console.log(`[Cache MISS] Latest tag for ${owner}/${repo} - fetching from API`);
     const tag = await this.client.fetchLatestTag(owner, repo);
-
-    // Cache the result
     this.cache.setLatestTag(cacheKey, tag);
-
     return tag;
   }
 

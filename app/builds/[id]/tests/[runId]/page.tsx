@@ -74,7 +74,6 @@ export default function TestResultsPage({
   // Unwrap params
   useEffect(() => {
     params.then((p) => {
-      console.log('[TestResultsPage] Params received:', p);
       setBuildId(p.id);
       setRunId(p.runId);
     });
@@ -83,11 +82,8 @@ export default function TestResultsPage({
   // Fetch test results
   useEffect(() => {
     if (!session || !buildId || !runId) {
-      console.log('[TestResultsPage] Skipping fetch:', { session: !!session, buildId, runId });
       return;
     }
-
-    console.log('[TestResultsPage] Fetching data for:', { buildId, runId });
 
     const fetchData = async () => {
       setLoading(true);
@@ -118,12 +114,6 @@ export default function TestResultsPage({
 
         if (!testResponse.ok) {
           const errorData = await testResponse.json().catch(() => ({}));
-          console.error('Test results API error:', {
-            status: testResponse.status,
-            statusText: testResponse.statusText,
-            error: errorData,
-          });
-
           if (testResponse.status === 401) {
             throw new Error('Authentication failed. Please sign in again.');
           }
@@ -134,7 +124,6 @@ export default function TestResultsPage({
         }
 
         const data = await testResponse.json();
-        console.log('[TestResultsPage] Received data:', data);
         setTestResults(data);
       } catch (err) {
         console.error('Error fetching test results:', err);

@@ -9,7 +9,6 @@ let cacheInstance: InMemoryGitHubDataCache | null = null;
 export function getGitHubDataCache(): InMemoryGitHubDataCache {
   if (!cacheInstance) {
     cacheInstance = new InMemoryGitHubDataCache();
-    console.log('[Cache] Created new singleton cache instance');
   }
   return cacheInstance;
 }
@@ -21,7 +20,6 @@ export function clearGitHubDataCache(): void {
   if (cacheInstance) {
     cacheInstance.invalidateAll();
     cacheInstance = null;
-    console.log('[Cache] Cleared singleton cache instance');
   }
 }
 

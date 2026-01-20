@@ -107,9 +107,6 @@ export class FetchBuildStatsUseCase {
         build.cacheExpirationMinutes
       );
 
-      console.log(`[FetchBuildStats] Total commits: ${totalCommits}, Total contributors: ${totalContributors}`);
-
-      // Fetch test statistics from the most recent run's artifacts
       let testStats: TestStats | null = null;
       if (allRuns.length > 0 && allRuns[0]) {
         testStats = await this.fetchTestStatsFromArtifacts(
@@ -239,7 +236,6 @@ export class FetchBuildStatsUseCase {
           }
 
           const testStats = parseJUnitXML(content);
-          console.log(`Parsed test stats from artifact ${artifact.name}:`, testStats);
 
           if (testStats) {
             return testStats;
