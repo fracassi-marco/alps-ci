@@ -55,3 +55,7 @@ Update the specifications in spec.md and generate prompts in prompt_plan.md
 # Test report
 When I click on the tests run, a new page opens with the details of the tests run, whether they passed or failed, the execution time, and any failure details.
 Update the specifications in spec.md and generate prompts in prompt_plan.md
+
+# Detailed test report
+Currently the list of files with tests is shown, make sure that each file has an accordion, if the accordion is open it must show the detail of all the tests of that file
+Update the specifications in spec.md and generate prompts in prompt_plan.md

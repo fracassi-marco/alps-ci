@@ -35,7 +35,7 @@ interface TestResultsSummary {
 
 interface TestResults {
   summary: TestResultsSummary;
-  testCases: TestCase[];
+  testSuites: TestCase[];
 }
 
 function getCacheKey(buildId: string, runId: string): string {
@@ -142,59 +142,81 @@ function parseTestCases(xmlContent: string): TestCase[] {
     });
 
     const result = parser.parse(xmlContent);
+    console.log('[TestResults] Parsing XML with structure:', Object.keys(result));
 
     // Handle both single testsuite and testsuites wrapper
     let testsuites = [];
     if (result.testsuites) {
+      console.log('[TestResults] Found testsuites wrapper');
       if (result.testsuites.testsuite) {
         testsuites = Array.isArray(result.testsuites.testsuite)
           ? result.testsuites.testsuite
           : [result.testsuites.testsuite];
       }
     } else if (result.testsuite) {
+      console.log('[TestResults] Found single testsuite');
       // Single test suite
-      testsuites = [result.testsuite];
+      testsuites = Array.isArray(result.testsuite) ? result.testsuite : [result.testsuite];
     }
+
+    console.log(`[TestResults] Found ${testsuites.length} test suite(s)`);
 
     if (testsuites.length === 0) {
       return testCases;
     }
 
-    // Process each test suite
-    for (const testsuite of testsuites) {
+    // Recursive function to process testsuites (handle nested structure)
+    const processTestSuite = (testsuite: any) => {
       if (!testsuite) {
-        continue;
+        return;
       }
 
+      // Use testsuite.name as specified by user, fallback to file
       const suiteName = testsuite['@_name'] || testsuite['@_file'] || 'Unknown Suite';
+      const suiteFile = testsuite['@_file'] || suiteName;
+
+      console.log(`[TestResults] Processing suite: ${suiteName} (file: ${suiteFile})`);
+
+      // Check if this testsuite has nested testsuites (some formats have this)
+      if (testsuite.testsuite) {
+        console.log(`[TestResults] Suite ${suiteName} has nested testsuites`);
+        const nestedSuites = Array.isArray(testsuite.testsuite)
+          ? testsuite.testsuite
+          : [testsuite.testsuite];
+        nestedSuites.forEach(processTestSuite);
+        return;
+      }
 
       if (!testsuite.testcase) {
+        console.log(`[TestResults] Suite ${suiteName} has no testcase property`);
+        // Bun format without individual test cases - create suite-level summary
         const suiteTests = parseInt(testsuite['@_tests']?.toString() || '0', 10);
         const suiteFailures = parseInt(testsuite['@_failures']?.toString() || '0', 10);
         const suiteSkipped = parseInt(testsuite['@_skipped']?.toString() || '0', 10);
-        const suitePassed = suiteTests - suiteFailures - suiteSkipped;
         const suiteTime = parseFloat(testsuite['@_time']?.toString() || '0');
 
         // Create a summary entry for this suite
         if (suiteTests > 0) {
           testCases.push({
             name: suiteName,
-            suite: 'Test Suite',
+            suite: suiteFile,
             status: suiteFailures > 0 ? 'failed' : (suiteSkipped > 0 ? 'skipped' : 'passed'),
             duration: suiteTime,
             errorMessage: suiteFailures > 0 ? `${suiteFailures} test(s) failed in this suite` : undefined,
           });
         }
-        continue;
+        return;
       }
 
       const testcases = Array.isArray(testsuite.testcase)
         ? testsuite.testcase
         : [testsuite.testcase];
 
+      console.log(`[TestResults] Suite ${suiteName} has ${testcases.length} testcase(s)`);
+
       for (const testcase of testcases) {
-        const name = testcase['@_name'] || 'Unknown Test';
-        const className = testcase['@_classname'] || testcase['@_class'] || suiteName;
+        // Use testcase.name as specified by user
+        const testName = testcase['@_name'] || 'Unknown Test';
         const timeStr = testcase['@_time'] || '0';
         const duration = parseFloat(timeStr.toString());
 
@@ -220,15 +242,20 @@ function parseTestCases(xmlContent: string): TestCase[] {
         }
 
         testCases.push({
-          name,
-          suite: className,
+          name: testName,
+          suite: suiteFile, // Use file path as suite identifier
           status,
           duration,
           errorMessage,
           stackTrace,
         });
       }
-    }
+    };
+
+    // Process each test suite
+    testsuites.forEach(processTestSuite);
+
+    console.log(`[TestResults] Extracted ${testCases.length} test cases total`);
   } catch (error) {
     console.error('[TestResults] Error parsing test cases:', error);
   }
@@ -304,7 +331,7 @@ export async function GET(
     if (artifacts.length === 0) {
       return NextResponse.json({
         summary: {total: 0, passed: 0, failed: 0, skipped: 0},
-        testCases: [],
+        testSuites: [],
         message: 'No artifacts found for this workflow run',
       });
     }
@@ -317,7 +344,7 @@ export async function GET(
     if (testArtifacts.length === 0) {
       return NextResponse.json({
         summary: {total: 0, passed: 0, failed: 0, skipped: 0},
-        testCases: [],
+        testSuites: [],
         message: 'No test artifacts found for this workflow run',
       });
     }
@@ -352,7 +379,7 @@ export async function GET(
 
     const results: TestResults = {
       summary,
-      testCases: allTestCases,
+      testSuites: allTestCases,
     };
 
     setCachedResults(id, runId, results);

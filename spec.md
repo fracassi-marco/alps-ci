@@ -439,22 +439,51 @@ When users click on test statistics in a Build card (e.g., "25 / 23 / 2" showing
 - Skipped tests (yellow)
 - Success rate percentage with visual indicator
 
-**Test Results Table**:
-- Columns: Status (icon), Test Name, Test Suite, Duration, Error Message (if failed)
-- Sortable by: Status, Name, Duration
-- Filterable by: All / Passed / Failed / Skipped
-- Color-coded status indicators
-- **Accordion for Test Suites**: Each test suite file (e.g., `__tests__/components/BuildCard.test.tsx`) is displayed as a collapsible accordion row
-  - **Collapsed state**: Shows suite name, overall status, total test count, and aggregate duration
-  - **Expanded state**: Shows all individual tests within that suite with full details
-  - Click to toggle between collapsed/expanded
-  - Expand icon changes (ChevronDown/ChevronUp) based on state
-- **Individual Test Details** (within expanded accordion):
-  - Test name
-  - Status icon (CheckCircle/XCircle/MinusCircle)
-  - Duration
-  - Error message and stack trace for failed tests
-  - Formatted and syntax-highlighted stack traces
+**Test Results Accordion Display**:
+- **Accordion Structure**: Each test suite file is displayed as an accordion item
+  - **Suite Header (Collapsed)**:
+    - Expand/collapse icon (ChevronDown when collapsed, ChevronUp when expanded)
+    - Status icon indicating overall suite status:
+      - Green CheckCircle: All tests passed
+      - Red XCircle: One or more tests failed
+      - Yellow MinusCircle: One or more tests skipped
+    - Suite file path (e.g., `__tests__/components/BuildCard.test.tsx`)
+    - Test count (e.g., "18 tests")
+    - Aggregate duration for all tests in suite (formatted: "1.2s", "450ms")
+    - Hover state styling
+    - Clickable to toggle expansion
+  
+  - **Suite Body (Expanded)**:
+    - Light background to distinguish from header
+    - List of individual test cases with padding/indentation
+    - Each test row shows:
+      - Status icon (CheckCircle green, XCircle red, MinusCircle yellow)
+      - Test name
+      - Duration (formatted)
+      - Error message preview (for failed tests, truncated)
+    - Sort order: Failed tests first, then skipped, then passed
+    - For failed tests with stack traces:
+      - Click test row to expand error details
+      - Show full error message and stack trace
+      - Stack trace in monospace font with dark background
+      - Scrollable if long
+      - Another ChevronDown/Up icon for error expansion
+  
+  - **Empty State**:
+    - If suite has no individual test details (Bun format limitation), show: "Individual test details not available in this format"
+    - Still display suite-level statistics in header
+
+- **Filtering**: Filter buttons work at individual test level
+  - If filter applied, hide suites with no matching tests
+  - Dynamically show/hide accordion items based on filter
+  
+- **Sorting**: Suites sorted alphabetically by file path
+  - Within each suite, tests sorted by status (failed → skipped → passed)
+
+- **Responsive Design**:
+  - Accordion works on mobile with appropriate touch targets
+  - Horizontal scroll for long file paths
+  - All suites collapsed by default
 
 **Bun JUnit XML Compatibility**:
 - Handles Bun's JUnit XML format which only provides suite-level statistics

@@ -1,8 +1,5 @@
 import type {TestStats} from '../domain/models';
 
-/**
- * Parse JUnit XML content to extract test statistics
- */
 export function parseJUnitXML(xmlContent: string): TestStats | null {
   try {
     // Helper function to extract attribute value

@@ -737,7 +737,7 @@ Prompt: Implement proper caching and comprehensive error handling for test resul
 
 ### 6.7. Add Accordion for Test Suite Details
 ```
-Prompt: Replace the flat test results table with an accordion-based layout where each test suite file can be expanded to show individual test details.
+Prompt: Replace the flat test results table with an accordion-based layout where each test suite file can be expanded to show individual testcase details.
 
 **Implementation**:
 - **Test Suite Rows** (collapsed state):

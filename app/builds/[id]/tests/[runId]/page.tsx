@@ -9,14 +9,13 @@ import {
   MinusCircle,
   Clock,
   AlertCircle,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useSession } from '@/infrastructure/auth-client';
 import Button from '../../../../components/Button';
 
-interface TestCase {
+interface TestSuite {
   name: string;
   suite: string;
   status: 'passed' | 'failed' | 'skipped';
@@ -34,7 +33,7 @@ interface TestResultsSummary {
 
 interface TestResults {
   summary: TestResultsSummary;
-  testCases: TestCase[];
+  testSuites: TestSuite[];
   message?: string;
 }
 
@@ -61,8 +60,8 @@ export default function TestResultsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'passed' | 'failed' | 'skipped'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'duration' | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set());
+  const [expandedFailedTests, setExpandedFailedTests] = useState<Set<string>>(new Set());
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -171,10 +170,10 @@ export default function TestResultsPage({
   };
 
   // Filter test cases
-  const getFilteredTests = (): TestCase[] => {
+  const getFilteredTests = (): TestSuite[] => {
     if (!testResults) return [];
 
-    let filtered = testResults.testCases;
+    let filtered = testResults.testSuites;
 
     if (filter !== 'all') {
       filtered = filtered.filter((test) => test.status === filter);
@@ -183,49 +182,83 @@ export default function TestResultsPage({
     return filtered;
   };
 
-  // Sort test cases
-  const getSortedTests = (): TestCase[] => {
-    const filtered = getFilteredTests();
-
-    if (!sortBy) return filtered;
-
-    return [...filtered].sort((a, b) => {
-      let comparison = 0;
-
-      if (sortBy === 'name') {
-        comparison = a.name.localeCompare(b.name);
-      } else if (sortBy === 'duration') {
-        comparison = a.duration - b.duration;
-      }
-
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-  };
-
-  // Handle sort
-  const handleSort = (column: 'name' | 'duration') => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
-    }
-  };
 
   // Get filter counts
   const getFilterCounts = () => {
     if (!testResults) return { all: 0, passed: 0, failed: 0, skipped: 0 };
 
     return {
-      all: testResults.testCases.length,
+      all: testResults.testSuites.length,
       passed: testResults.summary.passed,
       failed: testResults.summary.failed,
       skipped: testResults.summary.skipped,
     };
   };
 
+  // Group tests by suite
+  const groupTestsBySuite = (): Map<string, TestSuite[]> => {
+    const grouped = new Map<string, TestSuite[]>();
+    const filtered = getFilteredTests();
+
+    filtered.forEach((test) => {
+      // test.suite is always the file path now
+      const suiteName = test.suite;
+
+      if (!grouped.has(suiteName)) {
+        grouped.set(suiteName, []);
+      }
+      grouped.get(suiteName)!.push(test);
+    });
+
+    // Sort suites alphabetically and return
+    return new Map(
+      [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b))
+    );
+  };
+
+  // Get suite status (aggregate of all tests in suite)
+  const getSuiteStatus = (tests: TestSuite[]): 'passed' | 'failed' | 'skipped' => {
+    const hasFailed = tests.some((t) => t.status === 'failed');
+    const hasSkipped = tests.some((t) => t.status === 'skipped');
+
+    if (hasFailed) return 'failed';
+    if (hasSkipped) return 'skipped';
+    return 'passed';
+  };
+
+  // Get suite duration (sum of all test durations)
+  const getSuiteDuration = (tests: TestSuite[]): number => {
+    return tests.reduce((sum, test) => sum + test.duration, 0);
+  };
+
+  // Toggle suite expansion
+  const toggleSuite = (suiteName: string) => {
+    setExpandedSuites((prev) => {
+      const next = new Set(prev);
+      if (next.has(suiteName)) {
+        next.delete(suiteName);
+      } else {
+        next.add(suiteName);
+      }
+      return next;
+    });
+  };
+
+  // Toggle failed test expansion
+  const toggleFailedTest = (testKey: string) => {
+    setExpandedFailedTests((prev) => {
+      const next = new Set(prev);
+      if (next.has(testKey)) {
+        next.delete(testKey);
+      } else {
+        next.add(testKey);
+      }
+      return next;
+    });
+  };
+
   const filterCounts = getFilterCounts();
-  const displayedTests = getSortedTests();
+  const groupedSuites = groupTestsBySuite();
 
   if (isPending || !session) {
     return (
@@ -476,7 +509,7 @@ export default function TestResultsPage({
                   {/* Header and Filters */}
                   <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Test Cases ({displayedTests.length})
+                      Test Suites ({groupedSuites.size})
                     </h2>
 
                     {/* Filter Buttons */}
@@ -489,7 +522,7 @@ export default function TestResultsPage({
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        All ({filterCounts.all})
+                        All ({testResults?.testSuites.length || 0})
                       </button>
                       <button
                         onClick={() => setFilter('passed')}
@@ -499,7 +532,7 @@ export default function TestResultsPage({
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        Passed ({filterCounts.passed})
+                        Passed ({testResults?.summary.passed || 0})
                       </button>
                       <button
                         onClick={() => setFilter('failed')}
@@ -509,7 +542,7 @@ export default function TestResultsPage({
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        Failed ({filterCounts.failed})
+                        Failed ({testResults?.summary.failed || 0})
                       </button>
                       <button
                         onClick={() => setFilter('skipped')}
@@ -519,106 +552,158 @@ export default function TestResultsPage({
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        Skipped ({filterCounts.skipped})
+                        Skipped ({testResults?.summary.skipped || 0})
                       </button>
                     </div>
                   </div>
 
-                  {/* Table */}
-                  {displayedTests.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16">
-                              Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                              <button
-                                onClick={() => handleSort('name')}
-                                className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                              >
-                                Test Name
-                                {sortBy === 'name' ? (
-                                  sortOrder === 'asc' ? (
-                                    <ArrowUp className="w-4 h-4" />
-                                  ) : (
-                                    <ArrowDown className="w-4 h-4" />
-                                  )
-                                ) : (
-                                  <ArrowUpDown className="w-4 h-4 opacity-50" />
-                                )}
-                              </button>
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                              Test Suite
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                              <button
-                                onClick={() => handleSort('duration')}
-                                className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                              >
-                                Duration
-                                {sortBy === 'duration' ? (
-                                  sortOrder === 'asc' ? (
-                                    <ArrowUp className="w-4 h-4" />
-                                  ) : (
-                                    <ArrowDown className="w-4 h-4" />
-                                  )
-                                ) : (
-                                  <ArrowUpDown className="w-4 h-4 opacity-50" />
-                                )}
-                              </button>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                          {displayedTests.map((testCase, index) => (
-                            <tr
-                              key={`${testCase.suite}-${testCase.name}-${index}`}
-                              className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  {/* Accordion */}
+                  {groupedSuites.size > 0 ? (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {Array.from(groupedSuites.entries()).map(([suiteName, suiteTests]) => {
+                        const isExpanded = expandedSuites.has(suiteName);
+                        const suiteStatus = getSuiteStatus(suiteTests);
+                        const suiteDuration = getSuiteDuration(suiteTests);
+                        const testCount = suiteTests.length;
+
+                        // Sort tests within suite: failed first, then skipped, then passed
+                        const sortedSuiteTests = [...suiteTests].sort((a, b) => {
+                          const statusOrder = { failed: 0, skipped: 1, passed: 2 };
+                          return statusOrder[a.status] - statusOrder[b.status];
+                        });
+
+                        return (
+                          <div key={suiteName}>
+                            {/* Suite Header Row */}
+                            <button
+                              onClick={() => toggleSuite(suiteName)}
+                              className="w-full px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group"
                             >
-                              {/* Status Icon */}
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {testCase.status === 'passed' ? (
-                                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                ) : testCase.status === 'failed' ? (
-                                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                              {/* Expand/Collapse Icon */}
+                              <div className="flex-shrink-0">
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                                 ) : (
-                                  <MinusCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                  <ChevronDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                                 )}
-                              </td>
+                              </div>
 
-                              {/* Test Name */}
-                              <td className="px-6 py-4">
-                                <div
-                                  className="text-sm text-gray-900 dark:text-white truncate max-w-md"
-                                  title={testCase.name}
-                                >
-                                  {testCase.name}
-                                </div>
-                              </td>
+                              {/* Status Icon */}
+                              <div className="flex-shrink-0">
+                                {suiteStatus === 'passed' ? (
+                                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                ) : suiteStatus === 'failed' ? (
+                                  <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                ) : (
+                                  <MinusCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                                )}
+                              </div>
 
-                              {/* Test Suite */}
-                              <td className="px-6 py-4">
-                                <div
-                                  className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs"
-                                  title={testCase.suite}
-                                >
-                                  {testCase.suite}
+                              {/* Suite Name */}
+                              <div className="flex-1 text-left">
+                                <div className="font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                  {suiteName}
                                 </div>
-                              </td>
+                              </div>
+
+                              {/* Test Count */}
+                              <div className="flex-shrink-0 text-sm text-gray-600 dark:text-gray-400">
+                                {testCount} {testCount === 1 ? 'test' : 'tests'}
+                              </div>
 
                               {/* Duration */}
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="text-sm text-gray-900 dark:text-white font-mono">
-                                  {formatTestDuration(testCase.duration)}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              <div className="flex-shrink-0 text-sm font-mono text-gray-900 dark:text-white">
+                                {formatTestDuration(suiteDuration)}
+                              </div>
+                            </button>
+
+                            {/* Expanded Test Details */}
+                            {isExpanded && (
+                              <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4">
+                                {suiteTests.length === 1 && suiteTests[0] && suiteTests[0].name === suiteName ? (
+                                  // Suite-level summary only (no individual test details)
+                                  <div className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
+                                    Individual test details not available in this format
+                                  </div>
+                                ) : (
+                                  // Individual test details
+                                  <div className="space-y-2">
+                                    {sortedSuiteTests.map((test, index) => {
+                                      const testKey = `${suiteName}-${index}`;
+                                      const isTestExpanded = expandedFailedTests.has(testKey);
+
+                                      return (
+                                        <div key={testKey} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                          {/* Test Row */}
+                                          <div
+                                            className={`px-4 py-3 flex items-center gap-3 ${
+                                              test.status === 'failed' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''
+                                            }`}
+                                            onClick={() => test.status === 'failed' && toggleFailedTest(testKey)}
+                                          >
+                                            {/* Status Icon */}
+                                            <div className="flex-shrink-0">
+                                              {test.status === 'passed' ? (
+                                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                              ) : test.status === 'failed' ? (
+                                                <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                              ) : (
+                                                <MinusCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                                              )}
+                                            </div>
+
+                                            {/* Test Name */}
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-sm text-gray-900 dark:text-white truncate">
+                                                {test.name}
+                                              </div>
+                                              {test.errorMessage && (
+                                                <div className="text-xs text-red-600 dark:text-red-400 truncate mt-0.5">
+                                                  {test.errorMessage}
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Duration */}
+                                            <div className="flex-shrink-0 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                              {formatTestDuration(test.duration)}
+                                            </div>
+
+                                            {/* Expand Icon for Failed Tests */}
+                                            {test.status === 'failed' && test.stackTrace && (
+                                              <div className="flex-shrink-0">
+                                                {isTestExpanded ? (
+                                                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                                                ) : (
+                                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Expanded Error Details */}
+                                          {test.status === 'failed' && isTestExpanded && test.stackTrace && (
+                                            <div className="border-t border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-900/10 px-4 py-3">
+                                              <div className="text-xs font-semibold text-red-800 dark:text-red-300 mb-2">
+                                                Stack Trace:
+                                              </div>
+                                              <div className="bg-gray-900 dark:bg-gray-950 rounded p-3 overflow-x-auto max-h-96 overflow-y-auto">
+                                                <pre className="text-xs text-gray-100 font-mono whitespace-pre-wrap break-words">
+                                                  {test.stackTrace}
+                                                </pre>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="px-6 py-12 text-center">
