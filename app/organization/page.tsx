@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
 import { Users, Mail, UserCheck, X, AlertCircle, User, LogOut, Key } from 'lucide-react';
+import { toast } from '../lib/toast';
 import { TokenList } from '../components/TokenList';
 import Button from '../components/Button';
 
@@ -134,10 +135,10 @@ export default function OrganizationPage() {
       setInvitations(invitations.filter(inv => inv.id !== invitationToRevoke.id));
 
       // Show success message (you can replace with a toast)
-      alert('✅ Invitation revoked successfully');
+      toast.success('Invitation revoked successfully');
     } catch (err: any) {
       console.error('Failed to revoke invitation:', err);
-      alert(`❌ ${err.message}`);
+      toast.error(err.message);
     } finally {
       setRevokingId(null);
       setShowConfirmDialog(false);
@@ -184,10 +185,10 @@ export default function OrganizationPage() {
       ));
 
       // Show success message
-      alert(`✅ ${roleChangeData.member.name}'s role changed to ${roleChangeData.newRole}`);
+      toast.success(`${roleChangeData.member.name}'s role changed to ${roleChangeData.newRole}`);
     } catch (err: any) {
       console.error('Failed to change role:', err);
-      alert(`❌ ${err.message}`);
+      toast.error(err.message);
     } finally {
       setChangingRoleId(null);
       setShowRoleChangeDialog(false);

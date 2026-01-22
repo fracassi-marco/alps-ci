@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import type { AccessTokenResponse } from '@/domain/models';
+import { toast } from '../lib/toast';
 import AddAccessTokenModal from './AddAccessTokenModal';
 import DeleteAccessTokenDialog from './DeleteAccessTokenDialog';
 import Button from './Button';
@@ -148,7 +149,7 @@ export function TokenList() {
       await fetchTokens();
     } catch (err) {
       console.error('Failed to delete token:', err);
-      alert(err instanceof Error ? err.message : 'Failed to delete token');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete token');
       setDeletingToken(null);
       setBuildsUsingToken([]);
     } finally {

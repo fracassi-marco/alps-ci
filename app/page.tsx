@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, UserPlus, LogOut, User, LayoutGrid, LayoutList, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/infrastructure/auth-client';
+import { toast } from './lib/toast';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { AddEditBuildForm } from './components/AddEditBuildForm';
 import { BuildCard } from './components/BuildCard';
@@ -205,7 +206,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to delete build:', error);
-      alert('Failed to delete build. Please try again.');
+      toast.error('Failed to delete build. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -245,7 +246,7 @@ export default function Home() {
       }
 
       // Show success message
-      alert(`✅ Invitation sent to ${email}!`);
+      toast.success(`Invitation sent to ${email}!`);
     } catch (error: any) {
       console.error('Failed to send invitation:', error);
       throw error;
