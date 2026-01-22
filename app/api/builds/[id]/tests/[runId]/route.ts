@@ -142,20 +142,16 @@ function parseTestCases(xmlContent: string): TestCase[] {
     });
 
     const result = parser.parse(xmlContent);
-    console.log('[TestResults] Parsing XML with structure:', Object.keys(result));
 
     // Handle both single testsuite and testsuites wrapper
     let testsuites = [];
     if (result.testsuites) {
-      console.log('[TestResults] Found testsuites wrapper');
       if (result.testsuites.testsuite) {
         testsuites = Array.isArray(result.testsuites.testsuite)
           ? result.testsuites.testsuite
           : [result.testsuites.testsuite];
       }
     } else if (result.testsuite) {
-      console.log('[TestResults] Found single testsuite');
-      // Single test suite
       testsuites = Array.isArray(result.testsuite) ? result.testsuite : [result.testsuite];
     }
 
@@ -177,18 +173,64 @@ function parseTestCases(xmlContent: string): TestCase[] {
 
       console.log(`[TestResults] Processing suite: ${suiteName} (file: ${suiteFile})`);
 
-      // Check if this testsuite has nested testsuites (some formats have this)
+      // Process testcases at this level first (if any)
+      if (testsuite.testcase) {
+        const testcases = Array.isArray(testsuite.testcase)
+          ? testsuite.testcase
+          : [testsuite.testcase];
+
+        console.log(`[TestResults] Suite ${suiteName} has ${testcases.length} testcase(s)`);
+
+        for (const testcase of testcases) {
+          // Use testcase.name as specified by user
+          const testName = testcase['@_name'] || 'Unknown Test';
+          const timeStr = testcase['@_time'] || '0';
+          const duration = parseFloat(timeStr.toString());
+
+          // Determine status
+          let status: 'passed' | 'failed' | 'skipped' = 'passed';
+          let errorMessage: string | undefined;
+          let stackTrace: string | undefined;
+
+          if (testcase.failure) {
+            status = 'failed';
+            const failure = testcase.failure;
+            errorMessage = failure['@_message'] || failure['#text'] || 'Test failed';
+            stackTrace = failure['#text'] || undefined;
+          } else if (testcase.error) {
+            status = 'failed';
+            const error = testcase.error;
+            errorMessage = error['@_message'] || error['#text'] || 'Test error';
+            stackTrace = error['#text'] || undefined;
+          } else if (testcase.skipped) {
+            status = 'skipped';
+            const skipped = testcase.skipped;
+            errorMessage = skipped['@_message'] || skipped['#text'] || 'Test skipped';
+          }
+
+          testCases.push({
+            name: testName,
+            suite: suiteFile, // Use file path as suite identifier
+            status,
+            duration,
+            errorMessage,
+            stackTrace,
+          });
+        }
+      }
+
+      // Now check if this testsuite has nested testsuites and process them
       if (testsuite.testsuite) {
         console.log(`[TestResults] Suite ${suiteName} has nested testsuites`);
         const nestedSuites = Array.isArray(testsuite.testsuite)
           ? testsuite.testsuite
           : [testsuite.testsuite];
         nestedSuites.forEach(processTestSuite);
-        return;
       }
 
-      if (!testsuite.testcase) {
-        console.log(`[TestResults] Suite ${suiteName} has no testcase property`);
+      // If no testcases and no nested testsuites, create suite-level summary
+      if (!testsuite.testcase && !testsuite.testsuite) {
+        console.log(`[TestResults] Suite ${suiteName} has no testcase or nested testsuite`);
         // Bun format without individual test cases - create suite-level summary
         const suiteTests = parseInt(testsuite['@_tests']?.toString() || '0', 10);
         const suiteFailures = parseInt(testsuite['@_failures']?.toString() || '0', 10);
@@ -205,50 +247,6 @@ function parseTestCases(xmlContent: string): TestCase[] {
             errorMessage: suiteFailures > 0 ? `${suiteFailures} test(s) failed in this suite` : undefined,
           });
         }
-        return;
-      }
-
-      const testcases = Array.isArray(testsuite.testcase)
-        ? testsuite.testcase
-        : [testsuite.testcase];
-
-      console.log(`[TestResults] Suite ${suiteName} has ${testcases.length} testcase(s)`);
-
-      for (const testcase of testcases) {
-        // Use testcase.name as specified by user
-        const testName = testcase['@_name'] || 'Unknown Test';
-        const timeStr = testcase['@_time'] || '0';
-        const duration = parseFloat(timeStr.toString());
-
-        // Determine status
-        let status: 'passed' | 'failed' | 'skipped' = 'passed';
-        let errorMessage: string | undefined;
-        let stackTrace: string | undefined;
-
-        if (testcase.failure) {
-          status = 'failed';
-          const failure = testcase.failure;
-          errorMessage = failure['@_message'] || failure['#text'] || 'Test failed';
-          stackTrace = failure['#text'] || undefined;
-        } else if (testcase.error) {
-          status = 'failed';
-          const error = testcase.error;
-          errorMessage = error['@_message'] || error['#text'] || 'Test error';
-          stackTrace = error['#text'] || undefined;
-        } else if (testcase.skipped) {
-          status = 'skipped';
-          const skipped = testcase.skipped;
-          errorMessage = skipped['@_message'] || skipped['#text'] || 'Test skipped';
-        }
-
-        testCases.push({
-          name: testName,
-          suite: suiteFile, // Use file path as suite identifier
-          status,
-          duration,
-          errorMessage,
-          stackTrace,
-        });
       }
     };
 
