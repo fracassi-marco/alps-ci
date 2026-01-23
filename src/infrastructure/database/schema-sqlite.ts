@@ -142,12 +142,104 @@ export const accessTokens = sqliteTable('access_tokens', {
   uniqueTenantName: uniqueIndex('idx_access_tokens_unique').on(table.tenantId, table.name),
 }));
 
+// Workflow Runs table (historical build executions)
+export const workflowRuns = sqliteTable('workflow_runs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  
+  // GitHub workflow run data
+  githubRunId: integer('github_run_id').notNull(),
+  name: text('name').notNull(),
+  status: text('status').notNull().$type<'success' | 'failure' | 'cancelled' | 'in_progress' | 'queued'>(),
+  conclusion: text('conclusion'),
+  htmlUrl: text('html_url').notNull(),
+  headBranch: text('head_branch'),
+  event: text('event'),
+  duration: integer('duration'), // milliseconds
+  
+  // Commit info
+  commitSha: text('commit_sha').notNull(),
+  commitMessage: text('commit_message'),
+  commitAuthor: text('commit_author'),
+  commitDate: integer('commit_date', { mode: 'timestamp' }),
+  
+  // Timestamps
+  workflowCreatedAt: integer('workflow_created_at', { mode: 'timestamp' }).notNull(),
+  workflowUpdatedAt: integer('workflow_updated_at', { mode: 'timestamp' }).notNull(),
+  syncedAt: integer('synced_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  buildIdIdx: index('idx_workflow_runs_build_id').on(table.buildId),
+  tenantIdIdx: index('idx_workflow_runs_tenant_id').on(table.tenantId),
+  statusIdx: index('idx_workflow_runs_status').on(table.status),
+  workflowCreatedAtIdx: index('idx_workflow_runs_workflow_created_at').on(table.workflowCreatedAt),
+  buildIdWorkflowCreatedAtIdx: index('idx_workflow_runs_build_created').on(table.buildId, table.workflowCreatedAt),
+  uniqueBuildGithubRun: uniqueIndex('idx_workflow_runs_unique').on(table.buildId, table.githubRunId),
+}));
+
+// Test Results table (parsed test results from workflow artifacts)
+export const testResults = sqliteTable('test_results', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  workflowRunId: text('workflow_run_id').notNull().references(() => workflowRuns.id, { onDelete: 'cascade' }),
+  buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  
+  // Test summary
+  totalTests: integer('total_tests').notNull(),
+  passedTests: integer('passed_tests').notNull(),
+  failedTests: integer('failed_tests').notNull(),
+  skippedTests: integer('skipped_tests').notNull(),
+  
+  // Test details (JSON array of individual test cases)
+  testCases: text('test_cases', { mode: 'json' }),
+  
+  // Metadata
+  artifactName: text('artifact_name'),
+  artifactUrl: text('artifact_url'),
+  parsedAt: integer('parsed_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  workflowRunIdIdx: uniqueIndex('idx_test_results_workflow_run_id').on(table.workflowRunId),
+  buildIdIdx: index('idx_test_results_build_id').on(table.buildId),
+  tenantIdIdx: index('idx_test_results_tenant_id').on(table.tenantId),
+  buildIdParsedAtIdx: index('idx_test_results_build_parsed').on(table.buildId, table.parsedAt),
+}));
+
+// Build Sync Status table (tracks sync progress per build)
+export const buildSyncStatus = sqliteTable('build_sync_status', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  
+  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
+  lastSyncedRunId: integer('last_synced_run_id'),
+  lastSyncedRunCreatedAt: integer('last_synced_run_created_at', { mode: 'timestamp' }),
+  
+  initialBackfillCompleted: integer('initial_backfill_completed', { mode: 'boolean' }).notNull().default(false),
+  initialBackfillCompletedAt: integer('initial_backfill_completed_at', { mode: 'timestamp' }),
+  
+  totalRunsSynced: integer('total_runs_synced').notNull().default(0),
+  lastSyncError: text('last_sync_error'),
+  
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (table) => ({
+  buildIdIdx: uniqueIndex('idx_build_sync_status_build_id').on(table.buildId),
+  tenantIdIdx: index('idx_build_sync_status_tenant_id').on(table.tenantId),
+}));
+
 // Relations
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   members: many(tenantMembers),
   invitations: many(invitations),
   builds: many(builds),
   accessTokens: many(accessTokens),
+  workflowRuns: many(workflowRuns),
+  testResults: many(testResults),
+  buildSyncStatuses: many(buildSyncStatus),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -188,11 +280,14 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
-export const buildsRelations = relations(builds, ({ one }) => ({
+export const buildsRelations = relations(builds, ({ one, many }) => ({
   tenant: one(tenants, {
     fields: [builds.tenantId],
     references: [tenants.id],
   }),
+  workflowRuns: many(workflowRuns),
+  testResults: many(testResults),
+  syncStatus: one(buildSyncStatus),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -217,5 +312,43 @@ export const accessTokensRelations = relations(accessTokens, ({ one }) => ({
   creator: one(users, {
     fields: [accessTokens.createdBy],
     references: [users.id],
+  }),
+}));
+
+export const workflowRunsRelations = relations(workflowRuns, ({ one }) => ({
+  build: one(builds, {
+    fields: [workflowRuns.buildId],
+    references: [builds.id],
+  }),
+  tenant: one(tenants, {
+    fields: [workflowRuns.tenantId],
+    references: [tenants.id],
+  }),
+  testResult: one(testResults),
+}));
+
+export const testResultsRelations = relations(testResults, ({ one }) => ({
+  workflowRun: one(workflowRuns, {
+    fields: [testResults.workflowRunId],
+    references: [workflowRuns.id],
+  }),
+  build: one(builds, {
+    fields: [testResults.buildId],
+    references: [builds.id],
+  }),
+  tenant: one(tenants, {
+    fields: [testResults.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const buildSyncStatusRelations = relations(buildSyncStatus, ({ one }) => ({
+  build: one(builds, {
+    fields: [buildSyncStatus.buildId],
+    references: [builds.id],
+  }),
+  tenant: one(tenants, {
+    fields: [buildSyncStatus.tenantId],
+    references: [tenants.id],
   }),
 }));

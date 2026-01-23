@@ -504,13 +504,33 @@ export default function TestResultsPage({
                   </div>
                 </div>
 
+                {/* Message if we have summary but no detailed test cases */}
+                {testResults.testSuites.length === 0 && testResults.summary.total > 0 && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                          Summary Only
+                        </h3>
+                        <p className="text-blue-800 dark:text-blue-300">
+                          Test summary statistics are available, but detailed individual test case information is not available.
+                          This can happen when test results are aggregated at the suite level or when detailed test case
+                          data was not stored during parsing.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Test Cases Table */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  {/* Header and Filters */}
-                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Test Suites ({groupedSuites.size})
-                    </h2>
+                {testResults.testSuites.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    {/* Header and Filters */}
+                    <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Test Suites ({groupedSuites.size})
+                      </h2>
 
                     {/* Filter Buttons */}
                     <div className="flex flex-wrap gap-2">
@@ -713,9 +733,10 @@ export default function TestResultsPage({
                     </div>
                   )}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+            </>
+          )}
+        </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">No test results available</p>

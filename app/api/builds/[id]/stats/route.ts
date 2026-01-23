@@ -3,7 +3,11 @@ import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepositor
 import { GitHubGraphQLClient, GitHubAuthenticationError } from '@/infrastructure/GitHubGraphQLClient';
 import { getGitHubDataCache } from '@/infrastructure/cache-instance';
 import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
-import { FetchBuildStatsUseCase } from '@/use-cases/fetchBuildStats';
+import { FetchBuildStatsFromDatabaseUseCase } from '@/use-cases/fetchBuildStatsFromDatabase';
+import { SyncBuildHistoryUseCase } from '@/use-cases/syncBuildHistory';
+import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
+import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import { DatabaseBuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
@@ -13,6 +17,9 @@ const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const accessTokenRepository = new DatabaseAccessTokenRepository();
 const tokenResolutionService = new TokenResolutionService(accessTokenRepository);
+const workflowRunRepository = new DatabaseWorkflowRunRepository();
+const testResultRepository = new DatabaseTestResultRepository();
+const syncStatusRepository = new DatabaseBuildSyncStatusRepository();
 
 export async function GET(
   request: Request,
@@ -59,8 +66,12 @@ export async function GET(
     const cache = getGitHubDataCache();
     const cachedClient = new CachedGitHubClient(githubClient, cache);
 
-    // Fetch statistics
-    const useCase = new FetchBuildStatsUseCase(cachedClient);
+    // Fetch statistics from database (fast!)
+    const useCase = new FetchBuildStatsFromDatabaseUseCase(
+      workflowRunRepository,
+      testResultRepository,
+      cachedClient
+    );
     const stats = await useCase.execute(build);
 
     return NextResponse.json(stats);
@@ -130,9 +141,23 @@ export async function POST(
     // Invalidate cache for this repository
     cachedClient.invalidateRepository(build.organization, build.repository);
 
-    // Fetch fresh statistics
-    const useCase = new FetchBuildStatsUseCase(cachedClient);
-    const stats = await useCase.execute(build);
+    // Sync workflow runs from GitHub to database
+    const syncUseCase = new SyncBuildHistoryUseCase(
+      cachedClient,
+      workflowRunRepository,
+      testResultRepository,
+      syncStatusRepository
+    );
+
+    await syncUseCase.execute(build);
+
+    // Fetch fresh statistics from database
+    const fetchUseCase = new FetchBuildStatsFromDatabaseUseCase(
+      workflowRunRepository,
+      testResultRepository,
+      cachedClient
+    );
+    const stats = await fetchUseCase.execute(build);
 
     return NextResponse.json(stats);
   } catch (error) {

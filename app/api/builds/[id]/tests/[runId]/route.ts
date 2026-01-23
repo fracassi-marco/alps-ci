@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
+import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
+import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import { TokenResolutionService } from '@/infrastructure/TokenResolutionService';
 import { parseJUnitXML } from '@/infrastructure/junit-parser';
 import JSZip from 'jszip';
@@ -11,6 +13,8 @@ import { XMLParser } from 'fast-xml-parser';
 const buildRepository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const accessTokenRepository = new DatabaseAccessTokenRepository();
+const workflowRunRepository = new DatabaseWorkflowRunRepository();
+const testResultRepository = new DatabaseTestResultRepository();
 const tokenResolutionService = new TokenResolutionService(accessTokenRepository);
 
 // In-memory cache for test results (1 hour TTL)
@@ -309,6 +313,80 @@ export async function GET(
       );
     }
 
+    // Try to fetch test results from database first
+    const workflowRun = await workflowRunRepository.findByGithubRunId(
+      build.id,
+      parseInt(runId, 10),
+      membership.tenantId
+    );
+
+    console.log(`[TestResults] Workflow run lookup:`, {
+      buildId: build.id,
+      runId,
+      found: !!workflowRun,
+    });
+
+    if (workflowRun) {
+      const testResult = await testResultRepository.findByWorkflowRunId(
+        workflowRun.id,
+        membership.tenantId
+      );
+
+      if (testResult) {
+        console.log(`[TestResults] Found test result in database:`, {
+          totalTests: testResult.totalTests,
+          hasTestCases: !!testResult.testCases,
+          testCasesLength: testResult.testCases?.length || 0,
+        });
+
+        // Map database test cases to API format (handle null testCases)
+        const testSuites: TestCase[] = testResult.testCases && testResult.testCases.length > 0
+          ? testResult.testCases.map((tc) => ({
+              name: tc.name || 'Unknown Test',
+              suite: tc.suite || tc.file || 'Unknown Suite',
+              status: tc.status,
+              duration: (tc.duration || 0) / 1000, // Convert ms to seconds
+              errorMessage: tc.error || undefined,
+            }))
+          : []; // Empty array if no detailed test cases available
+
+        // Return test results from database
+        const results: TestResults = {
+          summary: {
+            total: testResult.totalTests,
+            passed: testResult.passedTests,
+            failed: testResult.failedTests,
+            skipped: testResult.skippedTests,
+          },
+          testSuites,
+        };
+
+        // If no detailed test cases but we have summary stats, add a note
+        if (testSuites.length === 0 && testResult.totalTests > 0) {
+          console.log('[TestResults] Returning summary without detailed test cases');
+          return NextResponse.json({
+            ...results,
+            message: 'Test summary available. Detailed test case information not available.',
+            cachedAt: testResult.parsedAt.toISOString(),
+            source: 'database',
+          });
+        }
+
+        // Also cache in memory for faster subsequent requests
+        setCachedResults(id, runId, results);
+
+        console.log('[TestResults] Returning full test results from database');
+        return NextResponse.json({
+          ...results,
+          cachedAt: testResult.parsedAt.toISOString(),
+          source: 'database',
+        });
+      }
+    }
+
+    // Fallback: Fetch from GitHub artifacts if not in database
+    console.log('[TestResults] No test results in database, fetching from GitHub artifacts');
+
     // Resolve GitHub access token
     let token: string;
     try {
@@ -317,14 +395,19 @@ export async function GET(
         inlineToken: build.personalAccessToken,
         tenantId: membership.tenantId,
       });
+      console.log('[TestResults] Token resolved successfully');
     } catch (error) {
+      console.error('[TestResults] Failed to resolve token:', error);
       return NextResponse.json(
         {error: 'Failed to resolve access token. Please check your token configuration.'},
         {status: 400}
       );
     }
     
+    console.log(`[TestResults] Fetching artifacts for ${build.organization}/${build.repository}/runs/${runId}`);
     const artifacts = await fetchArtifacts(token, build.organization, build.repository, runId);
+
+    console.log(`[TestResults] Found ${artifacts.length} artifact(s)`);
 
     if (artifacts.length === 0) {
       return NextResponse.json({
@@ -338,6 +421,9 @@ export async function GET(
     const testArtifacts = artifacts.filter((artifact: any) =>
       artifact.name.toLowerCase().includes('test')
     );
+
+    console.log(`[TestResults] Found ${testArtifacts.length} test artifact(s):`, 
+      testArtifacts.map((a: any) => a.name));
 
     if (testArtifacts.length === 0) {
       return NextResponse.json({

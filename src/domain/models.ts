@@ -152,3 +152,71 @@ export interface BuildWithStats extends Build {
   stats: BuildStats | null;
   error: string | null;
 }
+
+// Workflow Run Record (historical workflow execution data)
+export interface WorkflowRunRecord {
+  id: string;
+  buildId: string;
+  tenantId: string;
+  githubRunId: number;
+  name: string;
+  status: WorkflowRunStatus;
+  conclusion: string | null;
+  htmlUrl: string;
+  headBranch: string | null;
+  event: string | null;
+  duration: number | null; // milliseconds
+  commitSha: string;
+  commitMessage: string | null;
+  commitAuthor: string | null;
+  commitDate: Date | null;
+  workflowCreatedAt: Date;
+  workflowUpdatedAt: Date;
+  syncedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Test Case (individual test result)
+export interface TestCase {
+  name: string;
+  status: 'passed' | 'failed' | 'skipped';
+  duration: number | null; // milliseconds
+  file: string | null;
+  suite: string | null;
+  error: string | null;
+}
+
+// Test Result Record (parsed test results from artifacts)
+export interface TestResultRecord {
+  id: string;
+  workflowRunId: string;
+  buildId: string;
+  tenantId: string;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  skippedTests: number;
+  testCases: TestCase[] | null;
+  artifactName: string | null;
+  artifactUrl: string | null;
+  parsedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Build Sync Status (tracks sync progress per build)
+export interface BuildSyncStatus {
+  id: string;
+  buildId: string;
+  tenantId: string;
+  lastSyncedAt: Date | null;
+  lastSyncedRunId: number | null;
+  lastSyncedRunCreatedAt: Date | null;
+  initialBackfillCompleted: boolean;
+  initialBackfillCompletedAt: Date | null;
+  totalRunsSynced: number;
+  lastSyncError: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -108,42 +108,6 @@ export class GitHubGraphQLClient {
       since?: Date;
     }
   ): Promise<WorkflowRun[]> {
-    const limit = filters?.limit || 100;
-    const sinceDate = filters?.since || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Default: 7 days ago
-
-    const query = `
-      query($owner: String!, $repo: String!, $limit: Int!, $since: DateTime!) {
-        repository(owner: $owner, name: $repo) {
-          workflowRuns: object(expression: "HEAD") {
-            ... on Commit {
-              history(first: 1) {
-                nodes {
-                  checkSuites(first: $limit) {
-                    nodes {
-                      workflowRun {
-                        databaseId
-                        workflow {
-                          name
-                        }
-                        event
-                        status
-                        conclusion
-                        url
-                        createdAt
-                        updatedAt
-                        runStartedAt
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    // Use REST API for workflow runs as GraphQL support is limited
     return this.fetchWorkflowRunsREST(owner, repo, filters);
   }
 
@@ -157,6 +121,7 @@ export class GitHubGraphQLClient {
       since?: Date;
     }
   ): Promise<WorkflowRun[]> {
+    console.log(`[GitHub] fetching workflow runs for ${owner}/${repo}`);
     const limit = filters?.limit || 100;
     const perPage = Math.min(limit, 100);
 
@@ -210,6 +175,7 @@ export class GitHubGraphQLClient {
   }
 
   async fetchTags(owner: string, repo: string, limit = 100): Promise<string[]> {
+    console.log(`[GitHub] fetching tags for ${owner}/${repo}`);
     const query = `
       query($owner: String!, $repo: String!, $limit: Int!) {
         repository(owner: $owner, name: $repo) {
@@ -251,7 +217,7 @@ export class GitHubGraphQLClient {
   }
 
   async fetchWorkflows(owner: string, repo: string): Promise<Array<{ name: string; path: string; state: string }>> {
-    // Use REST API for workflows
+    console.log(`[GitHub] fetching workflows for ${owner}/${repo}`);
     const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows`;
 
     const response = await fetch(url, {
@@ -371,6 +337,7 @@ export class GitHubGraphQLClient {
     since?: Date,
     until?: Date
   ): Promise<number> {
+    console.log(`[GitHub] fetching commits for ${owner}/${repo}`);
     try {
       const sinceParam = since ? `&since=${since.toISOString()}` : '';
       const untilParam = until ? `&until=${until.toISOString()}` : '';
@@ -425,6 +392,7 @@ export class GitHubGraphQLClient {
     repo: string,
     since?: Date
   ): Promise<number> {
+    console.log(`[GitHub] fetching total contributor for ${owner}/${repo}`);
     try {
       // First, fetch commits to get unique authors
       const sinceParam = since ? `&since=${since.toISOString()}` : '';
@@ -479,7 +447,8 @@ export class GitHubGraphQLClient {
   async fetchTotalContributors(
     owner: string,
     repo: string
-  ): Promise<number> {
+  ): Promise<number> {    
+    console.log(`[GitHub] fetching total contributor for ${owner}/${repo}`);
     try {
       // GitHub's contributors endpoint returns all contributors
       // We need to paginate through all pages to get accurate count
@@ -542,6 +511,7 @@ export class GitHubGraphQLClient {
     repo: string
   ): Promise<{ message: string; date: Date; author: string; sha: string; url: string } | null> {
     try {
+      console.log(`[GitHub] fetching last commit for: ${owner}/${repo}`);
       const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`;
 
       const response = await fetch(url, {
@@ -591,6 +561,7 @@ export class GitHubGraphQLClient {
    */
   async fetchArtifacts(owner: string, repo: string, runId: number): Promise<Array<{ id: number; name: string; size_in_bytes: number }>> {
     try {
+      console.log('[GitHub] fetching artifacts for run:', runId);
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}/artifacts`;
 
       const response = await fetch(url, {
@@ -627,6 +598,7 @@ export class GitHubGraphQLClient {
    */
   async downloadArtifact(owner: string, repo: string, artifactId: number): Promise<string | null> {
     try {
+      console.log('[GitHub] fetching artifact:', artifactId);
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts/${artifactId}/zip`;
 
       const response = await fetch(url, {
