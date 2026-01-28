@@ -334,6 +334,32 @@ export class CachedGitHubClient {
   }
 
   /**
+   * Fetches contributors list with caching support
+   */
+  async fetchContributorsList(
+    owner: string,
+    repo: string,
+    cacheExpirationMinutes: number,
+    limit: number = 50
+  ): Promise<Array<{ login: string; name: string | null; avatarUrl: string; contributions: number; profileUrl: string }>> {
+    const cacheKey = this.getCacheKey(owner, repo, `contributors-list-${limit}`);
+
+    // Check cache first
+    const cached = this.cache.getWorkflowRuns(cacheKey);
+    if (this.isCacheValid(cached, cacheExpirationMinutes)) {
+      return cached.data as any;
+    }
+
+    // Cache miss or expired, fetch from API
+    const contributors = await this.client.fetchContributorsList(owner, repo, limit);
+
+    // Cache the result
+    this.cache.setWorkflowRuns(cacheKey, contributors as any);
+
+    return contributors;
+  }
+
+  /**
    * Fetch artifacts from a workflow run (no caching for artifacts)
    */
   async fetchArtifacts(

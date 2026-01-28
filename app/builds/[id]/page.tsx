@@ -25,6 +25,7 @@ import Button from '../../components/Button';
 import { BuildDetailsChart } from '../../components/BuildDetailsChart';
 import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
 import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
+import { ContributorsList } from '../../components/ContributorsList';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { Build, BuildDetailsStats, Selector, WorkflowRun } from '@/domain/models';
 
@@ -393,6 +394,13 @@ export default function BuildDetailsPage() {
         {stats && stats.testTrend && stats.testTrend.length > 0 && (
           <div className="mb-6">
             <MonthlyTestsChart testTrend={stats.testTrend} />
+          </div>
+        )}
+
+        {/* Contributors List */}
+        {stats && stats.contributors && stats.contributors.length > 0 && (
+          <div className="mb-6">
+            <ContributorsList contributors={stats.contributors} />
           </div>
         )}
 

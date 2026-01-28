@@ -170,6 +170,15 @@ export interface TestTrendDataPoint {
   skippedTests: number;
 }
 
+// Contributor information
+export interface Contributor {
+  login: string;
+  name: string | null;
+  avatarUrl: string;
+  contributions: number;
+  profileUrl: string;
+}
+
 // Build with statistics
 export interface BuildWithStats extends Build {
   stats: BuildStats | null;
@@ -181,6 +190,7 @@ export interface BuildDetailsStats extends BuildStats {
   monthlyStats: MonthlyBuildStats[]; // Last 12 months
   monthlyCommits: MonthlyCommitStats[]; // Last 12 months of commits
   testTrend: TestTrendDataPoint[]; // All test runs over time
+  contributors: Contributor[]; // List of contributors ordered by contributions
 }
 
 // Workflow Run Record (historical workflow execution data)

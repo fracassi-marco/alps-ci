@@ -1,4 +1,4 @@
-import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, WorkflowRunRecord, TestResultRecord } from '@/domain/models';
+import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord, TestResultRecord } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
@@ -55,11 +55,29 @@ export class FetchBuildDetailsStatsUseCase {
     // Calculate test trend (all test runs over time)
     const testTrend = await this.calculateTestTrend(build, twelveMonthsAgo, now);
 
+    // Fetch contributors list if GitHub client is available
+    let contributors: Contributor[] = [];
+    if (this.cachedGitHubClient) {
+      try {
+        contributors = await this.cachedGitHubClient.fetchContributorsList(
+          build.organization,
+          build.repository,
+          build.cacheExpirationMinutes,
+          50 // Limit to top 50 contributors
+        );
+      } catch (error) {
+        console.error('Failed to fetch contributors list:', error);
+        // Return empty array on error (graceful degradation)
+        contributors = [];
+      }
+    }
+
     return {
       ...baseStats,
       monthlyStats,
       monthlyCommits,
       testTrend,
+      contributors,
     };
   }
 

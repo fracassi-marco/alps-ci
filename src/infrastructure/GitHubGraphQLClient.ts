@@ -532,6 +532,88 @@ export class GitHubGraphQLClient {
   }
 
   /**
+   * Fetch list of contributors with their commit counts
+   * Returns contributors ordered by number of contributions (descending)
+   */
+  async fetchContributorsList(
+    owner: string,
+    repo: string,
+    limit: number = 50
+  ): Promise<Array<{ login: string; name: string | null; avatarUrl: string; contributions: number; profileUrl: string }>> {
+    console.log(`[GitHub] fetching contributors list for ${owner}/${repo}`);
+    try {
+      const allContributors: Array<{
+        login: string;
+        name: string | null;
+        avatarUrl: string;
+        contributions: number;
+        profileUrl: string;
+      }> = [];
+      let page = 1;
+      const perPage = 100;
+
+      while (allContributors.length < limit) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${perPage}&page=${page}&anon=1`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Alps-CI',
+          },
+        });
+
+        if (response.status === 401) {
+          throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+        }
+
+        if (!response.ok) {
+          throw new GitHubAPIError(
+            `GitHub API request failed: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const contributors = await response.json();
+
+        if (!Array.isArray(contributors) || contributors.length === 0) {
+          break;
+        }
+
+        // Map GitHub API response to our Contributor interface
+        for (const contributor of contributors) {
+          if (allContributors.length >= limit) {
+            break;
+          }
+
+          allContributors.push({
+            login: contributor.login || 'unknown',
+            name: contributor.name || null,
+            avatarUrl: contributor.avatar_url || '',
+            contributions: contributor.contributions || 0,
+            profileUrl: contributor.html_url || `https://github.com/${contributor.login}`,
+          });
+        }
+
+        // If we got less than perPage results, we're done
+        if (contributors.length < perPage || allContributors.length >= limit) {
+          break;
+        }
+
+        page++;
+      }
+
+      // Already sorted by contributions DESC from GitHub API
+      return allContributors.slice(0, limit);
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch contributors list: ${error}`);
+    }
+  }
+
+  /**
    * Fetch the last commit from a repository
    */
   async fetchLastCommit(
