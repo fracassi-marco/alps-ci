@@ -155,6 +155,12 @@ export interface MonthlyBuildStats {
   totalCount: number;
 }
 
+// Monthly commit count for commit activity chart
+export interface MonthlyCommitStats {
+  month: string; // ISO month string (YYYY-MM)
+  commitCount: number;
+}
+
 // Build with statistics
 export interface BuildWithStats extends Build {
   stats: BuildStats | null;
@@ -164,6 +170,7 @@ export interface BuildWithStats extends Build {
 // Build details statistics (extended stats with monthly data)
 export interface BuildDetailsStats extends BuildStats {
   monthlyStats: MonthlyBuildStats[]; // Last 12 months
+  monthlyCommits: MonthlyCommitStats[]; // Last 12 months of commits
 }
 
 // Workflow Run Record (historical workflow execution data)

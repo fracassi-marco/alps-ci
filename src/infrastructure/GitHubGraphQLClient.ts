@@ -106,6 +106,7 @@ export class GitHubGraphQLClient {
       branch?: string;
       limit?: number;
       since?: Date;
+      delayMs?: number;
     }
   ): Promise<WorkflowRun[]> {
     return this.fetchWorkflowRunsREST(owner, repo, filters);
@@ -119,41 +120,68 @@ export class GitHubGraphQLClient {
       branch?: string;
       limit?: number;
       since?: Date;
+      delayMs?: number;
     }
   ): Promise<WorkflowRun[]> {
-    console.log(`[GitHub] fetching workflow runs for ${owner}/${repo}`);
-    const limit = filters?.limit || 100;
-    const perPage = Math.min(limit, 100);
+    console.log(`[GitHub] fetching workflow runs for ${owner}/${repo}${filters?.limit === undefined ? ' (unlimited)' : ` (limit: ${filters.limit})`}`);
+    const limit = filters?.limit;
+    const perPage = 100; // GitHub API max per page
+    const delayMs = filters?.delayMs || 0;
 
-    let url = `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=${perPage}`;
+    let allRuns: any[] = [];
+    let page = 1;
+    let hasMorePages = true;
 
-    if (filters?.branch) {
-      url += `&branch=${encodeURIComponent(filters.branch)}`;
+    while (hasMorePages) {
+      let url = `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=${perPage}&page=${page}`;
+
+      if (filters?.branch) {
+        url += `&branch=${encodeURIComponent(filters.branch)}`;
+      }
+
+      // Add delay between requests to avoid rate limits (except first request)
+      if (page > 1 && delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const result = await response.json();
+      const runs = result.workflow_runs || [];
+      
+      allRuns = allRuns.concat(runs);
+
+      // Check if we should continue paginating
+      if (limit !== undefined && allRuns.length >= limit) {
+        hasMorePages = false;
+      } else if (runs.length < perPage) {
+        // No more pages available
+        hasMorePages = false;
+      } else {
+        page++;
+      }
     }
 
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Alps-CI',
-      },
-    });
+    console.log(`[GitHub] Fetched ${allRuns.length} workflow runs for ${owner}/${repo}`);
 
-    if (response.status === 401) {
-      throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
-    }
-
-    if (!response.ok) {
-      throw new GitHubAPIError(
-        `GitHub API request failed: ${response.statusText}`,
-        response.status
-      );
-    }
-
-    const result = await response.json();
-    const runs = result.workflow_runs || [];
-
-    return runs
+    return allRuns
       .filter((run: any) => {
         // Filter by workflow name if specified
         if (filters?.workflowName && run.name !== filters.workflowName) {

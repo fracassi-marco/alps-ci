@@ -32,6 +32,7 @@ export default function Home() {
   const [userRole, setUserRole] = useState<'owner' | 'admin' | 'member' | null>(null);
   const [buildRefreshKeys, setBuildRefreshKeys] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSavingBuild, setIsSavingBuild] = useState(false);
 
   // Filter builds based on search query (name and repository only)
   const filteredBuilds = useMemo(() => {
@@ -136,6 +137,7 @@ export default function Home() {
   };
 
   const handleSaveBuild = async (build: Partial<Build>) => {
+    setIsSavingBuild(true);
     try {
       const url = editingBuild ? `/api/builds/${build.id}` : '/api/builds';
       const method = editingBuild ? 'PUT' : 'POST';
@@ -147,7 +149,19 @@ export default function Home() {
       });
 
       if (response.ok) {
+        const savedBuild = await response.json();
+        
+        // Refetch the builds list to show the new/updated build
         await fetchBuilds();
+
+        // If creating a new build, show a toast notification about initial data fetch
+        if (!editingBuild) {
+          toast.success(`Build "${savedBuild.name}" created! Initial data is being fetched in the background.`);
+          
+          // Keep loading overlay visible for a brief moment to ensure 
+          // BuildCard has time to mount and show the "Fetching initial data" banner
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
 
         // If editing an existing build, force refresh its statistics
         if (editingBuild && build.id) {
@@ -176,6 +190,8 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to save build:', error);
       throw error;
+    } finally {
+      setIsSavingBuild(false);
     }
   };
 
@@ -599,6 +615,18 @@ export default function Home() {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">Deleting build...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Saving Build Overlay */}
+      {isSavingBuild && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">
+              {editingBuild ? 'Updating build...' : 'Creating build and fetching initial data...'}
+            </p>
           </div>
         </div>
       )}

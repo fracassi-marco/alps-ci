@@ -216,6 +216,26 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
         {/* Statistics */}
         {!loading && !error && stats && (
           <div className="space-y-6">
+            {/* Initial Backfill Message - Show when no data yet */}
+            {stats.totalExecutions === 0 && (
+              <div 
+                className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-6 shadow-md"
+                data-testid="initial-backfill-banner"
+              >
+                <div className="flex items-start gap-4">
+                  <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400 shrink-0 animate-pulse" />
+                  <div className="flex-1">
+                    <p className="text-base text-blue-900 dark:text-blue-100 font-bold mb-2">
+                      Fetching initial data...
+                    </p>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      We're loading workflow history from GitHub. This may take a few moments. Click the refresh button to check progress.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Total Executions */}

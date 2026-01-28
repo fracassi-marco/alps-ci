@@ -1,6 +1,7 @@
-import type { Build, BuildDetailsStats, MonthlyBuildStats, WorkflowRunRecord } from '@/domain/models';
+import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, WorkflowRunRecord } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
 import { formatDateYYYYMM, getLastNMonthsRange } from '@/domain/utils';
 import { FetchBuildStatsFromDatabaseUseCase } from './fetchBuildStatsFromDatabase';
 
@@ -11,7 +12,8 @@ import { FetchBuildStatsFromDatabaseUseCase } from './fetchBuildStatsFromDatabas
 export class FetchBuildDetailsStatsUseCase {
   constructor(
     private workflowRunRepo: WorkflowRunRepository,
-    private testResultRepo: TestResultRepository
+    private testResultRepo: TestResultRepository,
+    private cachedGitHubClient?: CachedGitHubClient
   ) {}
 
   async execute(build: Build): Promise<BuildDetailsStats> {
@@ -35,9 +37,25 @@ export class FetchBuildDetailsStatsUseCase {
     // Calculate monthly statistics
     const monthlyStats = this.calculateMonthlyStats(allRuns);
 
+    // Calculate monthly commits if GitHub client is available
+    let monthlyCommits: MonthlyCommitStats[] = [];
+    if (this.cachedGitHubClient) {
+      try {
+        monthlyCommits = await this.calculateMonthlyCommits(build, this.cachedGitHubClient);
+      } catch (error) {
+        console.error('Failed to fetch monthly commits:', error);
+        // Return empty array on error (graceful degradation)
+        monthlyCommits = this.getEmptyMonthlyCommits();
+      }
+    } else {
+      // No GitHub client provided, return empty data
+      monthlyCommits = this.getEmptyMonthlyCommits();
+    }
+
     return {
       ...baseStats,
       monthlyStats,
+      monthlyCommits,
     };
   }
 
@@ -78,5 +96,45 @@ export class FetchBuildDetailsStatsUseCase {
         totalCount,
       };
     });
+  }
+
+  private async calculateMonthlyCommits(
+    build: Build,
+    cachedClient: CachedGitHubClient
+  ): Promise<MonthlyCommitStats[]> {
+    const last12Months = getLastNMonthsRange(12);
+
+    // Fetch commits for each month in parallel
+    const monthlyCommits = await Promise.all(
+      last12Months.map(async (month) => {
+        const [year, monthNum] = month.split('-');
+        
+        // Create date range for this month (first day to last day)
+        const startDate = new Date(parseInt(year!), parseInt(monthNum!) - 1, 1, 0, 0, 0, 0);
+        const endDate = new Date(parseInt(year!), parseInt(monthNum!), 0, 23, 59, 59, 999);
+
+        try {
+          const commitCount = await cachedClient.fetchCommits(
+            build.organization,
+            build.repository,
+            build.cacheExpirationMinutes,
+            startDate,
+            endDate
+          );
+
+          return { month, commitCount };
+        } catch (error) {
+          console.error(`Failed to fetch commits for ${month}:`, error);
+          return { month, commitCount: 0 };
+        }
+      })
+    );
+
+    return monthlyCommits;
+  }
+
+  private getEmptyMonthlyCommits(): MonthlyCommitStats[] {
+    const last12Months = getLastNMonthsRange(12);
+    return last12Months.map((month) => ({ month, commitCount: 0 }));
   }
 }

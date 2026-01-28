@@ -17,14 +17,21 @@ import {
   XCircle,
   GitCommit,
   ChevronDown,
+  User,
+  LogOut,
 } from 'lucide-react';
+import { useSession, signOut } from '@/infrastructure/auth-client';
+import Button from '../../components/Button';
 import { BuildDetailsChart } from '../../components/BuildDetailsChart';
+import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { Build, BuildDetailsStats, Selector, WorkflowRun } from '@/domain/models';
 
 export default function BuildDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const buildId = params.id as string;
+  const { data: session, isPending } = useSession();
 
   const [build, setBuild] = useState<Build | null>(null);
   const [stats, setStats] = useState<BuildDetailsStats | null>(null);
@@ -32,10 +39,31 @@ export default function BuildDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showRecentRuns, setShowRecentRuns] = useState(false);
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push('/auth/signin');
+    }
+  }, [session, isPending, router]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowUserMenu(false);
+    if (showUserMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showUserMenu]);
 
   useEffect(() => {
-    fetchBuildDetails();
-  }, [buildId]);
+    if (session) {
+      fetchBuildDetails();
+    }
+  }, [buildId, session]);
 
   const fetchBuildDetails = async () => {
     try {
@@ -74,11 +102,12 @@ export default function BuildDetailsPage() {
     router.push(`/?edit=${buildId}`);
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this build?')) {
-      return;
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/builds/${buildId}`, {
         method: 'DELETE',
@@ -92,7 +121,14 @@ export default function BuildDetailsPage() {
     } catch (err) {
       console.error('Error deleting build:', err);
       alert('Failed to delete build. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
   };
 
   const getSelectorIcon = (type: Selector['type']) => {
@@ -106,6 +142,11 @@ export default function BuildDetailsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/auth/signin');
+  };
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -115,6 +156,18 @@ export default function BuildDetailsPage() {
       minute: '2-digit',
     });
   };
+
+  // Show loading while checking auth
+  if (isPending || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -145,9 +198,68 @@ export default function BuildDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Consistent Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🏔</span>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Alps-CI
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Build Details
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* User Menu */}
+              <div className="relative">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUserMenu(!showUserMenu);
+                  }}
+                  variant="secondary"
+                  icon={<User className="w-5 h-5" />}
+                  className="gap-2"
+                >
+                  <span className="text-sm font-medium">{session.user?.name || session.user?.email}</span>
+                </Button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/organization');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <User className="w-4 h-4" />
+                      Organization
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Page Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Build Header with Back Button */}
         <div className="mb-6">
           <button
             onClick={() => router.push('/')}
@@ -187,7 +299,7 @@ export default function BuildDetailsPage() {
                   <Edit className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                   className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
                   title="Delete build"
                 >
@@ -218,114 +330,17 @@ export default function BuildDetailsPage() {
           </div>
         )}
 
-        {/* Build Info Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Selectors */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Selectors
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {build.selectors.map((selector, index) => (
-                <div
-                  key={index}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm"
-                >
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {getSelectorIcon(selector.type)}
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {selector.type}:
-                  </span>
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {selector.pattern}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Health Metrics */}
-          {stats && (
-            <>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Health Metrics (Last 7 Days)
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Success Rate</span>
-                    <span className={`text-lg font-bold ${
-                      stats.healthPercentage >= 90 
-                        ? 'text-green-600 dark:text-green-400' 
-                        : stats.healthPercentage >= 70 
-                        ? 'text-yellow-600 dark:text-yellow-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {stats.healthPercentage}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Runs</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {stats.totalExecutions}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Successes</span>
-                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                      {stats.successfulExecutions}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Failures</span>
-                    <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                      {stats.failedExecutions}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Repository Info */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Repository Activity
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Commits (7d)</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {stats.commitsLast7Days}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Contributors (7d)</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {stats.contributorsLast7Days}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Commits</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {stats.totalCommits.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Contributors</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {stats.totalContributors}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
         {/* Monthly Chart */}
         {stats && (
           <div className="mb-6">
             <BuildDetailsChart monthlyStats={stats.monthlyStats} />
+          </div>
+        )}
+
+        {/* Monthly Commits Chart */}
+        {stats && stats.monthlyCommits && stats.monthlyCommits.length > 0 && (
+          <div className="mb-6">
+            <MonthlyCommitsChart monthlyCommits={stats.monthlyCommits} />
           </div>
         )}
 
@@ -542,6 +557,29 @@ export default function BuildDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteModal && build && !isDeleting && (
+        <ConfirmDialog
+          title="Delete Build?"
+          message={`Are you sure you want to delete "${build.name}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          isDestructive
+        />
+      )}
+
+      {/* Deleting Overlay */}
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Deleting build...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

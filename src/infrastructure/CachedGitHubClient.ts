@@ -46,6 +46,7 @@ export class CachedGitHubClient {
       branch?: string;
       limit?: number;
       since?: Date;
+      delayMs?: number;
     }
   ): Promise<WorkflowRun[]> {
     const cacheKey = this.getCacheKey(

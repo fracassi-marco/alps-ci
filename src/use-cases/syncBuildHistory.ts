@@ -35,10 +35,10 @@ export class SyncBuildHistoryUseCase {
       }
 
       // 2. Determine date range for fetching
-      const sinceDate = syncStatus.lastSyncedRunCreatedAt || this.get30DaysAgo();
+      const sinceDate = this.getBackfillStartDate(syncStatus);
 
       // 3. Fetch workflow runs from GitHub
-      const githubRuns = await this.fetchWorkflowRunsForBuild(build, sinceDate);
+      const githubRuns = await this.fetchWorkflowRunsForBuild(build, sinceDate, syncStatus);
 
       // 4. Filter out runs we already have in database
       const newRuns = await this.filterNewRuns(githubRuns, build.id, build.tenantId);
@@ -60,9 +60,13 @@ export class SyncBuildHistoryUseCase {
 
       console.log(`Synced ${persistedRuns.length} new workflow runs for build ${build.name}`);
 
-      // 7. For completed runs, fetch and persist test results
+      // 7. For completed runs, fetch and persist test results (LAST 50 ONLY)
       let testResultsParsed = 0;
-      for (const run of persistedRuns) {
+      const runsForTestFetch = persistedRuns.slice(0, 50); // Only fetch tests for last 50 runs
+      
+      console.log(`Fetching test results for ${runsForTestFetch.length} of ${persistedRuns.length} runs`);
+      
+      for (const run of runsForTestFetch) {
         if (run.status === 'success' || run.status === 'failure') {
           try {
             const testResult = await this.fetchAndPersistTestResult(run, build);
@@ -114,13 +118,38 @@ export class SyncBuildHistoryUseCase {
     }
   }
 
-  private async fetchWorkflowRunsForBuild(build: Build, since: Date): Promise<WorkflowRun[]> {
+  private isInitialBackfill(syncStatus: { initialBackfillCompleted: boolean }): boolean {
+    return !syncStatus.initialBackfillCompleted;
+  }
+
+  private getBackfillStartDate(syncStatus: { 
+    initialBackfillCompleted: boolean; 
+    lastSyncedRunCreatedAt: Date | null;
+  }): Date {
+    // If initial backfill not complete, fetch all history
+    if (this.isInitialBackfill(syncStatus)) {
+      // Use very old date to fetch all workflow runs (GitHub Actions launched in 2019)
+      return new Date('2015-01-01');
+    }
+    // Otherwise, incremental sync from last run or last 30 days
+    return syncStatus.lastSyncedRunCreatedAt || this.get30DaysAgo();
+  }
+
+  private async fetchWorkflowRunsForBuild(
+    build: Build, 
+    since: Date,
+    syncStatus: { initialBackfillCompleted: boolean }
+  ): Promise<WorkflowRun[]> {
     // Fetch all workflow runs since the specified date
     const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
       build.organization,
       build.repository,
       build.cacheExpirationMinutes,
-      { since, limit: 100 }
+      { 
+        since, 
+        limit: this.isInitialBackfill(syncStatus) ? undefined : 100,
+        delayMs: 100  // Add delay between paginated requests to avoid rate limits
+      }
     );
 
     // Fetch all tags for tag matching

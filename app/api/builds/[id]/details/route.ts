@@ -5,11 +5,18 @@ import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflow
 import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
+import { GitHubGraphQLClient } from '@/infrastructure/GitHubGraphQLClient';
+import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
+import { InMemoryGitHubDataCache } from '@/infrastructure/GitHubDataCache';
+import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
+import { decrypt } from '@/infrastructure/encryption';
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const workflowRunRepository = new DatabaseWorkflowRunRepository();
 const testResultRepository = new DatabaseTestResultRepository();
+const accessTokenRepository = new DatabaseAccessTokenRepository();
+const cache = new InMemoryGitHubDataCache();
 
 export async function GET(
   request: Request,
@@ -44,10 +51,40 @@ export async function GET(
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
     }
 
+    // Initialize GitHub client if build has a token
+    let cachedGitHubClient: CachedGitHubClient | undefined;
+    
+    try {
+      let token: string | null = null;
+
+      // Try to get token from accessTokenId first
+      if (build.accessTokenId) {
+        const accessToken = await accessTokenRepository.findById(build.accessTokenId, tenantId);
+        if (accessToken) {
+          token = decrypt(accessToken.encryptedToken);
+        }
+      }
+
+      // Fall back to personal access token if no shared token
+      if (!token && build.personalAccessToken) {
+        token = build.personalAccessToken;
+      }
+
+      // Create cached GitHub client if token is available
+      if (token) {
+        const githubClient = new GitHubGraphQLClient(token);
+        cachedGitHubClient = new CachedGitHubClient(githubClient, cache);
+      }
+    } catch (error) {
+      console.error('Failed to initialize GitHub client:', error);
+      // Continue without GitHub client (will return empty commit data)
+    }
+
     // Fetch extended statistics with monthly data
     const useCase = new FetchBuildDetailsStatsUseCase(
       workflowRunRepository,
-      testResultRepository
+      testResultRepository,
+      cachedGitHubClient
     );
     const detailsStats = await useCase.execute(build);
 

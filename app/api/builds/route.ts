@@ -6,6 +6,15 @@ import { ListBuildsUseCase } from '@/use-cases/listBuilds';
 import { ValidationError } from '@/domain/validation';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
+import { GitHubGraphQLClient } from '@/infrastructure/GitHubGraphQLClient';
+import { getGitHubDataCache } from '@/infrastructure/cache-instance';
+import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
+import { SyncBuildHistoryUseCase } from '@/use-cases/syncBuildHistory';
+import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
+import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import { DatabaseBuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
+import { TokenResolutionService } from '@/infrastructure/TokenResolutionService';
+import type { Build } from '@/domain/models';
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
@@ -82,6 +91,12 @@ export async function POST(request: Request) {
     const useCase = new AddBuildUseCase(repository, accessTokenRepository);
     const savedBuild = await useCase.execute(newBuild, membership.tenantId);
 
+    // Trigger initial backfill asynchronously (fire-and-forget)
+    triggerInitialBackfill(savedBuild, membership.tenantId).catch(err => {
+      console.error(`[Initial Backfill] Failed for build ${savedBuild.id}:`, err);
+      // Error is already stored in sync_status table by SyncBuildHistoryUseCase
+    });
+
     return NextResponse.json(savedBuild, { status: 201 });
   } catch (error) {
     console.error('Failed to add build:', error);
@@ -95,6 +110,68 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Failed to add build' }, { status: 500 });
+  }
+}
+
+/**
+ * Triggers initial historical data backfill for a newly created build.
+ * Runs asynchronously without blocking the API response.
+ * 
+ * Fetches:
+ * - ALL workflow runs from repository history (no date/count limit)
+ * - Test results for LAST 50 runs only
+ * 
+ * @param build The newly created build
+ * @param tenantId The tenant ID for proper scoping
+ */
+async function triggerInitialBackfill(build: Build, tenantId: string): Promise<void> {
+  try {
+    console.log(`[Initial Backfill] Starting for build: ${build.name} (${build.id})`);
+
+    // 1. Resolve GitHub access token
+    const tokenService = new TokenResolutionService(accessTokenRepository);
+    const githubToken = await tokenService.resolveToken({
+      accessTokenId: build.accessTokenId,
+      inlineToken: build.personalAccessToken,
+      tenantId,
+    });
+
+    if (!githubToken) {
+      throw new Error('No GitHub access token available for this build');
+    }
+
+    // 2. Create GitHub client with cache
+    const githubClient = new GitHubGraphQLClient(githubToken);
+    const cache = getGitHubDataCache();
+    const cachedClient = new CachedGitHubClient(githubClient, cache);
+
+    // 3. Create repository instances
+    const workflowRunRepo = new DatabaseWorkflowRunRepository();
+    const testResultRepo = new DatabaseTestResultRepository();
+    const syncStatusRepo = new DatabaseBuildSyncStatusRepository();
+
+    // 4. Execute sync with full backfill
+    const syncUseCase = new SyncBuildHistoryUseCase(
+      cachedClient,
+      workflowRunRepo,
+      testResultRepo,
+      syncStatusRepo
+    );
+
+    const result = await syncUseCase.execute(build);
+    
+    console.log(
+      `[Initial Backfill] Completed for ${build.name}: ` +
+      `${result.newRunsSynced} runs synced, ` +
+      `${result.testResultsParsed} test results parsed`
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error during initial backfill';
+    console.error(`[Initial Backfill] Failed for ${build.name}:`, errorMessage);
+    
+    // Error is already stored in sync_status table by SyncBuildHistoryUseCase.execute()
+    // The BuildCard component will detect and display it
+    throw error; // Re-throw so .catch() in POST handler logs it
   }
 }
 

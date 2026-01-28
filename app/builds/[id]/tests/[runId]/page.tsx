@@ -11,8 +11,10 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  User,
+  LogOut,
 } from 'lucide-react';
-import { useSession } from '@/infrastructure/auth-client';
+import { useSession, signOut } from '@/infrastructure/auth-client';
 import Button from '../../../../components/Button';
 
 interface TestSuite {
@@ -62,6 +64,7 @@ export default function TestResultsPage({
   const [filter, setFilter] = useState<'all' | 'passed' | 'failed' | 'skipped'>('all');
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set());
   const [expandedFailedTests, setExpandedFailedTests] = useState<Set<string>>(new Set());
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -69,6 +72,15 @@ export default function TestResultsPage({
       router.push('/auth/signin');
     }
   }, [session, isPending, router]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowUserMenu(false);
+    if (showUserMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showUserMenu]);
 
   // Unwrap params
   useEffect(() => {
@@ -151,6 +163,11 @@ export default function TestResultsPage({
   };
 
   // Format date
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/auth/signin');
+  };
+
   const formatDate = (date: Date): string => {
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
@@ -273,49 +290,99 @@ export default function TestResultsPage({
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Consistent Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={() => router.back()}
-                variant="secondary"
-                icon={<ArrowLeft className="w-5 h-5" />}
-                title="Back to dashboard"
-              >
-                Back
-              </Button>
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🏔</span>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Test Results
+                  Alps-CI
                 </h1>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">{buildName}</span>
-                  {workflowRun && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span>{workflowRun.name}</span>
-                      <span className="mx-2">•</span>
-                      <span>{formatDate(workflowRun.createdAt)}</span>
-                      {workflowRun.duration && (
-                        <>
-                          <span className="mx-2">•</span>
-                          <Clock className="inline w-4 h-4 mb-0.5" />
-                          <span className="ml-1">{formatDuration(workflowRun.duration)}</span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Test Results
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* User Menu */}
+              <div className="relative">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUserMenu(!showUserMenu);
+                  }}
+                  variant="secondary"
+                  icon={<User className="w-5 h-5" />}
+                  className="gap-2"
+                >
+                  <span className="text-sm font-medium">{session.user?.name || session.user?.email}</span>
+                </Button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        router.push('/organization');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <User className="w-4 h-4" />
+                      Organization
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Page Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Build & Test Run Info */}
+        <div className="mb-6">
+          <Button
+            onClick={() => router.back()}
+            variant="secondary"
+            icon={<ArrowLeft className="w-5 h-5" />}
+            className="mb-4"
+            title="Back to dashboard"
+          >
+            Back
+          </Button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {buildName}
+            </h2>
+            {workflowRun && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <span>{workflowRun.name}</span>
+                <span className="mx-2">•</span>
+                <span>{formatDate(workflowRun.createdAt)}</span>
+                {workflowRun.duration && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <Clock className="inline w-4 h-4 mb-0.5" />
+                    <span className="ml-1">{formatDuration(workflowRun.duration)}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>

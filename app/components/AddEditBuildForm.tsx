@@ -444,7 +444,9 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
               size="lg"
               fullWidth
             >
-              {isEditMode ? 'Update Build' : 'Add Build'}
+              {isSubmitting 
+                ? (isEditMode ? 'Updating...' : 'Creating Build...') 
+                : (isEditMode ? 'Update Build' : 'Add Build')}
             </Button>
           </div>
         </form>
