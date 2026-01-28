@@ -1,4 +1,4 @@
-import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, WorkflowRunRecord } from '@/domain/models';
+import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, WorkflowRunRecord, TestResultRecord } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
@@ -52,10 +52,14 @@ export class FetchBuildDetailsStatsUseCase {
       monthlyCommits = this.getEmptyMonthlyCommits();
     }
 
+    // Calculate test trend (all test runs over time)
+    const testTrend = await this.calculateTestTrend(build, twelveMonthsAgo, now);
+
     return {
       ...baseStats,
       monthlyStats,
       monthlyCommits,
+      testTrend,
     };
   }
 
@@ -136,5 +140,45 @@ export class FetchBuildDetailsStatsUseCase {
   private getEmptyMonthlyCommits(): MonthlyCommitStats[] {
     const last12Months = getLastNMonthsRange(12);
     return last12Months.map((month) => ({ month, commitCount: 0 }));
+  }
+
+  private async calculateTestTrend(
+    build: Build,
+    startDate: Date,
+    endDate: Date
+  ): Promise<TestTrendDataPoint[]> {
+    try {
+      // Fetch all workflow runs from last 12 months (sorted DESC by default)
+      const allRuns = await this.workflowRunRepo.findByBuildIdInDateRange(
+        build.id,
+        build.tenantId,
+        startDate,
+        endDate
+      );
+
+      // For each workflow run, try to get its test results
+      const testTrendData: TestTrendDataPoint[] = [];
+      
+      for (const run of allRuns) {
+        const testResult = await this.testResultRepo.findByWorkflowRunId(run.id, build.tenantId);
+        
+        if (testResult) {
+          testTrendData.push({
+            date: run.workflowCreatedAt, // Use workflow run creation date, not parsedAt
+            totalTests: testResult.totalTests,
+            passedTests: testResult.passedTests,
+            failedTests: testResult.failedTests,
+            skippedTests: testResult.skippedTests,
+          });
+        }
+      }
+
+      // Reverse to get chronological order (oldest to newest) for the chart
+      return testTrendData.reverse();
+    } catch (error) {
+      console.error('Failed to calculate test trend:', error);
+      // Return empty data on error (graceful degradation)
+      return [];
+    }
   }
 }

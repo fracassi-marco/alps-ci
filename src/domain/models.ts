@@ -161,6 +161,15 @@ export interface MonthlyCommitStats {
   commitCount: number;
 }
 
+// Test trend data point (individual test run)
+export interface TestTrendDataPoint {
+  date: Date; // When the test was parsed/run
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  skippedTests: number;
+}
+
 // Build with statistics
 export interface BuildWithStats extends Build {
   stats: BuildStats | null;
@@ -171,6 +180,7 @@ export interface BuildWithStats extends Build {
 export interface BuildDetailsStats extends BuildStats {
   monthlyStats: MonthlyBuildStats[]; // Last 12 months
   monthlyCommits: MonthlyCommitStats[]; // Last 12 months of commits
+  testTrend: TestTrendDataPoint[]; // All test runs over time
 }
 
 // Workflow Run Record (historical workflow execution data)

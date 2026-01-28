@@ -11,6 +11,7 @@ export type {
   AccessToken,
   AccessTokenResponse,
   TestStats,
+  TestTrendDataPoint,
 } from './models';
 
 // Export repository interfaces

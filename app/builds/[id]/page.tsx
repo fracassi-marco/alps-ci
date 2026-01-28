@@ -24,6 +24,7 @@ import { useSession, signOut } from '@/infrastructure/auth-client';
 import Button from '../../components/Button';
 import { BuildDetailsChart } from '../../components/BuildDetailsChart';
 import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
+import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { Build, BuildDetailsStats, Selector, WorkflowRun } from '@/domain/models';
 
@@ -344,6 +345,57 @@ export default function BuildDetailsPage() {
           </div>
         )}
 
+        {/* Test Stats Box */}
+        {stats && stats.testStats && stats.recentRuns && stats.recentRuns.length > 0 && (
+          <div className="mb-6">
+            <button
+              onClick={() => router.push(`/builds/${buildId}/tests/${stats.recentRuns[0]!.id}`)}
+              className="w-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm text-purple-700 dark:text-purple-300 font-medium group-hover:underline">
+                  Test Results (Last Run)
+                </span>
+                <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-xs text-purple-600 dark:text-purple-400 mb-1">Total</div>
+                  <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
+                    {stats.testStats.totalTests}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-green-600 dark:text-green-400 mb-1">Passed</div>
+                  <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                    {stats.testStats.passedTests}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-red-600 dark:text-red-400 mb-1">Failed</div>
+                  <div className="text-lg font-bold text-red-700 dark:text-red-300">
+                    {stats.testStats.failedTests}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Skipped</div>
+                  <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                    {stats.testStats.skippedTests}
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Monthly Tests Chart */}
+        {stats && stats.testTrend && stats.testTrend.length > 0 && (
+          <div className="mb-6">
+            <MonthlyTestsChart testTrend={stats.testTrend} />
+          </div>
+        )}
+
         {/* Additional Info Sections */}
         {stats && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -392,48 +444,6 @@ export default function BuildDetailsPage() {
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Test Stats */}
-            {stats.testStats && stats.recentRuns && stats.recentRuns.length > 0 && (
-              <button
-                onClick={() => router.push(`/builds/${buildId}/tests/${stats.recentRuns[0]!.id}`)}
-                className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors cursor-pointer group lg:col-span-2"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm text-purple-700 dark:text-purple-300 font-medium group-hover:underline">
-                    Test Results (Last Run)
-                  </span>
-                  <ExternalLink className="w-4 h-4 text-purple-600 dark:text-purple-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-xs text-purple-600 dark:text-purple-400 mb-1">Total</div>
-                    <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
-                      {stats.testStats.totalTests}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-green-600 dark:text-green-400 mb-1">Passed</div>
-                    <div className="text-lg font-bold text-green-700 dark:text-green-300">
-                      {stats.testStats.passedTests}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-red-600 dark:text-red-400 mb-1">Failed</div>
-                    <div className="text-lg font-bold text-red-700 dark:text-red-300">
-                      {stats.testStats.failedTests}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Skipped</div>
-                    <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                      {stats.testStats.skippedTests}
-                    </div>
-                  </div>
-                </div>
-              </button>
             )}
           </div>
         )}

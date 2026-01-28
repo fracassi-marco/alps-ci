@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { db } from './database/client';
 import { testResults } from './database/schema';
 import type { TestResultRecord, TestCase } from '@/domain/models';
@@ -7,6 +7,7 @@ export interface TestResultRepository {
   create(result: Omit<TestResultRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<TestResultRecord>;
   findByWorkflowRunId(workflowRunId: string, tenantId: string): Promise<TestResultRecord | null>;
   findByBuildId(buildId: string, tenantId: string, limit?: number): Promise<TestResultRecord[]>;
+  findByBuildIdInDateRange(buildId: string, tenantId: string, startDate: Date, endDate: Date): Promise<TestResultRecord[]>;
 }
 
 export class DatabaseTestResultRepository implements TestResultRepository {
@@ -58,6 +59,28 @@ export class DatabaseTestResultRepository implements TestResultRepository {
     }
 
     const results = await query;
+    return results.map(this.mapToModel);
+  }
+
+  async findByBuildIdInDateRange(
+    buildId: string,
+    tenantId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<TestResultRecord[]> {
+    const results = await db
+      .select()
+      .from(testResults)
+      .where(
+        and(
+          eq(testResults.buildId, buildId),
+          eq(testResults.tenantId, tenantId),
+          gte(testResults.parsedAt, startDate),
+          lte(testResults.parsedAt, endDate)
+        )
+      )
+      .orderBy(desc(testResults.parsedAt));
+
     return results.map(this.mapToModel);
   }
 
