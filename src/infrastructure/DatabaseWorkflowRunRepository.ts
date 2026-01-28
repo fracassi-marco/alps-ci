@@ -1,4 +1,4 @@
-import { eq, and, desc, gt } from 'drizzle-orm';
+import { eq, and, desc, gt, gte, lte } from 'drizzle-orm';
 import { db } from './database/client';
 import { workflowRuns } from './database/schema';
 import type { WorkflowRunRecord } from '@/domain/models';
@@ -8,6 +8,7 @@ export interface WorkflowRunRepository {
   bulkCreate(runs: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<WorkflowRunRecord[]>;
   findByBuildId(buildId: string, tenantId: string, limit?: number): Promise<WorkflowRunRecord[]>;
   findByBuildIdSince(buildId: string, tenantId: string, since: Date): Promise<WorkflowRunRecord[]>;
+  findByBuildIdInDateRange(buildId: string, tenantId: string, startDate: Date, endDate: Date): Promise<WorkflowRunRecord[]>;
   findByGithubRunId(buildId: string, githubRunId: number, tenantId: string): Promise<WorkflowRunRecord | null>;
   getLastSyncedRun(buildId: string, tenantId: string): Promise<WorkflowRunRecord | null>;
 }
@@ -101,6 +102,28 @@ export class DatabaseWorkflowRunRepository implements WorkflowRunRepository {
           eq(workflowRuns.buildId, buildId),
           eq(workflowRuns.tenantId, tenantId),
           gt(workflowRuns.workflowCreatedAt, since)
+        )
+      )
+      .orderBy(desc(workflowRuns.workflowCreatedAt));
+
+    return results.map(this.mapToModel);
+  }
+
+  async findByBuildIdInDateRange(
+    buildId: string,
+    tenantId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<WorkflowRunRecord[]> {
+    const results = await db
+      .select()
+      .from(workflowRuns)
+      .where(
+        and(
+          eq(workflowRuns.buildId, buildId),
+          eq(workflowRuns.tenantId, tenantId),
+          gte(workflowRuns.workflowCreatedAt, startDate),
+          lte(workflowRuns.workflowCreatedAt, endDate)
         )
       )
       .orderBy(desc(workflowRuns.workflowCreatedAt));

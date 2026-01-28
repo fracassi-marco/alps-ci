@@ -110,13 +110,25 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
     });
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Ignore clicks on buttons, links, and interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    router.push(`/builds/${build.id}`);
+  };
 
   const maxDailyTotal = stats
     ? Math.max(...stats.last7DaysSuccesses.map((d) => (d.successCount + (d.failureCount || 0))), 1)
     : 1;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-xl transition-shadow" onClick={handleCardClick}>
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-700 dark:to-blue-700 px-6 py-4">
         <div className="flex items-start justify-between">
@@ -137,7 +149,10 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
           </div>
           <div className="flex gap-2 ml-4">
             <button
-              onClick={handleRefresh}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRefresh();
+              }}
               disabled={refreshing || loading}
               className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
               title="Refresh data"
@@ -145,14 +160,20 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
               <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
-              onClick={() => onEdit(build)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(build);
+              }}
               className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
               title="Edit build"
             >
               <Edit className="w-5 h-5" />
             </button>
             <button
-              onClick={() => onDelete(build)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(build);
+              }}
               className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
               title="Delete build"
             >

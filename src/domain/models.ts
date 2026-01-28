@@ -147,10 +147,23 @@ export interface DailySuccess {
   failureCount?: number;
 }
 
+// Monthly success and failure count for monthly bar chart
+export interface MonthlyBuildStats {
+  month: string; // ISO month string (YYYY-MM)
+  successCount: number;
+  failureCount: number;
+  totalCount: number;
+}
+
 // Build with statistics
 export interface BuildWithStats extends Build {
   stats: BuildStats | null;
   error: string | null;
+}
+
+// Build details statistics (extended stats with monthly data)
+export interface BuildDetailsStats extends BuildStats {
+  monthlyStats: MonthlyBuildStats[]; // Last 12 months
 }
 
 // Workflow Run Record (historical workflow execution data)

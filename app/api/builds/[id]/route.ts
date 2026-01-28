@@ -11,6 +11,50 @@ const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const accessTokenRepository = new DatabaseAccessTokenRepository();
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Get current user from session
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      );
+    }
+
+    // Get user's tenant memberships
+    const memberships = await tenantMemberRepository.findByUserId(currentUser.id);
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: 'No tenant membership found' },
+        { status: 404 }
+      );
+    }
+
+    const tenantId = memberships[0]!.tenantId;
+    const { id } = await params;
+
+    // Find the build (scoped to tenant)
+    const build = await repository.findById(id, tenantId);
+
+    if (!build) {
+      return NextResponse.json({ error: 'Build not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(build);
+  } catch (error) {
+    console.error('Failed to fetch build:', error);
+
+    return NextResponse.json(
+      { error: 'Failed to fetch build' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

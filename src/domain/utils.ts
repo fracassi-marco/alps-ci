@@ -91,6 +91,27 @@ export function formatDateYYYYMMDD(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Format date to YYYY-MM
+export function formatDateYYYYMM(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+// Get last N months range
+export function getLastNMonthsRange(months: number): string[] {
+  const monthsArray: string[] = [];
+  const now = new Date();
+
+  for (let i = months - 1; i >= 0; i--) {
+    const date = new Date(now);
+    date.setMonth(date.getMonth() - i);
+    monthsArray.push(formatDateYYYYMM(date));
+  }
+
+  return monthsArray;
+}
+
 // Group builds by label with proper sorting
 export function groupBuildsByLabel(builds: Build[]): Map<string, Build[]> {
   // First, group builds by label (case-insensitive)
