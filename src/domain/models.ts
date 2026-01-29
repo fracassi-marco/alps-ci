@@ -84,7 +84,6 @@ export interface Build {
   selectors: Selector[];
   accessTokenId: string | null;
   personalAccessToken: string | null;
-  cacheExpirationMinutes: number;
   createdAt: Date;
   updatedAt: Date;
 }

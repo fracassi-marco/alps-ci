@@ -61,7 +61,7 @@ export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
               Easy Setup
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Add builds quickly with your GitHub Personal Access Token. Configure cache expiration and start monitoring immediately.
+              Add builds quickly with your GitHub Personal Access Token. Start monitoring immediately.
             </p>
           </div>
         </div>
@@ -111,7 +111,7 @@ export function WelcomeScreen({ onAddBuild, userRole }: WelcomeScreenProps) {
                   Monitor Your Workflows
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  View real-time statistics, success rates, and recent runs. Refresh data manually or let the cache handle updates automatically.
+                  View real-time statistics, success rates, and recent runs.
                 </p>
               </div>
             </div>

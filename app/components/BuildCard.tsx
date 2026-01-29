@@ -601,9 +601,6 @@ export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps
                       Metadata
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-500 dark:text-gray-400">
-                      <div key="cache-expiration">
-                        <span className="font-medium">Cache Expiration:</span> {build.cacheExpirationMinutes} min
-                      </div>
                       <div key="last-fetched">
                         <span className="font-medium">Last Fetched:</span> {formatDate(stats.lastFetchedAt)}
                       </div>

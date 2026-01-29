@@ -50,7 +50,6 @@ export class DatabaseBuildRepository implements BuildRepository {
         selectors: JSON.stringify(build.selectors),
         accessTokenId: build.accessTokenId || null,
         personalAccessToken: build.personalAccessToken || null,
-        cacheExpirationMinutes: build.cacheExpirationMinutes,
       })
       .returning();
 
@@ -72,7 +71,6 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.selectors !== undefined) updateData.selectors = JSON.stringify(updates.selectors);
     if (updates.accessTokenId !== undefined) updateData.accessTokenId = updates.accessTokenId;
     if (updates.personalAccessToken !== undefined) updateData.personalAccessToken = updates.personalAccessToken;
-    if (updates.cacheExpirationMinutes !== undefined) updateData.cacheExpirationMinutes = updates.cacheExpirationMinutes;
 
     // Always update the updatedAt timestamp
     updateData.updatedAt = new Date();
@@ -153,7 +151,6 @@ export class DatabaseBuildRepository implements BuildRepository {
       selectors,
       accessTokenId: row.accessTokenId || null,
       personalAccessToken: row.personalAccessToken || null,
-      cacheExpirationMinutes: row.cacheExpirationMinutes,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
     };

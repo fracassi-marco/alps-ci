@@ -11,7 +11,6 @@ describe('AddBuildUseCase', () => {
     repository: 'test-repo',
     accessTokenId: null,
     personalAccessToken: 'ghp_test123',
-    cacheExpirationMinutes: 30,
     selectors: [{ type: 'branch', pattern: 'main' }],
   };
 
@@ -61,7 +60,6 @@ describe('AddBuildUseCase', () => {
       organization: 'org',
       repository: 'repo',
       personalAccessToken: 'token',
-      cacheExpirationMinutes: 30,
       selectors: [{ type: 'branch', pattern: 'main' }],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -83,19 +81,6 @@ describe('AddBuildUseCase', () => {
 
   it('should throw error for invalid build (missing required fields)', async () => {
     const invalidBuild = { ...validBuildInput, name: '' };
-    const mockRepository = {
-      findAll: mock(() => Promise.resolve([])),
-      create: mock(() => Promise.resolve({} as Build)),
-    };
-
-    const useCase = new AddBuildUseCase(mockRepository);
-
-    await expect(useCase.execute(invalidBuild, tenantId)).rejects.toThrow();
-    expect(mockRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error for invalid cache expiration', async () => {
-    const invalidBuild = { ...validBuildInput, cacheExpirationMinutes: -1 };
     const mockRepository = {
       findAll: mock(() => Promise.resolve([])),
       create: mock(() => Promise.resolve({} as Build)),

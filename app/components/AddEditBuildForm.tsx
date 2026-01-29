@@ -24,7 +24,6 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
     accessTokenId: build?.accessTokenId || '',
     personalAccessToken: build?.personalAccessToken || '',
     tokenName: '', // Name for saving inline token to organization
-    cacheExpirationMinutes: build?.cacheExpirationMinutes || 30,
   });
 
   const [availableTokens, setAvailableTokens] = useState<AccessTokenResponse[]>([]);
@@ -148,16 +147,15 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
         repository: formData.repository.trim(),
         label: formData.label.trim() || null,
         selectors: selectors.map((s) => ({
-          type: s.type,
-          pattern: s.pattern.trim(),
-        })),
-        accessTokenId: finalAccessTokenId || null,
-        personalAccessToken: null, // Always use saved token
-        cacheExpirationMinutes: formData.cacheExpirationMinutes,
-        createdAt: build?.createdAt || new Date(),
-        updatedAt: new Date(),
-        // tenantId is handled by the backend based on authenticated user
-      };
+        type: s.type,
+        pattern: s.pattern.trim(),
+      })),
+      accessTokenId: finalAccessTokenId || null,
+      personalAccessToken: null, // Always use saved token
+      createdAt: build?.createdAt || new Date(),
+      updatedAt: new Date(),
+      // tenantId is handled by the backend based on authenticated user
+    };
 
       // Validate using domain validation
       validateBuild(buildData);
@@ -403,26 +401,6 @@ export function AddEditBuildForm({ build, onSave, onCancel }: AddEditBuildFormPr
               )}
             </>
           )}
-
-          {/* Cache Expiration */}
-          <div>
-            <label htmlFor="cacheExpiration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Cache Expiration (minutes) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              id="cacheExpiration"
-              value={formData.cacheExpirationMinutes}
-              onChange={(e) => handleInputChange('cacheExpirationMinutes', parseInt(e.target.value))}
-              min={1}
-              max={1440}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              required
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              How long to cache GitHub API responses (1-1440 minutes, i.e., 1 minute to 1 day)
-            </p>
-          </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

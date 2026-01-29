@@ -8,10 +8,6 @@ export class ValidationError extends Error {
   }
 }
 
-// Cache expiration constraints
-export const CACHE_EXPIRATION_MIN = 1; // 1 minute
-export const CACHE_EXPIRATION_MAX = 1440; // 1 day (24 hours)
-
 // Label constraints
 export const LABEL_MAX_LENGTH = 50;
 
@@ -37,29 +33,6 @@ export function validateSelector(selector: Selector): void {
 
   if (selector.pattern.trim().length === 0) {
     throw new ValidationError('Selector pattern cannot be empty');
-  }
-}
-
-// Cache expiration validation
-export function validateCacheExpiration(minutes: number): void {
-  if (typeof minutes !== 'number' || isNaN(minutes)) {
-    throw new ValidationError('Cache expiration must be a valid number');
-  }
-
-  if (!Number.isInteger(minutes)) {
-    throw new ValidationError('Cache expiration must be an integer');
-  }
-
-  if (minutes < CACHE_EXPIRATION_MIN) {
-    throw new ValidationError(
-      `Cache expiration must be at least ${CACHE_EXPIRATION_MIN} minute`
-    );
-  }
-
-  if (minutes > CACHE_EXPIRATION_MAX) {
-    throw new ValidationError(
-      `Cache expiration must not exceed ${CACHE_EXPIRATION_MAX} minutes (1 day)`
-    );
   }
 }
 
@@ -128,13 +101,6 @@ export function validateBuild(build: Partial<Build>): void {
     throw new ValidationError('Cannot specify both saved Access Token and inline Personal Access Token');
   }
 
-  // Cache expiration validation
-  if (build.cacheExpirationMinutes === undefined) {
-    throw new ValidationError('Cache expiration is required');
-  }
-
-  validateCacheExpiration(build.cacheExpirationMinutes);
-
   // Label validation (optional field)
   if (build.label !== undefined && build.label !== null) {
     if (typeof build.label !== 'string') {
@@ -175,17 +141,6 @@ export function sanitizeBuild(build: Partial<Build>): Partial<Build> {
   }
 
   return sanitized;
-}
-
-// Check if cache is expired
-export function isCacheExpired(
-  lastFetchedAt: Date,
-  cacheExpirationMinutes: number
-): boolean {
-  const now = new Date();
-  const expirationTime = new Date(lastFetchedAt);
-  expirationTime.setMinutes(expirationTime.getMinutes() + cacheExpirationMinutes);
-  return now >= expirationTime;
 }
 
 // Authentication validation

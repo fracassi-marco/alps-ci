@@ -149,7 +149,6 @@ describe('Utils - Create Build', () => {
     repository: 'test-repo',
     selectors,
     personalAccessToken: 'token123',
-    cacheExpirationMinutes: 60,
     accessTokenId: 'ignore',
   };
 
@@ -180,7 +179,6 @@ describe('Utils - Create Build', () => {
     expect(build.repository).toBe(buildData.repository);
     expect(build.selectors).toEqual(buildData.selectors);
     expect(build.personalAccessToken).toBe(buildData.personalAccessToken);
-    expect(build.cacheExpirationMinutes).toBe(buildData.cacheExpirationMinutes);
   });
 
   test('should create different IDs for different builds', () => {
@@ -202,7 +200,6 @@ describe('Utils - Update Build Timestamp', () => {
       repository: 'repo',
       selectors: [{ type: 'tag', pattern: 'v*' }],
       personalAccessToken: 'token',
-      cacheExpirationMinutes: 60,
       createdAt: originalDate,
       updatedAt: originalDate,
       accessTokenId: 'ignore',
@@ -223,7 +220,6 @@ describe('Utils - Update Build Timestamp', () => {
       repository: 'repo',
       selectors: [{ type: 'tag', pattern: 'v*' }],
       personalAccessToken: 'token',
-      cacheExpirationMinutes: 60,
       createdAt: new Date(),
       updatedAt: new Date(),
       accessTokenId: 'ignore',
@@ -408,7 +404,6 @@ describe('Utils - Group Builds By Label', () => {
     selectors: [{ type: 'branch', pattern: 'main' }],
     accessTokenId: null,
     personalAccessToken: 'token',
-    cacheExpirationMinutes: 30,
     createdAt: new Date(),
     updatedAt: new Date(),
   });

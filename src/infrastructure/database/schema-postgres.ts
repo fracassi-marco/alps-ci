@@ -117,7 +117,6 @@ export const builds = pgTable('builds', {
   repository: varchar('repository', { length: 255 }).notNull(),
   selectors: jsonb('selectors').notNull().default([]),
   personalAccessToken: text('personal_access_token').notNull(),
-  cacheExpirationMinutes: integer('cache_expiration_minutes').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({

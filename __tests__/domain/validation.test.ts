@@ -2,13 +2,9 @@ import { describe, test, expect } from 'bun:test';
 import {
   validateSelector,
   validateSelectorType,
-  validateCacheExpiration,
   validateBuild,
   sanitizeBuild,
-  isCacheExpired,
   ValidationError,
-  CACHE_EXPIRATION_MIN,
-  CACHE_EXPIRATION_MAX,
 } from '@/domain/validation';
 import type { Selector, Build } from '@/domain/models';
 
@@ -80,42 +76,6 @@ describe('Validation - Selector', () => {
   });
 });
 
-describe('Validation - Cache Expiration', () => {
-  test('should validate cache expiration within valid range', () => {
-    expect(() => validateCacheExpiration(1)).not.toThrow();
-    expect(() => validateCacheExpiration(60)).not.toThrow();
-    expect(() => validateCacheExpiration(1440)).not.toThrow();
-  });
-
-  test('should throw error for values below minimum', () => {
-    expect(() => validateCacheExpiration(0)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(-1)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(0)).toThrow(`at least ${CACHE_EXPIRATION_MIN}`);
-  });
-
-  test('should throw error for values above maximum', () => {
-    expect(() => validateCacheExpiration(1441)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(2000)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(1441)).toThrow(`not exceed ${CACHE_EXPIRATION_MAX}`);
-  });
-
-  test('should throw error for non-integer values', () => {
-    expect(() => validateCacheExpiration(1.5)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(59.9)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(1.5)).toThrow('must be an integer');
-  });
-
-  test('should throw error for NaN', () => {
-    expect(() => validateCacheExpiration(NaN)).toThrow(ValidationError);
-    expect(() => validateCacheExpiration(NaN)).toThrow('must be a valid number');
-  });
-
-  test('should validate boundary values', () => {
-    expect(() => validateCacheExpiration(CACHE_EXPIRATION_MIN)).not.toThrow();
-    expect(() => validateCacheExpiration(CACHE_EXPIRATION_MAX)).not.toThrow();
-  });
-});
-
 describe('Validation - Build', () => {
   const validBuild: Partial<Build> = {
     name: 'Test Build',
@@ -127,7 +87,6 @@ describe('Validation - Build', () => {
     ],
     accessTokenId: null,
     personalAccessToken: 'ghp_test_token_123',
-    cacheExpirationMinutes: 60,
   };
 
   test('should validate a correct build', () => {
@@ -256,19 +215,6 @@ describe('Validation - Build', () => {
     });
   });
 
-  describe('Cache expiration validation', () => {
-    test('should throw error for missing cache expiration', () => {
-      const build = { ...validBuild, cacheExpirationMinutes: undefined };
-      expect(() => validateBuild(build)).toThrow(ValidationError);
-      expect(() => validateBuild(build)).toThrow('Cache expiration is required');
-    });
-
-    test('should throw error for invalid cache expiration', () => {
-      const build = { ...validBuild, cacheExpirationMinutes: 0 };
-      expect(() => validateBuild(build)).toThrow(ValidationError);
-    });
-  });
-
   describe('Label validation', () => {
     test('should accept valid label', () => {
       const build = { ...validBuild, label: 'Production' };
@@ -312,7 +258,6 @@ describe('Validation - Sanitize Build', () => {
       repository: '  test-repo  ',
       personalAccessToken: '  token123  ',
       selectors: [{ type: 'tag', pattern: '  v1.0.0  ' }],
-      cacheExpirationMinutes: 60,
     };
 
     const sanitized = sanitizeBuild(build);
@@ -389,49 +334,5 @@ describe('Validation - Sanitize Build', () => {
   });
 });
 
-describe('Validation - Cache Expiration Check', () => {
-  test('should return false when cache is not expired', () => {
-    const lastFetched = new Date();
-    const expirationMinutes = 60;
 
-    expect(isCacheExpired(lastFetched, expirationMinutes)).toBe(false);
-  });
-
-  test('should return true when cache is expired', () => {
-    const lastFetched = new Date();
-    lastFetched.setMinutes(lastFetched.getMinutes() - 61);
-    const expirationMinutes = 60;
-
-    expect(isCacheExpired(lastFetched, expirationMinutes)).toBe(true);
-  });
-
-  test('should return false when cache is exactly at expiration time', () => {
-    const lastFetched = new Date();
-    lastFetched.setMinutes(lastFetched.getMinutes() - 60);
-    const expirationMinutes = 60;
-
-    // Should be expired (>= expiration time)
-    expect(isCacheExpired(lastFetched, expirationMinutes)).toBe(true);
-  });
-
-  test('should handle minimum cache expiration (1 minute)', () => {
-    const lastFetched = new Date();
-    lastFetched.setSeconds(lastFetched.getSeconds() - 30);
-
-    expect(isCacheExpired(lastFetched, 1)).toBe(false);
-
-    lastFetched.setMinutes(lastFetched.getMinutes() - 1);
-    expect(isCacheExpired(lastFetched, 1)).toBe(true);
-  });
-
-  test('should handle maximum cache expiration (1 day)', () => {
-    const lastFetched = new Date();
-    lastFetched.setMinutes(lastFetched.getMinutes() - 1439);
-
-    expect(isCacheExpired(lastFetched, 1440)).toBe(false);
-
-    lastFetched.setMinutes(lastFetched.getMinutes() - 2);
-    expect(isCacheExpired(lastFetched, 1440)).toBe(true);
-  });
-});
 

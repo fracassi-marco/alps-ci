@@ -48,7 +48,6 @@ export class AddBuildUseCase {
       selectors: sanitized.selectors!,
       accessTokenId: sanitized.accessTokenId || null,
       personalAccessToken: sanitized.personalAccessToken || null,
-      cacheExpirationMinutes: sanitized.cacheExpirationMinutes!,
     };
 
     return await this.repository.create(buildToAdd, tenantId);

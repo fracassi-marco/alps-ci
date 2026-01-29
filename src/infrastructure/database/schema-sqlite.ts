@@ -114,7 +114,6 @@ export const builds = sqliteTable('builds', {
   selectors: text('selectors', { mode: 'json' }).notNull().$defaultFn(() => []),
   accessTokenId: text('access_token_id').references(() => accessTokens.id, { onDelete: 'set null' }),
   personalAccessToken: text('personal_access_token'),
-  cacheExpirationMinutes: integer('cache_expiration_minutes').notNull(),
   label: text('label'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),

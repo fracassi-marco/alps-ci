@@ -13,7 +13,6 @@ describe('EditBuildUseCase', () => {
     repository: 'original-repo',
     accessTokenId: null,
     personalAccessToken: 'ghp_original',
-    cacheExpirationMinutes: 30,
     selectors: [{ type: 'branch', pattern: 'main' }],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
@@ -22,7 +21,7 @@ describe('EditBuildUseCase', () => {
   it('should update an existing build successfully', async () => {
     const updates: Partial<Build> = {
       name: 'Updated Build',
-      cacheExpirationMinutes: 60,
+      organization: 'updated-org',
     };
 
     const updatedBuild = {
@@ -41,8 +40,7 @@ describe('EditBuildUseCase', () => {
     const result = await useCase.execute('1', updates, tenantId);
 
     expect(result.name).toBe('Updated Build');
-    expect(result.cacheExpirationMinutes).toBe(60);
-    expect(result.organization).toBe('original-org'); // Unchanged
+    expect(result.organization).toBe('updated-org');
     expect(result.id).toBe('1'); // ID preserved
     expect(result.tenantId).toBe(tenantId); // Tenant preserved
     expect(mockRepository.findById).toHaveBeenCalledWith('1', tenantId);
@@ -77,20 +75,6 @@ describe('EditBuildUseCase', () => {
     expect(mockRepository.update).not.toHaveBeenCalled();
   });
 
-  it('should throw error for invalid updated build', async () => {
-    const invalidUpdates = { cacheExpirationMinutes: -1 };
-    const mockRepository = {
-      findById: mock(() => Promise.resolve(existingBuild)),
-      findAll: mock(() => Promise.resolve([existingBuild])),
-      update: mock(() => Promise.resolve({} as Build)),
-    };
-
-    const useCase = new EditBuildUseCase(mockRepository);
-
-    await expect(useCase.execute('1', invalidUpdates, tenantId)).rejects.toThrow();
-    expect(mockRepository.update).not.toHaveBeenCalled();
-  });
-
   it('should throw error if new name conflicts with existing build in same tenant', async () => {
     const otherBuild: Build = {
       id: '2',
@@ -99,7 +83,6 @@ describe('EditBuildUseCase', () => {
       organization: 'org',
       repository: 'repo',
       personalAccessToken: 'ghp_token',
-      cacheExpirationMinutes: 30,
       selectors: [{ type: 'branch', pattern: 'main' }],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -121,7 +104,7 @@ describe('EditBuildUseCase', () => {
   });
 
   it('should allow updating to same name', async () => {
-    const updates = { cacheExpirationMinutes: 60 };
+    const updates = { organization: 'updated-org' };
     const updatedBuild = {
       ...existingBuild,
       ...updates,
@@ -138,7 +121,7 @@ describe('EditBuildUseCase', () => {
     const result = await useCase.execute('1', updates, tenantId);
 
     expect(result.name).toBe('Original Build');
-    expect(result.cacheExpirationMinutes).toBe(60);
+    expect(result.organization).toBe('updated-org');
     expect(mockRepository.update).toHaveBeenCalledTimes(1);
   });
 

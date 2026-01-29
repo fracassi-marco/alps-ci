@@ -12,7 +12,6 @@ describe('DeleteBuildUseCase', () => {
     organization: 'org',
     repository: 'repo',
     personalAccessToken: 'ghp_token',
-    cacheExpirationMinutes: 30,
     selectors: [{ type: 'branch', pattern: 'main' }],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),

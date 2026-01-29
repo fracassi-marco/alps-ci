@@ -25,7 +25,7 @@ import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
 import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
 import { ContributorsList } from '../../components/ContributorsList';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
-import type { Build, BuildDetailsStats, Selector } from '@/domain/models';
+import type { Build, BuildDetailsStats } from '@/domain/models';
 
 export default function BuildDetailsPage() {
   const params = useParams();
@@ -516,10 +516,6 @@ export default function BuildDetailsPage() {
           {showMetadata && (
             <div className="border-t border-gray-200 dark:border-gray-700 p-6">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Cache Expiration:</span>
-                  <p className="text-gray-600 dark:text-gray-400">{build.cacheExpirationMinutes} min</p>
-                </div>
                 {stats && (
                   <>
                     <div>
