@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Edit,
   Trash2,
   RefreshCw,
@@ -188,12 +187,6 @@ export default function BuildDetailsPage() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">Build not found</p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            Back to Builds
-          </button>
         </div>
       </div>
     );
@@ -205,7 +198,10 @@ export default function BuildDetailsPage() {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
               <span className="text-4xl">🏔</span>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -215,7 +211,7 @@ export default function BuildDetailsPage() {
                   Build Details
                 </p>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-3">
               {/* User Menu */}
@@ -261,16 +257,8 @@ export default function BuildDetailsPage() {
 
       {/* Page Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Build Header with Back Button */}
+        {/* Build Header */}
         <div className="mb-6">
-          <button
-            onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Builds
-          </button>
-
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-700 dark:to-blue-700 rounded-lg shadow-lg p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
