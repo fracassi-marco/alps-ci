@@ -1,4 +1,5 @@
 import type { WorkflowRun, WorkflowRunStatus } from '../domain/models';
+import type { GitHubClient } from './GitHubClient';
 import AdmZip from 'adm-zip';
 
 export class GitHubAuthenticationError extends Error {
@@ -48,7 +49,7 @@ interface WorkflowNode {
   state: string;
 }
 
-export class GitHubGraphQLClient {
+export class GitHubGraphQLClient implements GitHubClient {
   private readonly baseUrl = 'https://api.github.com/graphql';
   private readonly token: string;
 

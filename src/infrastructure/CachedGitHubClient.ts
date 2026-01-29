@@ -1,15 +1,18 @@
 import type { WorkflowRun } from '../domain/models';
-import type { GitHubGraphQLClient } from './GitHubGraphQLClient';
+import type { GitHubClient } from './GitHubClient';
 import type { GitHubDataCache } from './GitHubDataCache';
 import { isCacheExpired } from '../domain/validation';
 
 /**
- * Cached GitHub client that wraps GitHubGraphQLClient and adds caching.
+ * Cached GitHub client that wraps a GitHubClient implementation and adds caching.
  * Respects per-Build cache expiration thresholds.
+ * 
+ * Note: This does not implement GitHubClient directly because it adds
+ * cacheExpirationMinutes parameters to support per-build cache configuration.
  */
 export class CachedGitHubClient {
   constructor(
-    private client: GitHubGraphQLClient,
+    private client: GitHubClient,
     private cache: GitHubDataCache
   ) {}
 
