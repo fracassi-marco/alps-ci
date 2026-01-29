@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { DeleteAccessTokenUseCase } from '../../src/use-cases/deleteAccessToken';
-import type { AccessTokenRepository } from '../../src/domain/AccessTokenRepository';
-import type { BuildRepository } from '../../src/infrastructure/DatabaseBuildRepository';
-import type { AccessToken, Build } from '../../src/domain/models';
+import { DeleteAccessTokenUseCase } from '@/use-cases/deleteAccessToken';
+import type { AccessTokenRepository } from '@/domain/AccessTokenRepository';
+import type { BuildRepository } from '@/infrastructure/DatabaseBuildRepository';
+import type { AccessToken, Build } from '@/domain/models';
 
 // Set up encryption key for tests
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'a'.repeat(64);

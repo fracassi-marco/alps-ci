@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { DeleteBuildUseCase } from '../../src/use-cases/deleteBuild';
-import type { Build } from '../../src/domain/models';
+import { DeleteBuildUseCase } from '@/use-cases/deleteBuild';
+import type { Build } from '@/domain/models';
 
 describe('DeleteBuildUseCase', () => {
   const tenantId = 'tenant-123';
@@ -57,11 +57,6 @@ describe('DeleteBuildUseCase', () => {
   });
 
   it('should throw error if build belongs to different tenant', async () => {
-    const differentTenantBuild: Build = {
-      ...buildToDelete,
-      tenantId: 'different-tenant',
-    };
-
     const mockRepository = {
       findById: mock(() => Promise.resolve(null)), // Returns null because of tenant filter
       delete: mock(() => Promise.resolve()),

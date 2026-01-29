@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { ChangeMemberRoleUseCase } from '../../src/use-cases/changeMemberRole';
-import type { TenantMemberRepository } from '../../src/use-cases/registerTenant';
-import type { TenantMember } from '../../src/domain/models';
+import { ChangeMemberRoleUseCase } from '@/use-cases/changeMemberRole';
+import type { TenantMemberRepository } from '@/use-cases/registerTenant';
+import type { TenantMember } from '@/domain/models';
 
 // Mock repository
 class MockTenantMemberRepository implements TenantMemberRepository {

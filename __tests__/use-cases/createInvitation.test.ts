@@ -3,9 +3,9 @@
  */
 
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { CreateInvitationUseCase } from '../../src/use-cases/createInvitation';
-import type { Invitation } from '../../src/domain/models';
-import type { InvitationRepository } from '../../src/use-cases/createInvitation';
+import { CreateInvitationUseCase } from '@/use-cases/createInvitation';
+import type { Invitation } from '@/domain/models';
+import type { InvitationRepository } from '@/use-cases/createInvitation';
 
 // Mock Repository
 class MockInvitationRepository implements InvitationRepository {

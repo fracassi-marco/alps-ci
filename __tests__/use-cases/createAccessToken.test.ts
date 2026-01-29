@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { CreateAccessTokenUseCase } from '../../src/use-cases/createAccessToken';
-import type { AccessTokenRepository } from '../../src/domain/AccessTokenRepository';
-import type { AccessToken, AccessTokenResponse } from '../../src/domain/models';
+import { CreateAccessTokenUseCase } from '@/use-cases/createAccessToken';
+import type { AccessTokenRepository } from '@/domain/AccessTokenRepository';
+import type { AccessToken, AccessTokenResponse } from '@/domain/models';
 
 // Set up encryption key for tests
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'a'.repeat(64);

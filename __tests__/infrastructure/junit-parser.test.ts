@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { parseJUnitXML, isTestArtifact } from '../../src/infrastructure/junit-parser';
+import { parseJUnitXML, isTestArtifact } from '@/infrastructure/junit-parser';
 
 describe('JUnit Parser', () => {
   describe('parseJUnitXML', () => {

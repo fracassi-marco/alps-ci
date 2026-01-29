@@ -1,7 +1,7 @@
-import type { InvitationRepository } from "../../src/use-cases/createInvitation.ts";
+import type { InvitationRepository } from "@/use-cases/createInvitation";
 import { describe, it, expect, beforeEach } from 'bun:test';
-import type {Invitation} from "../../src/domain/models.ts";
-import {RevokeInvitationUseCase} from "../../src/use-cases";
+import type { Invitation } from "@/domain/models";
+import { RevokeInvitationUseCase } from "@/use-cases/revokeInvitation";
 
 
 // Mock repository
@@ -248,7 +248,7 @@ describe('RevokeInvitationUseCase', () => {
         role: 'member',
         token: 'token-1',
         invitedBy: 'user-owner',
-        expiresAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // Expired
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Expired
         acceptedAt: null,
         createdAt: new Date('2026-01-10'),
       };

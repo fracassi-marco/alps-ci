@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { AddBuildUseCase } from '../../src/use-cases/addBuild';
-import type { Build } from '../../src/domain/models';
+import { AddBuildUseCase } from '@/use-cases/addBuild';
+import type { Build } from '@/domain/models';
 
 describe('AddBuildUseCase', () => {
   const tenantId = 'tenant-123';

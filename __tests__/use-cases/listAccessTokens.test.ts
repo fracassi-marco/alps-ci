@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { ListAccessTokensUseCase } from '../../src/use-cases/listAccessTokens';
-import type { AccessTokenRepository } from '../../src/domain/AccessTokenRepository';
-import type { AccessTokenResponse } from '../../src/domain/models';
+import { ListAccessTokensUseCase } from '@/use-cases/listAccessTokens';
+import type { AccessTokenRepository } from '@/domain/AccessTokenRepository';
+import type { AccessTokenResponse } from '@/domain/models';
 
 describe('ListAccessTokensUseCase', () => {
   let mockRepository: AccessTokenRepository;

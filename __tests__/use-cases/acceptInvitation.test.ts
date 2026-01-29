@@ -3,10 +3,10 @@
  */
 
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { AcceptInvitationUseCase } from '../../src/use-cases/acceptInvitation';
-import type { Invitation, TenantMember } from '../../src/domain/models';
-import type { InvitationRepository } from '../../src/use-cases/createInvitation';
-import type { TenantMemberRepository } from '../../src/use-cases/registerTenant';
+import { AcceptInvitationUseCase } from '@/use-cases/acceptInvitation';
+import type { Invitation, TenantMember } from '@/domain/models';
+import type { InvitationRepository } from '@/use-cases/createInvitation';
+import type { TenantMemberRepository } from '@/use-cases/registerTenant';
 
 // Mock Repositories
 class MockInvitationRepository implements InvitationRepository {

@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { renderHook, act } from '@testing-library/react';
-import { useViewMode } from '../../app/hooks/useViewMode';
+import { useViewMode } from 'app/hooks/useViewMode';
 
 describe('useViewMode', () => {
   // Mock localStorage
@@ -10,21 +10,22 @@ describe('useViewMode', () => {
     // Clear localStorage mock before each test
     localStorageMock = {};
 
-    // Mock localStorage methods
-    global.localStorage = {
-      getItem: (key: string) => localStorageMock[key] || null,
-      setItem: (key: string, value: string) => {
-        localStorageMock[key] = value;
+    // Mock localStorage methods using Object.defineProperty
+    Object.defineProperty(global, 'localStorage', {
+      value: {
+        getItem: (key: string) => localStorageMock[key] || null,
+        setItem: (key: string, value: string) => {
+          localStorageMock[key] = value;
+        },
+        clear: () => {
+          localStorageMock = {};
+        },
+        length: 0,
+        key: () => null,
       },
-      removeItem: (key: string) => {
-        delete localStorageMock[key];
-      },
-      clear: () => {
-        localStorageMock = {};
-      },
-      length: 0,
-      key: () => null,
-    };
+      writable: true,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
@@ -122,9 +123,16 @@ describe('useViewMode', () => {
 
   test('should handle localStorage errors gracefully', async () => {
     // Mock localStorage.getItem to throw an error
-    global.localStorage.getItem = () => {
-      throw new Error('localStorage disabled');
-    };
+    Object.defineProperty(global, 'localStorage', {
+      value: {
+        ...global.localStorage,
+        getItem: () => {
+          throw new Error('localStorage disabled');
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
 
     const { result } = renderHook(() => useViewMode());
 
@@ -138,9 +146,16 @@ describe('useViewMode', () => {
 
   test('should handle localStorage write errors gracefully', () => {
     // Mock localStorage.setItem to throw an error
-    global.localStorage.setItem = () => {
-      throw new Error('localStorage quota exceeded');
-    };
+    Object.defineProperty(global, 'localStorage', {
+      value: {
+        ...global.localStorage,
+        setItem: () => {
+          throw new Error('localStorage quota exceeded');
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
 
     const { result } = renderHook(() => useViewMode());
 

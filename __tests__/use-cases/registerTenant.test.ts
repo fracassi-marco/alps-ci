@@ -3,9 +3,9 @@
  */
 
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { RegisterTenantUseCase } from '../../src/use-cases/registerTenant';
-import type { Tenant, TenantMember } from '../../src/domain/models';
-import type { TenantRepository, TenantMemberRepository } from '../../src/use-cases/registerTenant';
+import { RegisterTenantUseCase } from '@/use-cases/registerTenant';
+import type { Tenant, TenantMember } from '@/domain/models';
+import type { TenantRepository, TenantMemberRepository } from '@/use-cases/registerTenant';
 
 // Mock Repositories
 class MockTenantRepository implements TenantRepository {

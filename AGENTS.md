@@ -118,6 +118,22 @@ import { Build } from '@/domain/models';
 import { ListBuildsUseCase } from '@/use-cases/listBuilds';
 ```
 
+**No Barrel Exports**: Always use explicit imports from the specific file.
+
+```typescript
+// ✅ Correct - explicit import
+import { Build } from '@/domain/models';
+import { AddBuildUseCase } from '@/use-cases/addBuild';
+import { getCurrentUser } from '@/infrastructure/auth-session';
+
+// ❌ Wrong - barrel export (index.ts)
+import { Build } from '@/domain';
+import { AddBuildUseCase } from '@/use-cases';
+import { getCurrentUser } from '@/infrastructure';
+```
+
+**Why?** Barrel exports (index.ts files) cause IDE warnings, reduce clarity about where code comes from, and can impact build performance. This project intentionally avoids them.
+
 ### TypeScript Patterns
 
 **Strict Configuration**: All strict flags enabled including `noUncheckedIndexedAccess`.
@@ -509,3 +525,4 @@ Use [gitmoji](https://gitmoji.dev/) for semantic commits. **Max 128 characters.*
 - **Drizzle queries return arrays** - Use `[result]` or check length
 - **E2E tests are local-only** - Not run in CI
 - **Prefer Edit over Write** for existing files
+- **No barrel exports** - Always import from specific files, never from `index.ts` files

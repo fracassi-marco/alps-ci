@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { RestoreFromBackupUseCase } from '../../src/use-cases/restoreFromBackup';
+import { RestoreFromBackupUseCase } from '@/use-cases/restoreFromBackup';
 
 describe('RestoreFromBackupUseCase', () => {
   const mockBackups = [

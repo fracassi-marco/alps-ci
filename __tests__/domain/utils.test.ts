@@ -11,8 +11,8 @@ import {
   getLastNDaysRange,
   formatDateYYYYMMDD,
   groupBuildsByLabel,
-} from '../../src/domain/utils';
-import type { Build, BuildStats, Selector } from '../../src/domain/models';
+} from '@/domain/utils';
+import type { Build, BuildStats, Selector } from '@/domain/models';
 
 describe('Utils - Generate Build ID', () => {
   test('should generate a unique ID', () => {

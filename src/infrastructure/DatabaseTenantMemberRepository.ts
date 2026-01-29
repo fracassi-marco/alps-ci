@@ -1,6 +1,7 @@
 import type {TenantMemberRepository} from "@/use-cases/registerTenant.ts";
 import type {TenantMember} from "@/domain/models.ts";
-import {db, tenantMembers} from "@/infrastructure/database";
+import { db } from "@/infrastructure/database/client";
+import { tenantMembers } from "@/infrastructure/database/schema";
 import {and, eq} from "drizzle-orm";
 
 export class DatabaseTenantMemberRepository implements TenantMemberRepository {

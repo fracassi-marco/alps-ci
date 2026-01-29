@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { encrypt, decrypt } from '../../src/infrastructure/encryption';
+import { encrypt, decrypt } from '@/infrastructure/encryption';
 
 describe('Encryption Service', () => {
   let originalEnv: string | undefined;
