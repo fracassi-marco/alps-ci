@@ -1,4 +1,4 @@
-import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord, TestResultRecord } from '@/domain/models';
+import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import type { GitHubClient } from '@/infrastructure/GitHubClient';
@@ -38,7 +38,7 @@ export class FetchBuildDetailsStatsUseCase {
     const monthlyStats = this.calculateMonthlyStats(allRuns);
 
     // Calculate monthly commits if GitHub client is available
-    let monthlyCommits: MonthlyCommitStats[] = [];
+    let monthlyCommits: MonthlyCommitStats[];
     if (this.githubClient) {
       try {
         monthlyCommits = await this.calculateMonthlyCommits(build, this.githubClient);
@@ -125,32 +125,36 @@ export class FetchBuildDetailsStatsUseCase {
   ): Promise<MonthlyCommitStats[]> {
     const last12Months = getLastNMonthsRange(12);
 
-    // Fetch commits for each month in parallel
-    const monthlyCommits = await Promise.all(
-      last12Months.map(async (month) => {
-        const [year, monthNum] = month.split('-');
-        
-        // Create date range for this month (first day to last day)
-        const startDate = new Date(parseInt(year!), parseInt(monthNum!) - 1, 1, 0, 0, 0, 0);
-        const endDate = new Date(parseInt(year!), parseInt(monthNum!), 0, 23, 59, 59, 999);
+    try {
+      // Fetch all commits from last 12 months in ONE API call
+      const twelveMonthsAgo = this.getTwelveMonthsAgo();
+      const now = new Date();
+      
+      const commits = await githubClient.fetchCommitsWithDates(
+        build.organization,
+        build.repository,
+        twelveMonthsAgo,
+        now
+      );
 
-        try {
-          const commitCount = await githubClient.fetchCommits(
-            build.organization,
-            build.repository,
-            startDate,
-            endDate
-          );
+      // Group commits by month in memory
+      const commitsByMonth = new Map<string, number>();
+      
+      for (const commit of commits) {
+        const month = formatDateYYYYMM(commit.date);
+        commitsByMonth.set(month, (commitsByMonth.get(month) || 0) + 1);
+      }
 
-          return { month, commitCount };
-        } catch (error) {
-          console.error(`Failed to fetch commits for ${month}:`, error);
-          return { month, commitCount: 0 };
-        }
-      })
-    );
-
-    return monthlyCommits;
+      // Create monthly stats for all 12 months
+      return last12Months.map((month) => ({
+        month,
+        commitCount: commitsByMonth.get(month) || 0,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch commits:', error);
+      // Return empty data on error (graceful degradation)
+      return this.getEmptyMonthlyCommits();
+    }
   }
 
   private getEmptyMonthlyCommits(): MonthlyCommitStats[] {

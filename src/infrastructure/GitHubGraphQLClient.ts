@@ -1,5 +1,5 @@
-import type { WorkflowRun, WorkflowRunStatus } from '../domain/models';
-import type { GitHubClient } from './GitHubClient';
+import type {WorkflowRun, WorkflowRunStatus} from '../domain/models';
+import type {GitHubClient} from './GitHubClient';
 import AdmZip from 'adm-zip';
 
 export class GitHubAuthenticationError extends Error {
@@ -24,29 +24,12 @@ interface GitHubGraphQLResponse<T> {
   }>;
 }
 
-interface WorkflowRunNode {
-  databaseId: number;
-  name: string;
-  status: string;
-  conclusion: string | null;
-  url: string;
-  createdAt: string;
-  updatedAt: string;
-  runStartedAt: string | null;
-}
-
 interface TagNode {
   name: string;
   target: {
     oid: string;
     committedDate?: string;
   };
-}
-
-interface WorkflowNode {
-  name: string;
-  path: string;
-  state: string;
 }
 
 export class GitHubGraphQLClient implements GitHubClient {
@@ -179,8 +162,6 @@ export class GitHubGraphQLClient implements GitHubClient {
         page++;
       }
     }
-
-    console.log(`[GitHub] Fetched ${allRuns.length} workflow runs for ${owner}/${repo}`);
 
     return allRuns
       .filter((run: any) => {
@@ -366,7 +347,7 @@ export class GitHubGraphQLClient implements GitHubClient {
     since?: Date,
     until?: Date
   ): Promise<number> {
-    console.log(`[GitHub] fetching commits for ${owner}/${repo}`);
+    // Logging moved to use case level to avoid spam
     try {
       const sinceParam = since ? `&since=${since.toISOString()}` : '';
       const untilParam = until ? `&until=${until.toISOString()}` : '';
@@ -409,6 +390,86 @@ export class GitHubGraphQLClient implements GitHubClient {
         throw error;
       }
       throw new GitHubAPIError(`Failed to fetch commits: ${error}`);
+    }
+  }
+
+  /**
+   * Fetches commits with their dates (optimized for grouping by month)
+   * Makes paginated requests to get all commits in date range
+   */
+  async fetchCommitsWithDates(
+    owner: string,
+    repo: string,
+    since?: Date,
+    until?: Date
+  ): Promise<Array<{ date: Date }>> {
+    console.log(`[GitHub] fetching commits with dates for ${owner}/${repo}`);
+    try {
+      const sinceParam = since ? `&since=${since.toISOString()}` : '';
+      const untilParam = until ? `&until=${until.toISOString()}` : '';
+
+      let allCommits: Array<{ date: Date }> = [];
+      let page = 1;
+      const perPage = 100; // Max allowed by GitHub API
+
+      while (true) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${perPage}&page=${page}${sinceParam}${untilParam}`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Alps-CI',
+          },
+        });
+
+        if (response.status === 401) {
+          throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+        }
+
+        if (!response.ok) {
+          throw new GitHubAPIError(
+            `GitHub API request failed: ${response.statusText}`,
+            response.status
+          );
+        }
+
+        const commits = await response.json();
+        
+        if (!Array.isArray(commits) || commits.length === 0) {
+          break; // No more commits
+        }
+
+        // Extract dates from commits
+        const commitsWithDates = commits.map((commit: any) => ({
+          date: new Date(commit.commit.committer.date),
+        }));
+
+        allCommits = allCommits.concat(commitsWithDates);
+
+        // If we got fewer commits than requested, we've reached the end
+        if (commits.length < perPage) {
+          break;
+        }
+
+        page++;
+
+        // Safety limit: stop after 10 pages (1000 commits)
+        if (page > 10) {
+          console.warn(`[GitHub] Stopped after 10 pages (1000 commits) for ${owner}/${repo}`);
+          break;
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      return allCommits;
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch commits with dates: ${error}`);
     }
   }
 
@@ -748,9 +809,7 @@ export class GitHubGraphQLClient implements GitHubClient {
         // Find the first XML file in the ZIP
         for (const entry of zipEntries) {
           if (!entry.isDirectory && entry.entryName.toLowerCase().endsWith('.xml')) {
-            // Extract and return the XML content as string
-            const xmlContent = entry.getData().toString('utf8');
-            return xmlContent;
+            return entry.getData().toString('utf8');
           }
         }
 

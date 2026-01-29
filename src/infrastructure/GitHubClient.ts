@@ -32,6 +32,13 @@ export interface GitHubClient {
     until?: Date
   ): Promise<number>;
 
+  fetchCommitsWithDates(
+    owner: string,
+    repo: string,
+    since?: Date,
+    until?: Date
+  ): Promise<Array<{ date: Date }>>;
+
   fetchContributors(
     owner: string,
     repo: string,
