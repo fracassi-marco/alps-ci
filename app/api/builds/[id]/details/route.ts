@@ -6,17 +6,15 @@ import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResul
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { GitHubGraphQLClient } from '@/infrastructure/GitHubGraphQLClient';
-import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
-import { InMemoryGitHubDataCache } from '@/infrastructure/GitHubDataCache';
 import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
 import { decrypt } from '@/infrastructure/encryption';
+import type { GitHubClient } from '@/infrastructure/GitHubClient';
 
 const repository = new DatabaseBuildRepository();
 const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const workflowRunRepository = new DatabaseWorkflowRunRepository();
 const testResultRepository = new DatabaseTestResultRepository();
 const accessTokenRepository = new DatabaseAccessTokenRepository();
-const cache = new InMemoryGitHubDataCache();
 
 export async function GET(
   request: Request,
@@ -52,7 +50,7 @@ export async function GET(
     }
 
     // Initialize GitHub client if build has a token
-    let cachedGitHubClient: CachedGitHubClient | undefined;
+    let githubClient: GitHubClient | undefined;
     
     try {
       let token: string | null = null;
@@ -70,10 +68,9 @@ export async function GET(
         token = build.personalAccessToken;
       }
 
-      // Create cached GitHub client if token is available
+      // Create GitHub client if token is available
       if (token) {
-        const githubClient = new GitHubGraphQLClient(token);
-        cachedGitHubClient = new CachedGitHubClient(githubClient, cache);
+        githubClient = new GitHubGraphQLClient(token);
       }
     } catch (error) {
       console.error('Failed to initialize GitHub client:', error);
@@ -84,7 +81,7 @@ export async function GET(
     const useCase = new FetchBuildDetailsStatsUseCase(
       workflowRunRepository,
       testResultRepository,
-      cachedGitHubClient
+      githubClient
     );
     const detailsStats = await useCase.execute(build);
 

@@ -1,5 +1,5 @@
 import type { Build, BuildStats, DailySuccess, WorkflowRun, TestStats, WorkflowRunRecord } from '@/domain/models';
-import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
+import type { GitHubClient } from '@/infrastructure/GitHubClient';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import { calculateHealthPercentage, formatDateYYYYMMDD, getLastNDaysRange } from '@/domain/utils';
@@ -12,7 +12,7 @@ export class FetchBuildStatsFromDatabaseUseCase {
   constructor(
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
-    private githubClient?: CachedGitHubClient
+    private githubClient?: GitHubClient
   ) {}
 
   async execute(build: Build): Promise<BuildStats> {
@@ -80,15 +80,13 @@ export class FetchBuildStatsFromDatabaseUseCase {
           // Fetch metadata from GitHub (these are still needed as they're not in workflow runs)
           lastTag = await this.githubClient.fetchLatestTag(
             build.organization,
-            build.repository,
-            build.cacheExpirationMinutes
+            build.repository
           );
 
           const today = new Date();
           commitsLast7Days = await this.githubClient.fetchCommits(
             build.organization,
             build.repository,
-            build.cacheExpirationMinutes,
             sevenDaysAgo,
             today
           );
@@ -96,14 +94,12 @@ export class FetchBuildStatsFromDatabaseUseCase {
           contributorsLast7Days = await this.githubClient.fetchContributors(
             build.organization,
             build.repository,
-            build.cacheExpirationMinutes,
             sevenDaysAgo
           );
 
           const lastCommitData = await this.githubClient.fetchLastCommit(
             build.organization,
-            build.repository,
-            build.cacheExpirationMinutes
+            build.repository
           );
 
           if (lastCommitData) {
@@ -118,14 +114,12 @@ export class FetchBuildStatsFromDatabaseUseCase {
 
           totalCommits = await this.githubClient.fetchCommits(
             build.organization,
-            build.repository,
-            build.cacheExpirationMinutes
+            build.repository
           );
 
           totalContributors = await this.githubClient.fetchTotalContributors(
             build.organization,
-            build.repository,
-            build.cacheExpirationMinutes
+            build.repository
           );
         } catch (error) {
           console.warn('Failed to fetch metadata from GitHub:', error);

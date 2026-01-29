@@ -1,7 +1,7 @@
 # Alps-CI Specification
 
 ## Overview
-Alps-CI is a modern multi-tenant CI dashboard that displays workflows from GitHub Actions for multiple repositories, organized as "Builds". The system supports team collaboration with user authentication, role-based access control, and team invitations. Users can define Builds with custom Selectors and view comprehensive statistics and metadata. The project uses Bun, Next.js (App Router), TypeScript, TailwindCSS, better-auth, and Drizzle ORM, following Clean Architecture principles. Data is retrieved from GitHub via the GraphQL API and cached per Build. Configuration is stored in a database (SQLite for development, PostgreSQL for production).
+Alps-CI is a modern multi-tenant CI dashboard that displays workflows from GitHub Actions for multiple repositories, organized as "Builds". The system supports team collaboration with user authentication, role-based access control, and team invitations. Users can define Builds with custom Selectors and view comprehensive statistics and metadata. The project uses Bun, Next.js (App Router), TypeScript, TailwindCSS, better-auth, and Drizzle ORM, following Clean Architecture principles. Data is retrieved from GitHub via the GraphQL API. Configuration is stored in a database (SQLite for development, PostgreSQL for production).
 
 ---
 
@@ -148,7 +148,6 @@ When adding a Build, specify:
 - **Repository**: Repository name
 - **Selectors**: One or more filters (mixed types allowed)
 - **Personal Access Token**: GitHub PAT
-- **Cache Expiration**: 1-1440 minutes
 - **Label** (optional): Label for grouping builds in the UI
 
 Actions:
@@ -224,7 +223,6 @@ Each Build appears as a full-screen card with comprehensive statistics:
 ### Error Handling
 - **Invalid PAT**: Display error banner with "Update Token" CTA
 - **API Failures**: Show error message with retry option
-- **Expired Cache**: Automatic background refresh
 
 ### Build Card Enhancements
 
@@ -269,7 +267,6 @@ When a row is expanded, it shows all the same information as Grid View:
 - **Last Successful Workflow Duration**
 - **Selectors & Metadata** (Collapsible accordion):
   - List of all configured selectors
-  - Cache expiration settings
 
 ### Behavior
 - **Row Click**: Toggle expand/collapse to show/hide full details
@@ -316,7 +313,7 @@ Clean Architecture under `/src`:
   - Permission system
 - **`use-cases/`**: Application orchestration layer
   - Build management (CRUD operations)
-  - Statistics fetching and caching
+  - Statistics fetching
   - User authentication flows
   - Tenant registration
   - Invitation system
@@ -324,7 +321,6 @@ Clean Architecture under `/src`:
   - GitHub GraphQL client
   - Database repositories (Drizzle ORM)
   - File system operations
-  - Caching layer
   - Authentication (better-auth integration)
 
 ### Database Schema
@@ -336,7 +332,7 @@ Clean Architecture under `/src`:
 - `tenants`: Organization workspaces (id, name, slug)
 - `tenant_members`: User-tenant associations (userId, tenantId, role)
 - `invitations`: Team invitations (email, token, expiresAt, acceptedAt)
-- `builds`: CI build configurations (tenantId, name, org, repo, selectors, PAT, cache)
+- `builds`: CI build configurations (tenantId, name, org, repo, selectors, PAT)
 - `verification_tokens`: Email verification (future feature)
 
 **Relations**:
@@ -357,18 +353,6 @@ Clean Architecture under `/src`:
   - Last commit details
   - Workflow durations
 - **Error Handling**: Invalid token detection, rate limiting, network errors
-
-### Caching System
-- **Per-Build Cache**: Individual cache expiration (1-1440 minutes)
-- **Cache Storage**: In-memory with timestamp tracking
-- **Cache Invalidation**: 
-  - Automatic on expiration
-  - Manual via refresh button
-  - Automatic on Build edit
-- **Cached Data**:
-  - Workflow runs
-  - Repository metadata
-  - Statistics calculations
 
 ### Security
 - **Password Hashing**: bcrypt with salt
@@ -516,10 +500,8 @@ When users click on test statistics in a Build card (e.g., "25 / 23 / 2" showing
   - Downloads artifacts from GitHub
   - Extracts and parses XML files
   - Returns structured test case data
-  - Caches results for 1 hour
 
 #### Performance
-- Cache parsed test results to avoid repeated GitHub API calls
 - Show loading state while fetching/parsing
 - Lazy load full stack traces for failed tests
 

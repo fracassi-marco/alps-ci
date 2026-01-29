@@ -1,7 +1,7 @@
 import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord, TestResultRecord } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
-import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
+import type { GitHubClient } from '@/infrastructure/GitHubClient';
 import { formatDateYYYYMM, getLastNMonthsRange } from '@/domain/utils';
 import { FetchBuildStatsFromDatabaseUseCase } from './fetchBuildStatsFromDatabase';
 
@@ -13,7 +13,7 @@ export class FetchBuildDetailsStatsUseCase {
   constructor(
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
-    private cachedGitHubClient?: CachedGitHubClient
+    private githubClient?: GitHubClient
   ) {}
 
   async execute(build: Build): Promise<BuildDetailsStats> {
@@ -39,9 +39,9 @@ export class FetchBuildDetailsStatsUseCase {
 
     // Calculate monthly commits if GitHub client is available
     let monthlyCommits: MonthlyCommitStats[] = [];
-    if (this.cachedGitHubClient) {
+    if (this.githubClient) {
       try {
-        monthlyCommits = await this.calculateMonthlyCommits(build, this.cachedGitHubClient);
+        monthlyCommits = await this.calculateMonthlyCommits(build, this.githubClient);
       } catch (error) {
         console.error('Failed to fetch monthly commits:', error);
         // Return empty array on error (graceful degradation)
@@ -57,12 +57,11 @@ export class FetchBuildDetailsStatsUseCase {
 
     // Fetch contributors list if GitHub client is available
     let contributors: Contributor[] = [];
-    if (this.cachedGitHubClient) {
+    if (this.githubClient) {
       try {
-        contributors = await this.cachedGitHubClient.fetchContributorsList(
+        contributors = await this.githubClient.fetchContributorsList(
           build.organization,
           build.repository,
-          build.cacheExpirationMinutes,
           50 // Limit to top 50 contributors
         );
       } catch (error) {
@@ -122,7 +121,7 @@ export class FetchBuildDetailsStatsUseCase {
 
   private async calculateMonthlyCommits(
     build: Build,
-    cachedClient: CachedGitHubClient
+    githubClient: GitHubClient
   ): Promise<MonthlyCommitStats[]> {
     const last12Months = getLastNMonthsRange(12);
 
@@ -136,10 +135,9 @@ export class FetchBuildDetailsStatsUseCase {
         const endDate = new Date(parseInt(year!), parseInt(monthNum!), 0, 23, 59, 59, 999);
 
         try {
-          const commitCount = await cachedClient.fetchCommits(
+          const commitCount = await githubClient.fetchCommits(
             build.organization,
             build.repository,
-            build.cacheExpirationMinutes,
             startDate,
             endDate
           );

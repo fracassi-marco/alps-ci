@@ -1,10 +1,10 @@
 import type {Build, BuildStats, DailySuccess, WorkflowRun, TestStats} from '../domain/models';
-import type {CachedGitHubClient} from '../infrastructure/CachedGitHubClient';
+import type {GitHubClient} from '../infrastructure/GitHubClient';
 import {calculateHealthPercentage, formatDateYYYYMMDD, getLastNDaysRange} from '../domain/utils';
 import { parseJUnitXML, isTestArtifact } from '../infrastructure/junit-parser';
 
 export class FetchBuildStatsUseCase {
-  constructor(private githubClient: CachedGitHubClient) {}
+  constructor(private githubClient: GitHubClient) {}
 
   async execute(build: Build): Promise<BuildStats> {
     try {
@@ -54,8 +54,7 @@ export class FetchBuildStatsUseCase {
       // Get last tag
       const lastTag = await this.githubClient.fetchLatestTag(
         build.organization,
-        build.repository,
-        build.cacheExpirationMinutes
+        build.repository
       );
 
       // Get last 3 runs for links
@@ -65,7 +64,6 @@ export class FetchBuildStatsUseCase {
       const commitsLast7Days = await this.githubClient.fetchCommits(
         build.organization,
         build.repository,
-        build.cacheExpirationMinutes,
         sevenDaysAgo,
         today
       );
@@ -74,15 +72,13 @@ export class FetchBuildStatsUseCase {
       const contributorsLast7Days = await this.githubClient.fetchContributors(
         build.organization,
         build.repository,
-        build.cacheExpirationMinutes,
         sevenDaysAgo
       );
 
       // Fetch last commit
       const lastCommitData = await this.githubClient.fetchLastCommit(
         build.organization,
-        build.repository,
-        build.cacheExpirationMinutes
+        build.repository
       );
 
       const lastCommit = lastCommitData ? {
@@ -96,15 +92,13 @@ export class FetchBuildStatsUseCase {
       // Fetch total commits (all time)
       const totalCommits = await this.githubClient.fetchCommits(
         build.organization,
-        build.repository,
-        build.cacheExpirationMinutes
+        build.repository
       );
 
       // Fetch total contributors (all time) - uses dedicated GitHub contributors endpoint
       const totalContributors = await this.githubClient.fetchTotalContributors(
         build.organization,
-        build.repository,
-        build.cacheExpirationMinutes
+        build.repository
       );
 
       let testStats: TestStats | null = null;
@@ -145,7 +139,6 @@ export class FetchBuildStatsUseCase {
     const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
       build.organization,
       build.repository,
-      build.cacheExpirationMinutes,
       { since, limit: 100 }
     );
 
@@ -153,7 +146,6 @@ export class FetchBuildStatsUseCase {
     const allTags = await this.githubClient.fetchTags(
       build.organization,
       build.repository,
-      build.cacheExpirationMinutes,
       100
     );
 

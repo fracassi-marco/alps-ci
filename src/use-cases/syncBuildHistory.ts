@@ -1,10 +1,10 @@
-import type { Build, WorkflowRun, WorkflowRunRecord, TestCase } from '@/domain/models';
-import type { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
-import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
-import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
-import type { BuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
-import { parseJUnitXML, isTestArtifact } from '@/infrastructure/junit-parser';
-import { parseDetailedTestCases } from '@/infrastructure/test-case-parser';
+import type {Build, WorkflowRun, WorkflowRunRecord} from '@/domain/models';
+import type {GitHubClient} from '@/infrastructure/GitHubClient';
+import type {WorkflowRunRepository} from '@/infrastructure/DatabaseWorkflowRunRepository';
+import type {TestResultRepository} from '@/infrastructure/DatabaseTestResultRepository';
+import type {BuildSyncStatusRepository} from '@/infrastructure/DatabaseBuildSyncStatusRepository';
+import {isTestArtifact, parseJUnitXML} from '@/infrastructure/junit-parser';
+import {parseDetailedTestCases} from '@/infrastructure/test-case-parser';
 
 export interface SyncResult {
   newRunsSynced: number;
@@ -14,7 +14,7 @@ export interface SyncResult {
 
 export class SyncBuildHistoryUseCase {
   constructor(
-    private githubClient: CachedGitHubClient,
+    private githubClient: GitHubClient,
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
     private syncStatusRepo: BuildSyncStatusRepository
@@ -144,7 +144,6 @@ export class SyncBuildHistoryUseCase {
     const allWorkflowRuns = await this.githubClient.fetchWorkflowRuns(
       build.organization,
       build.repository,
-      build.cacheExpirationMinutes,
       { 
         since, 
         limit: this.isInitialBackfill(syncStatus) ? undefined : 100,
@@ -156,7 +155,6 @@ export class SyncBuildHistoryUseCase {
     const allTags = await this.githubClient.fetchTags(
       build.organization,
       build.repository,
-      build.cacheExpirationMinutes,
       100
     );
 
@@ -282,8 +280,7 @@ export class SyncBuildHistoryUseCase {
             // Parse detailed test cases from XML
             const testCases = parseDetailedTestCases(content);
 
-            // Persist test result to database
-            const testResult = await this.testResultRepo.create({
+            return await this.testResultRepo.create({
               workflowRunId: run.id,
               buildId: build.id,
               tenantId: build.tenantId,
@@ -296,8 +293,6 @@ export class SyncBuildHistoryUseCase {
               artifactUrl: `https://github.com/${build.organization}/${build.repository}/actions/runs/${run.githubRunId}/artifacts/${artifact.id}`,
               parsedAt: new Date(),
             });
-
-            return testResult;
           }
         } catch (error) {
           console.error(`Failed to download/parse artifact ${artifact.name}:`, error);

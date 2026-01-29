@@ -7,8 +7,6 @@ import { ValidationError } from '@/domain/validation';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { GitHubGraphQLClient } from '@/infrastructure/GitHubGraphQLClient';
-import { getGitHubDataCache } from '@/infrastructure/cache-instance';
-import { CachedGitHubClient } from '@/infrastructure/CachedGitHubClient';
 import { SyncBuildHistoryUseCase } from '@/use-cases/syncBuildHistory';
 import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
@@ -140,10 +138,8 @@ async function triggerInitialBackfill(build: Build, tenantId: string): Promise<v
       throw new Error('No GitHub access token available for this build');
     }
 
-    // 2. Create GitHub client with cache
+    // 2. Create GitHub client
     const githubClient = new GitHubGraphQLClient(githubToken);
-    const cache = getGitHubDataCache();
-    const cachedClient = new CachedGitHubClient(githubClient, cache);
 
     // 3. Create repository instances
     const workflowRunRepo = new DatabaseWorkflowRunRepository();
@@ -152,7 +148,7 @@ async function triggerInitialBackfill(build: Build, tenantId: string): Promise<v
 
     // 4. Execute sync with full backfill
     const syncUseCase = new SyncBuildHistoryUseCase(
-      cachedClient,
+      githubClient,
       workflowRunRepo,
       testResultRepo,
       syncStatusRepo
