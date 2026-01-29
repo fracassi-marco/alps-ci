@@ -8,9 +8,7 @@ import {
   RefreshCw,
   ExternalLink,
   AlertCircle,
-  GitBranch,
   Tag,
-  Workflow,
   Activity,
   CheckCircle,
   XCircle,
@@ -22,11 +20,12 @@ import {
 import { useSession, signOut } from '@/infrastructure/auth-client';
 import Button from '../../components/Button';
 import { BuildDetailsChart } from '../../components/BuildDetailsChart';
+import { BuildDurationChart } from '../../components/BuildDurationChart';
 import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
 import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
 import { ContributorsList } from '../../components/ContributorsList';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
-import type { Build, BuildDetailsStats, Selector, WorkflowRun } from '@/domain/models';
+import type { Build, BuildDetailsStats, Selector } from '@/domain/models';
 
 export default function BuildDetailsPage() {
   const params = useParams();
@@ -130,17 +129,6 @@ export default function BuildDetailsPage() {
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
-  };
-
-  const getSelectorIcon = (type: Selector['type']) => {
-    switch (type) {
-      case 'tag':
-        return <Tag className="w-4 h-4" />;
-      case 'branch':
-        return <GitBranch className="w-4 h-4" />;
-      case 'workflow':
-        return <Workflow className="w-4 h-4" />;
-    }
   };
 
   const handleLogout = async () => {
@@ -324,6 +312,13 @@ export default function BuildDetailsPage() {
         {stats && (
           <div className="mb-6">
             <BuildDetailsChart monthlyStats={stats.monthlyStats} />
+          </div>
+        )}
+
+        {/* Build Duration Trends Chart */}
+        {stats && stats.durationTrends && stats.durationTrends.length > 0 && (
+          <div className="mb-6">
+            <BuildDurationChart durationTrends={stats.durationTrends} />
           </div>
         )}
 

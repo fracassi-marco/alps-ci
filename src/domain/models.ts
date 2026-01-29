@@ -179,6 +179,15 @@ export interface Contributor {
   profileUrl: string;
 }
 
+// Duration trend data point (build duration over time)
+export interface DurationTrend {
+  period: string; // ISO month string (YYYY-MM)
+  avgDuration: number; // milliseconds
+  minDuration: number; // milliseconds
+  maxDuration: number; // milliseconds
+  count: number; // number of runs in this period
+}
+
 // Build with statistics
 export interface BuildWithStats extends Build {
   stats: BuildStats | null;
@@ -191,6 +200,7 @@ export interface BuildDetailsStats extends BuildStats {
   monthlyCommits: MonthlyCommitStats[]; // Last 12 months of commits
   testTrend: TestTrendDataPoint[]; // All test runs over time
   contributors: Contributor[]; // List of contributors ordered by contributions
+  durationTrends: DurationTrend[]; // Last 12 months of build duration trends
 }
 
 // Workflow Run Record (historical workflow execution data)

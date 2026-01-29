@@ -1,4 +1,4 @@
-import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord } from '@/domain/models';
+import type { Build, BuildDetailsStats, MonthlyBuildStats, MonthlyCommitStats, TestTrendDataPoint, Contributor, WorkflowRunRecord, DurationTrend } from '@/domain/models';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import type { GitHubClient } from '@/infrastructure/GitHubClient';
@@ -36,6 +36,9 @@ export class FetchBuildDetailsStatsUseCase {
 
     // Calculate monthly statistics
     const monthlyStats = this.calculateMonthlyStats(allRuns);
+
+    // Calculate duration trends
+    const durationTrends = this.calculateDurationTrends(allRuns);
 
     // Calculate monthly commits if GitHub client is available
     let monthlyCommits: MonthlyCommitStats[];
@@ -77,6 +80,7 @@ export class FetchBuildDetailsStatsUseCase {
       monthlyCommits,
       testTrend,
       contributors,
+      durationTrends,
     };
   }
 
@@ -115,6 +119,53 @@ export class FetchBuildDetailsStatsUseCase {
         successCount,
         failureCount,
         totalCount,
+      };
+    });
+  }
+
+  private calculateDurationTrends(runs: WorkflowRunRecord[]): DurationTrend[] {
+    // Get last 12 months range
+    const last12Months = getLastNMonthsRange(12);
+
+    // Group runs by month (only those with duration data)
+    const runsByMonth = new Map<string, WorkflowRunRecord[]>();
+    
+    runs.forEach((run) => {
+      // Only include runs with duration data
+      if (run.duration !== null && run.duration > 0) {
+        const month = formatDateYYYYMM(run.workflowCreatedAt);
+        if (!runsByMonth.has(month)) {
+          runsByMonth.set(month, []);
+        }
+        runsByMonth.get(month)!.push(run);
+      }
+    });
+
+    // Calculate duration stats for each month
+    return last12Months.map((month) => {
+      const monthRuns = runsByMonth.get(month) || [];
+      
+      if (monthRuns.length === 0) {
+        return {
+          period: month,
+          avgDuration: 0,
+          minDuration: 0,
+          maxDuration: 0,
+          count: 0,
+        };
+      }
+
+      const durations = monthRuns.map((run) => run.duration!);
+      const avgDuration = Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length);
+      const minDuration = Math.min(...durations);
+      const maxDuration = Math.max(...durations);
+
+      return {
+        period: month,
+        avgDuration,
+        minDuration,
+        maxDuration,
+        count: monthRuns.length,
       };
     });
   }
