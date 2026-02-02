@@ -25,12 +25,12 @@ export default function RootLayout({
         {/* Fixed Mountain Background */}
         <div className="fixed inset-0 -z-10 overflow-hidden">
           <Image
-            src="/images/background.jpg"
+            src="/images/background_sass_de_mura.jpg"
             alt="Dolomiti Bellunesi"
             fill
             priority
             className="object-cover"
-            quality={90}
+            quality={75}
           />
           {/* Lighter overlay to make the image more vivid */}
           <div className="absolute inset-0 bg-white/10 dark:bg-black/20" />
