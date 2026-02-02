@@ -71,6 +71,9 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.selectors !== undefined) updateData.selectors = JSON.stringify(updates.selectors);
     if (updates.accessTokenId !== undefined) updateData.accessTokenId = updates.accessTokenId;
     if (updates.personalAccessToken !== undefined) updateData.personalAccessToken = updates.personalAccessToken;
+    if (updates.mostUpdatedFiles !== undefined) updateData.mostUpdatedFiles = JSON.stringify(updates.mostUpdatedFiles);
+    if (updates.monthlyCommits !== undefined) updateData.monthlyCommits = JSON.stringify(updates.monthlyCommits);
+    if (updates.lastAnalyzedCommitSha !== undefined) updateData.lastAnalyzedCommitSha = updates.lastAnalyzedCommitSha;
 
     // Always update the updatedAt timestamp
     updateData.updatedAt = new Date();
@@ -153,7 +156,13 @@ export class DatabaseBuildRepository implements BuildRepository {
       personalAccessToken: row.personalAccessToken || null,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
+      mostUpdatedFiles: typeof row.mostUpdatedFiles === 'string'
+        ? JSON.parse(row.mostUpdatedFiles)
+        : row.mostUpdatedFiles || undefined,
+      monthlyCommits: typeof row.monthlyCommits === 'string'
+        ? JSON.parse(row.monthlyCommits)
+        : row.monthlyCommits || undefined,
+      lastAnalyzedCommitSha: row.lastAnalyzedCommitSha || null,
     };
   }
 }
-

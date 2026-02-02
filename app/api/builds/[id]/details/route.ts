@@ -51,7 +51,7 @@ export async function GET(
 
     // Initialize GitHub client if build has a token
     let githubClient: GitHubClient | undefined;
-    
+
     try {
       let token: string | null = null;
 
@@ -81,6 +81,7 @@ export async function GET(
     const useCase = new FetchBuildDetailsStatsUseCase(
       workflowRunRepository,
       testResultRepository,
+      repository,
       githubClient
     );
     const detailsStats = await useCase.execute(build);

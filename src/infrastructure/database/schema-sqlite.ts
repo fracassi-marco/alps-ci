@@ -112,6 +112,9 @@ export const builds = sqliteTable('builds', {
   organization: text('organization').notNull(),
   repository: text('repository').notNull(),
   selectors: text('selectors', { mode: 'json' }).notNull().$defaultFn(() => []),
+  mostUpdatedFiles: text('most_updated_files', { mode: 'json' }),
+  monthlyCommits: text('monthly_commits', { mode: 'json' }),
+  lastAnalyzedCommitSha: text('last_analyzed_commit_sha'),
   accessTokenId: text('access_token_id').references(() => accessTokens.id, { onDelete: 'set null' }),
   personalAccessToken: text('personal_access_token'),
   label: text('label'),
@@ -146,7 +149,7 @@ export const workflowRuns = sqliteTable('workflow_runs', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
   tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-  
+
   // GitHub workflow run data
   githubRunId: integer('github_run_id').notNull(),
   name: text('name').notNull(),
@@ -156,13 +159,13 @@ export const workflowRuns = sqliteTable('workflow_runs', {
   headBranch: text('head_branch'),
   event: text('event'),
   duration: integer('duration'), // milliseconds
-  
+
   // Commit info
   commitSha: text('commit_sha').notNull(),
   commitMessage: text('commit_message'),
   commitAuthor: text('commit_author'),
   commitDate: integer('commit_date', { mode: 'timestamp' }),
-  
+
   // Timestamps
   workflowCreatedAt: integer('workflow_created_at', { mode: 'timestamp' }).notNull(),
   workflowUpdatedAt: integer('workflow_updated_at', { mode: 'timestamp' }).notNull(),
@@ -184,16 +187,16 @@ export const testResults = sqliteTable('test_results', {
   workflowRunId: text('workflow_run_id').notNull().references(() => workflowRuns.id, { onDelete: 'cascade' }),
   buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
   tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-  
+
   // Test summary
   totalTests: integer('total_tests').notNull(),
   passedTests: integer('passed_tests').notNull(),
   failedTests: integer('failed_tests').notNull(),
   skippedTests: integer('skipped_tests').notNull(),
-  
+
   // Test details (JSON array of individual test cases)
   testCases: text('test_cases', { mode: 'json' }),
-  
+
   // Metadata
   artifactName: text('artifact_name'),
   artifactUrl: text('artifact_url'),
@@ -212,17 +215,17 @@ export const buildSyncStatus = sqliteTable('build_sync_status', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   buildId: text('build_id').notNull().references(() => builds.id, { onDelete: 'cascade' }),
   tenantId: text('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-  
+
   lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
   lastSyncedRunId: integer('last_synced_run_id'),
   lastSyncedRunCreatedAt: integer('last_synced_run_created_at', { mode: 'timestamp' }),
-  
+
   initialBackfillCompleted: integer('initial_backfill_completed', { mode: 'boolean' }).notNull().default(false),
   initialBackfillCompletedAt: integer('initial_backfill_completed_at', { mode: 'timestamp' }),
-  
+
   totalRunsSynced: integer('total_runs_synced').notNull().default(0),
   lastSyncError: text('last_sync_error'),
-  
+
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({

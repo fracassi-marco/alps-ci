@@ -83,9 +83,12 @@ export interface Build {
   label?: string | null;
   selectors: Selector[];
   accessTokenId: string | null;
-  personalAccessToken: string | null;
+  personalAccessToken?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  mostUpdatedFiles?: { path: string; updateCount: number; lastUpdated: Date }[];
+  monthlyCommits?: { month: string; commitCount: number }[];
+  lastAnalyzedCommitSha?: string | null;
 }
 
 // Workflow run status

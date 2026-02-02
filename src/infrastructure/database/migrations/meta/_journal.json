@@ -22,6 +22,20 @@
       "when": 1769705738514,
       "tag": "0002_groovy_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1770019926499,
+      "tag": "0003_fine_stone_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1770020457086,
+      "tag": "0004_salty_tarot",
+      "breakpoints": true
     }
   ]
 }

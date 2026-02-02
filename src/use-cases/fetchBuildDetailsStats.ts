@@ -9,10 +9,17 @@ import { FetchBuildStatsFromDatabaseUseCase } from './fetchBuildStatsFromDatabas
  * Fetches extended build statistics including monthly aggregations
  * for the build details page
  */
+import type { BuildRepository } from '@/infrastructure/DatabaseBuildRepository';
+
+/**
+ * Fetches extended build statistics including monthly aggregations
+ * for the build details page
+ */
 export class FetchBuildDetailsStatsUseCase {
   constructor(
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
+    private buildRepo: BuildRepository,
     private githubClient?: GitHubClient
   ) { }
 
@@ -41,49 +48,91 @@ export class FetchBuildDetailsStatsUseCase {
     const durationTrends = this.calculateDurationTrends(allRuns);
 
     // Calculate monthly commits if GitHub client is available
-    let monthlyCommits: MonthlyCommitStats[];
-    if (this.githubClient) {
-      try {
-        monthlyCommits = await this.calculateMonthlyCommits(build, this.githubClient);
-      } catch (error) {
-        console.error('Failed to fetch monthly commits:', error);
-        // Return empty array on error (graceful degradation)
-        monthlyCommits = this.getEmptyMonthlyCommits();
-      }
-    } else {
-      // No GitHub client provided, return empty data
-      monthlyCommits = this.getEmptyMonthlyCommits();
-    }
-
-    // Calculate test trend (all test runs over time)
-    const testTrend = await this.calculateTestTrend(build, twelveMonthsAgo, now);
-
-    // Fetch contributors list and most updated files if GitHub client is available
+    let monthlyCommits: MonthlyCommitStats[] = [];
     let contributors: Contributor[] = [];
     let mostUpdatedFiles: { path: string; updateCount: number; lastUpdated: Date }[] = [];
 
     if (this.githubClient) {
       try {
-        const [contributorsList, activeFiles] = await Promise.all([
-          this.githubClient.fetchContributorsList(
+        // 1. Get current HEAD SHA (fast)
+        let latestCommitSha: string | null = null;
+        try {
+          const lastCommit = await this.githubClient.fetchLastCommit(
             build.organization,
-            build.repository,
-            50 // Limit to top 50 contributors
-          ),
-          this.githubClient.fetchMostActiveFiles(
-            build.organization,
-            build.repository,
-            100 // Analyze last 100 commits
-          )
-        ]);
+            build.repository
+          );
+          if (lastCommit) {
+            latestCommitSha = lastCommit.sha;
+          }
+        } catch (e) {
+          console.error('Failed to fetch latest commit SHA', e);
+        }
 
-        contributors = contributorsList;
-        mostUpdatedFiles = activeFiles;
+        // 2. Check Cache
+        const isCacheValid = latestCommitSha && build.lastAnalyzedCommitSha === latestCommitSha;
+        const hasCachedFiles = build.mostUpdatedFiles && build.mostUpdatedFiles.length > 0;
+        const hasCachedCommits = build.monthlyCommits && build.monthlyCommits.length > 0;
+
+        if (isCacheValid && hasCachedFiles && hasCachedCommits) {
+          console.log(`✅ Using cached stats for commit ${latestCommitSha}`);
+          mostUpdatedFiles = build.mostUpdatedFiles!;
+          monthlyCommits = build.monthlyCommits!;
+
+          // Only fetch contributors (fast enough, usually)
+          try {
+            contributors = await this.githubClient.fetchContributorsList(
+              build.organization,
+              build.repository,
+              50
+            );
+          } catch (e) { console.error('Failed to fetch contributors', e); }
+
+        } else {
+          console.log(`🔄 Cache miss or partial data (stored: ${build.lastAnalyzedCommitSha}, current: ${latestCommitSha}). Fetching fresh data...`);
+
+          // Fetch everything in parallel
+          const [contributorsList, activeFiles, calculatedMonthlyCommits] = await Promise.all([
+            this.githubClient.fetchContributorsList(
+              build.organization,
+              build.repository,
+              50
+            ).catch(() => []),
+            this.githubClient.fetchMostActiveFiles(
+              build.organization,
+              build.repository,
+              100
+            ).catch(() => []),
+            this.calculateMonthlyCommits(build, this.githubClient).catch(() => this.getEmptyMonthlyCommits())
+          ]);
+
+          contributors = contributorsList;
+          mostUpdatedFiles = activeFiles;
+          monthlyCommits = calculatedMonthlyCommits;
+
+          // Update cache
+          if (latestCommitSha && (mostUpdatedFiles.length > 0 || monthlyCommits.length > 0)) {
+            try {
+              await this.buildRepo.update(build.id, {
+                mostUpdatedFiles,
+                monthlyCommits,
+                lastAnalyzedCommitSha: latestCommitSha
+              }, build.tenantId);
+              console.log(`💾 Cache updated for build ${build.id} with commit ${latestCommitSha}`);
+            } catch (err) {
+              console.error('Failed to update build cache:', err);
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch GitHub data:', error);
-        // Default to empty arrays on error
+        monthlyCommits = this.getEmptyMonthlyCommits();
       }
+    } else {
+      monthlyCommits = this.getEmptyMonthlyCommits();
     }
+
+    // Calculate test trend (all test runs over time)
+    const testTrend = await this.calculateTestTrend(build, twelveMonthsAgo, now);
 
     return {
       ...baseStats,

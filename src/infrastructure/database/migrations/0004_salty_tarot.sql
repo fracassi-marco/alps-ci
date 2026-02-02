@@ -1,0 +1,1 @@
+ALTER TABLE `builds` ADD `monthly_commits` text;
