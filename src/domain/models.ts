@@ -193,6 +193,13 @@ export interface BuildWithStats extends Build {
   error: string | null;
 }
 
+// File update statistics
+export interface FileUpdateStat {
+  path: string;
+  updateCount: number;
+  lastUpdated: Date;
+}
+
 // Build details statistics (extended stats with monthly data)
 export interface BuildDetailsStats extends BuildStats {
   monthlyStats: MonthlyBuildStats[]; // Last 12 months
@@ -200,6 +207,7 @@ export interface BuildDetailsStats extends BuildStats {
   testTrend: TestTrendDataPoint[]; // All test runs over time
   contributors: Contributor[]; // List of contributors ordered by contributions
   durationTrends: DurationTrend[]; // Last 12 months of build duration trends
+  mostUpdatedFiles: FileUpdateStat[]; // Top 10 most frequently updated files
 }
 
 // Workflow Run Record (historical workflow execution data)

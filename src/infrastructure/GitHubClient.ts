@@ -1,4 +1,4 @@
-import type {WorkflowRun} from '../domain/models';
+import type { WorkflowRun } from '../domain/models';
 
 export interface GitHubClient {
 
@@ -83,4 +83,10 @@ export interface GitHubClient {
     repo: string,
     artifactId: number
   ): Promise<string | null>;
+
+  fetchMostActiveFiles(
+    owner: string,
+    repo: string,
+    limit?: number
+  ): Promise<Array<{ path: string; updateCount: number; lastUpdated: Date }>>;
 }

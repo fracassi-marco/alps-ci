@@ -24,6 +24,7 @@ import { BuildDurationChart } from '../../components/BuildDurationChart';
 import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
 import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
 import { ContributorsList } from '../../components/ContributorsList';
+import { MostUpdatedFilesList } from '../../components/MostUpdatedFilesList';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { Build, BuildDetailsStats } from '@/domain/models';
 
@@ -387,6 +388,13 @@ export default function BuildDetailsPage() {
           </div>
         )}
 
+        {/* Most Updated Files */}
+        {stats && stats.mostUpdatedFiles && stats.mostUpdatedFiles.length > 0 && (
+          <div className="mb-6">
+            <MostUpdatedFilesList files={stats.mostUpdatedFiles} />
+          </div>
+        )}
+
         {/* Additional Info Sections */}
         {stats && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -450,9 +458,8 @@ export default function BuildDetailsPage() {
                 Recent Workflow Runs ({stats.recentRuns.length})
               </span>
               <ChevronDown
-                className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
-                  showRecentRuns ? 'transform rotate-180' : ''
-                }`}
+                className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${showRecentRuns ? 'transform rotate-180' : ''
+                  }`}
               />
             </button>
 
@@ -507,9 +514,8 @@ export default function BuildDetailsPage() {
               Build Metadata
             </span>
             <ChevronDown
-              className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${
-                showMetadata ? 'transform rotate-180' : ''
-              }`}
+              className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${showMetadata ? 'transform rotate-180' : ''
+                }`}
             />
           </button>
 
@@ -530,9 +536,9 @@ export default function BuildDetailsPage() {
                             stats.recentRuns
                               .filter(r => r.duration)
                               .reduce((sum, r) => sum + (r.duration || 0), 0) /
-                              stats.recentRuns.filter(r => r.duration).length /
-                              1000 /
-                              60
+                            stats.recentRuns.filter(r => r.duration).length /
+                            1000 /
+                            60
                           )}m`
                         ) : (
                           'N/A'

@@ -14,7 +14,7 @@ export class FetchBuildDetailsStatsUseCase {
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
     private githubClient?: GitHubClient
-  ) {}
+  ) { }
 
   async execute(build: Build): Promise<BuildDetailsStats> {
     // Get base stats using existing use case
@@ -58,19 +58,30 @@ export class FetchBuildDetailsStatsUseCase {
     // Calculate test trend (all test runs over time)
     const testTrend = await this.calculateTestTrend(build, twelveMonthsAgo, now);
 
-    // Fetch contributors list if GitHub client is available
+    // Fetch contributors list and most updated files if GitHub client is available
     let contributors: Contributor[] = [];
+    let mostUpdatedFiles: { path: string; updateCount: number; lastUpdated: Date }[] = [];
+
     if (this.githubClient) {
       try {
-        contributors = await this.githubClient.fetchContributorsList(
-          build.organization,
-          build.repository,
-          50 // Limit to top 50 contributors
-        );
+        const [contributorsList, activeFiles] = await Promise.all([
+          this.githubClient.fetchContributorsList(
+            build.organization,
+            build.repository,
+            50 // Limit to top 50 contributors
+          ),
+          this.githubClient.fetchMostActiveFiles(
+            build.organization,
+            build.repository,
+            100 // Analyze last 100 commits
+          )
+        ]);
+
+        contributors = contributorsList;
+        mostUpdatedFiles = activeFiles;
       } catch (error) {
-        console.error('Failed to fetch contributors list:', error);
-        // Return empty array on error (graceful degradation)
-        contributors = [];
+        console.error('Failed to fetch GitHub data:', error);
+        // Default to empty arrays on error
       }
     }
 
@@ -81,6 +92,7 @@ export class FetchBuildDetailsStatsUseCase {
       testTrend,
       contributors,
       durationTrends,
+      mostUpdatedFiles,
     };
   }
 
@@ -98,7 +110,7 @@ export class FetchBuildDetailsStatsUseCase {
 
     // Group runs by month
     const runsByMonth = new Map<string, WorkflowRunRecord[]>();
-    
+
     runs.forEach((run) => {
       const month = formatDateYYYYMM(run.workflowCreatedAt);
       if (!runsByMonth.has(month)) {
@@ -129,7 +141,7 @@ export class FetchBuildDetailsStatsUseCase {
 
     // Group runs by month (only those with duration data)
     const runsByMonth = new Map<string, WorkflowRunRecord[]>();
-    
+
     runs.forEach((run) => {
       // Only include runs with duration data
       if (run.duration !== null && run.duration > 0) {
@@ -144,7 +156,7 @@ export class FetchBuildDetailsStatsUseCase {
     // Calculate duration stats for each month
     return last12Months.map((month) => {
       const monthRuns = runsByMonth.get(month) || [];
-      
+
       if (monthRuns.length === 0) {
         return {
           period: month,
@@ -180,7 +192,7 @@ export class FetchBuildDetailsStatsUseCase {
       // Fetch all commits from last 12 months in ONE API call
       const twelveMonthsAgo = this.getTwelveMonthsAgo();
       const now = new Date();
-      
+
       const commits = await githubClient.fetchCommitsWithDates(
         build.organization,
         build.repository,
@@ -190,7 +202,7 @@ export class FetchBuildDetailsStatsUseCase {
 
       // Group commits by month in memory
       const commitsByMonth = new Map<string, number>();
-      
+
       for (const commit of commits) {
         const month = formatDateYYYYMM(commit.date);
         commitsByMonth.set(month, (commitsByMonth.get(month) || 0) + 1);
@@ -229,10 +241,10 @@ export class FetchBuildDetailsStatsUseCase {
 
       // For each workflow run, try to get its test results
       const testTrendData: TestTrendDataPoint[] = [];
-      
+
       for (const run of allRuns) {
         const testResult = await this.testResultRepo.findByWorkflowRunId(run.id, build.tenantId);
-        
+
         if (testResult) {
           testTrendData.push({
             date: run.workflowCreatedAt, // Use workflow run creation date, not parsedAt

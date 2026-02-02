@@ -1,5 +1,5 @@
-import type {WorkflowRun, WorkflowRunStatus} from '../domain/models';
-import type {GitHubClient} from './GitHubClient';
+import type { WorkflowRun, WorkflowRunStatus } from '../domain/models';
+import type { GitHubClient } from './GitHubClient';
 import AdmZip from 'adm-zip';
 
 export class GitHubAuthenticationError extends Error {
@@ -149,7 +149,7 @@ export class GitHubGraphQLClient implements GitHubClient {
 
       const result = await response.json();
       const runs = result.workflow_runs || [];
-      
+
       allRuns = allRuns.concat(runs);
 
       // Check if we should continue paginating
@@ -435,7 +435,7 @@ export class GitHubGraphQLClient implements GitHubClient {
         }
 
         const commits = await response.json();
-        
+
         if (!Array.isArray(commits) || commits.length === 0) {
           break; // No more commits
         }
@@ -537,7 +537,7 @@ export class GitHubGraphQLClient implements GitHubClient {
   async fetchTotalContributors(
     owner: string,
     repo: string
-  ): Promise<number> {    
+  ): Promise<number> {
     console.log(`[GitHub] fetching total contributor for ${owner}/${repo}`);
     try {
       // GitHub's contributors endpoint returns all contributors
@@ -826,6 +826,109 @@ export class GitHubGraphQLClient implements GitHubClient {
       }
       console.error(`Failed to download artifact: ${error}`);
       return null;
+    }
+  }
+
+  /**
+   * Fetch the most active files in the repository (most frequently updated)
+   * Analyzes the last N commits
+   */
+  async fetchMostActiveFiles(
+    owner: string,
+    repo: string,
+    limit: number = 30
+  ): Promise<Array<{ path: string; updateCount: number; lastUpdated: Date }>> {
+    console.log(`[GitHub] fetching most active files for ${owner}/${repo} (limit: ${limit})`);
+    try {
+      // 1. Fetch the last N commits
+      const commitsUrl = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${limit}`;
+
+      const response = await fetch(commitsUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Alps-CI',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new GitHubAuthenticationError('Invalid or expired Personal Access Token');
+      }
+
+      if (!response.ok) {
+        throw new GitHubAPIError(
+          `GitHub API request failed: ${response.statusText}`,
+          response.status
+        );
+      }
+
+      const commits = await response.json();
+
+      if (!Array.isArray(commits) || commits.length === 0) {
+        return [];
+      }
+
+      // 2. For each commit, fetch the details to get the list of changed files
+      // Use concurrent requests with limit to avoid rate limiting
+      const fileStats = new Map<string, { updateCount: number; lastUpdated: Date }>();
+      const batchSize = 5;
+
+      for (let i = 0; i < commits.length; i += batchSize) {
+        const batch = commits.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (commit: any) => {
+          try {
+            const commitDate = new Date(commit.commit.author.date);
+            const commitUrl = commit.url;
+
+            const commitResponse = await fetch(commitUrl, {
+              headers: {
+                'Authorization': `Bearer ${this.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Alps-CI',
+              },
+            });
+
+            if (!commitResponse.ok) return;
+
+            const commitData = await commitResponse.json();
+
+            if (commitData.files && Array.isArray(commitData.files)) {
+              for (const file of commitData.files) {
+                const current = fileStats.get(file.filename) || { updateCount: 0, lastUpdated: new Date(0) };
+
+                fileStats.set(file.filename, {
+                  updateCount: current.updateCount + 1,
+                  // Keep the most recent date
+                  lastUpdated: commitDate > current.lastUpdated ? commitDate : current.lastUpdated
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to fetch commit details for ${commit.sha}:`, err);
+          }
+        }));
+
+        // Small delay between batches
+        if (i + batchSize < commits.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      // 3. Convert map to array and sort by update count
+      return Array.from(fileStats.entries())
+        .map(([path, stats]) => ({
+          path,
+          updateCount: stats.updateCount,
+          lastUpdated: stats.lastUpdated
+        }))
+        .sort((a, b) => b.updateCount - a.updateCount)
+        .slice(0, 10); // Return top 10
+
+    } catch (error) {
+      if (error instanceof GitHubAuthenticationError || error instanceof GitHubAPIError) {
+        throw error;
+      }
+      throw new GitHubAPIError(`Failed to fetch most active files: ${error}`);
     }
   }
 }
