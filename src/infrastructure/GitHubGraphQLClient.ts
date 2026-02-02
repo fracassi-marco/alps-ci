@@ -482,7 +482,7 @@ export class GitHubGraphQLClient implements GitHubClient {
     repo: string,
     since?: Date
   ): Promise<number> {
-    console.log(`[GitHub] fetching total contributor for ${owner}/${repo}`);
+    console.log(`[GitHub] fetching contributors (since ${since ? since.toISOString().split('T')[0] : 'all time'}) for ${owner}/${repo}`);
     try {
       // First, fetch commits to get unique authors
       const sinceParam = since ? `&since=${since.toISOString()}` : '';

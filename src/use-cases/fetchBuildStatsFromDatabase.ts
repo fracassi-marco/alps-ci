@@ -102,7 +102,6 @@ export class FetchBuildStatsFromDatabaseUseCase {
 
           // Check if we have cached metadata
           if (isCacheValid && build.tags && build.totalCommits !== undefined && build.totalContributors !== undefined) {
-            console.log(`✅ Using cached dashboard stats for ${latestCommitSha}`);
             lastTag = build.tags.length > 0 ? (build.tags[0] ?? null) : null;
             totalCommits = build.totalCommits;
             totalContributors = build.totalContributors;

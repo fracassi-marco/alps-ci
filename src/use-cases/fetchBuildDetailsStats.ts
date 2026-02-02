@@ -24,10 +24,12 @@ export class FetchBuildDetailsStatsUseCase {
   ) { }
 
   async execute(build: Build): Promise<BuildDetailsStats> {
-    // Get base stats using existing use case
+    // Get base stats using existing use case (with caching support)
     const baseStatsUseCase = new FetchBuildStatsFromDatabaseUseCase(
       this.workflowRunRepo,
-      this.testResultRepo
+      this.testResultRepo,
+      this.githubClient,
+      this.buildRepo
     );
     const baseStats = await baseStatsUseCase.execute(build);
 
