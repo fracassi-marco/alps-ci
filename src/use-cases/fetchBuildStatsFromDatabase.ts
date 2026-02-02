@@ -2,6 +2,7 @@ import type { Build, BuildStats, DailySuccess, WorkflowRun, TestStats, WorkflowR
 import type { GitHubClient } from '@/infrastructure/GitHubClient';
 import type { WorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import type { TestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import type { BuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { calculateHealthPercentage, formatDateYYYYMMDD, getLastNDaysRange } from '@/domain/utils';
 
 /**
@@ -12,8 +13,9 @@ export class FetchBuildStatsFromDatabaseUseCase {
   constructor(
     private workflowRunRepo: WorkflowRunRepository,
     private testResultRepo: TestResultRepository,
-    private githubClient?: GitHubClient
-  ) {}
+    private githubClient?: GitHubClient,
+    private buildRepo?: BuildRepository
+  ) { }
 
   async execute(build: Build): Promise<BuildStats> {
     try {
@@ -77,32 +79,16 @@ export class FetchBuildStatsFromDatabaseUseCase {
 
       if (this.githubClient) {
         try {
-          // Fetch metadata from GitHub (these are still needed as they're not in workflow runs)
-          lastTag = await this.githubClient.fetchLatestTag(
-            build.organization,
-            build.repository
-          );
+          let latestCommitSha: string | null = null;
 
-          const today = new Date();
-          commitsLast7Days = await this.githubClient.fetchCommits(
-            build.organization,
-            build.repository,
-            sevenDaysAgo,
-            today
-          );
-
-          contributorsLast7Days = await this.githubClient.fetchContributors(
-            build.organization,
-            build.repository,
-            sevenDaysAgo
-          );
-
+          // Fetch last commit to get SHA and commit info
           const lastCommitData = await this.githubClient.fetchLastCommit(
             build.organization,
             build.repository
           );
 
           if (lastCommitData) {
+            latestCommitSha = lastCommitData.sha;
             lastCommit = {
               message: lastCommitData.message,
               date: lastCommitData.date,
@@ -112,15 +98,60 @@ export class FetchBuildStatsFromDatabaseUseCase {
             };
           }
 
-          totalCommits = await this.githubClient.fetchCommits(
-            build.organization,
-            build.repository
-          );
+          const isCacheValid = latestCommitSha && build.lastAnalyzedCommitSha === latestCommitSha;
 
-          totalContributors = await this.githubClient.fetchTotalContributors(
-            build.organization,
-            build.repository
-          );
+          // Check if we have cached metadata
+          if (isCacheValid && build.tags && build.totalCommits !== undefined && build.totalContributors !== undefined) {
+            console.log(`✅ Using cached dashboard stats for ${latestCommitSha}`);
+            lastTag = build.tags.length > 0 ? (build.tags[0] ?? null) : null;
+            totalCommits = build.totalCommits;
+            totalContributors = build.totalContributors;
+
+            // Still need to fetch time-windowed data (last 7 days) as it's not cached
+            try {
+              const [last7dCommits, last7dContribs] = await Promise.all([
+                this.githubClient.fetchCommits(build.organization, build.repository, sevenDaysAgo, new Date()).catch(() => 0),
+                this.githubClient.fetchContributors(build.organization, build.repository, sevenDaysAgo).catch(() => 0)
+              ]);
+              commitsLast7Days = last7dCommits;
+              contributorsLast7Days = last7dContribs;
+            } catch (e) {
+              console.error('Failed to fetch time-windowed stats', e);
+            }
+          } else {
+            console.log(`🔄 Dashboard cache miss. Fetching fresh metadata...`);
+
+            // Fetch all metadata from GitHub
+            const [tags, commits, contributors, last7dCommits, last7dContribs] = await Promise.all([
+              this.githubClient.fetchTags(build.organization, build.repository, 50).catch(() => []),
+              this.githubClient.fetchCommits(build.organization, build.repository).catch(() => 0),
+              this.githubClient.fetchTotalContributors(build.organization, build.repository).catch(() => 0),
+              this.githubClient.fetchCommits(build.organization, build.repository, sevenDaysAgo, new Date()).catch(() => 0),
+              this.githubClient.fetchContributors(build.organization, build.repository, sevenDaysAgo).catch(() => 0)
+            ]);
+
+            lastTag = tags.length > 0 ? (tags[0] ?? null) : null;
+            totalCommits = commits;
+            totalContributors = contributors;
+            commitsLast7Days = last7dCommits;
+            contributorsLast7Days = last7dContribs;
+
+            // Update cache
+            if (this.buildRepo && latestCommitSha) {
+              try {
+                await this.buildRepo.update(build.id, {
+                  tags,
+                  totalCommits,
+                  totalContributors,
+                  lastAnalyzedCommitSha: latestCommitSha
+                }, build.tenantId);
+                console.log(`💾 Dashboard properties cached for build ${build.id}`);
+              } catch (e) {
+                console.error('Failed to cache dashboard stats', e);
+              }
+            }
+          }
+
         } catch (error) {
           console.warn('Failed to fetch metadata from GitHub:', error);
           // Continue with database data only

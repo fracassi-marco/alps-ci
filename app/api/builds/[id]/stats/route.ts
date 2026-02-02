@@ -66,7 +66,8 @@ export async function GET(
     const useCase = new FetchBuildStatsFromDatabaseUseCase(
       workflowRunRepository,
       testResultRepository,
-      githubClient
+      githubClient,
+      repository // Inject BuildRepository for caching
     );
     const stats = await useCase.execute(build);
 
@@ -146,7 +147,8 @@ export async function POST(
     const fetchUseCase = new FetchBuildStatsFromDatabaseUseCase(
       workflowRunRepository,
       testResultRepository,
-      githubClient
+      githubClient,
+      repository // Inject BuildRepository for caching
     );
     const stats = await fetchUseCase.execute(build);
 

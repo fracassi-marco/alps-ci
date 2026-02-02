@@ -89,6 +89,9 @@ export interface Build {
   mostUpdatedFiles?: { path: string; updateCount: number; lastUpdated: Date }[];
   monthlyCommits?: { month: string; commitCount: number }[];
   contributors?: Contributor[];
+  tags?: string[];
+  totalCommits?: number;
+  totalContributors?: number;
   lastAnalyzedCommitSha?: string | null;
 }
 

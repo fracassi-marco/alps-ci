@@ -43,6 +43,13 @@
       "when": 1770021067778,
       "tag": "0005_known_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1770021435246,
+      "tag": "0006_breezy_greymalkin",
+      "breakpoints": true
     }
   ]
 }

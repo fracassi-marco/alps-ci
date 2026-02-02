@@ -74,6 +74,9 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.mostUpdatedFiles !== undefined) updateData.mostUpdatedFiles = JSON.stringify(updates.mostUpdatedFiles);
     if (updates.monthlyCommits !== undefined) updateData.monthlyCommits = JSON.stringify(updates.monthlyCommits);
     if (updates.contributors !== undefined) updateData.contributors = JSON.stringify(updates.contributors);
+    if (updates.tags !== undefined) updateData.tags = JSON.stringify(updates.tags);
+    if (updates.totalCommits !== undefined) updateData.totalCommits = updates.totalCommits;
+    if (updates.totalContributors !== undefined) updateData.totalContributors = updates.totalContributors;
     if (updates.lastAnalyzedCommitSha !== undefined) updateData.lastAnalyzedCommitSha = updates.lastAnalyzedCommitSha;
 
     // Always update the updatedAt timestamp
@@ -166,6 +169,11 @@ export class DatabaseBuildRepository implements BuildRepository {
       contributors: typeof row.contributors === 'string'
         ? JSON.parse(row.contributors)
         : row.contributors || undefined,
+      tags: typeof row.tags === 'string'
+        ? JSON.parse(row.tags)
+        : row.tags || undefined,
+      totalCommits: row.totalCommits || undefined,
+      totalContributors: row.totalContributors || undefined,
       lastAnalyzedCommitSha: row.lastAnalyzedCommitSha || null,
     };
   }
