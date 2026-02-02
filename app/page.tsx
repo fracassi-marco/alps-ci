@@ -39,9 +39,9 @@ export default function Home() {
     if (!searchQuery.trim()) {
       return builds;
     }
-    
+
     const query = searchQuery.toLowerCase().trim();
-    
+
     return builds.filter((build) => {
       const matchName = build.name.toLowerCase().includes(query);
       const matchRepo = build.repository.toLowerCase().includes(query);
@@ -150,14 +150,14 @@ export default function Home() {
 
       if (response.ok) {
         const savedBuild = await response.json();
-        
+
         // Refetch the builds list to show the new/updated build
         await fetchBuilds();
 
         // If creating a new build, show a toast notification about initial data fetch
         if (!editingBuild) {
           toast.success(`Build "${savedBuild.name}" created! Initial data is being fetched in the background.`);
-          
+
           // Keep loading overlay visible for a brief moment to ensure 
           // BuildCard has time to mount and show the "Fetching initial data" banner
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -294,9 +294,9 @@ export default function Home() {
   // Show no results message if search returns nothing
   if (builds.length > 0 && filteredBuilds.length === 0 && searchQuery) {
     return (
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <main className="min-h-screen bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="bg-white/30 dark:bg-gray-800/30 border-b border-gray-200/30 dark:border-gray-700/30 sticky top-0 z-10 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+
         {/* Empty State */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
@@ -407,9 +407,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <main className="min-h-screen bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <div className="bg-white/30 dark:bg-gray-800/30 border-b border-gray-200/30 dark:border-gray-700/30 sticky top-0 z-10 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

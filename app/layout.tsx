@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +21,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        {children}
-        <Toaster 
+      <body className="antialiased min-h-screen relative">
+        {/* Fixed Mountain Background */}
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <Image
+            src="/images/background.jpg"
+            alt="Dolomiti Bellunesi"
+            fill
+            priority
+            className="object-cover"
+            quality={90}
+          />
+          {/* Lighter overlay to make the image more vivid */}
+          <div className="absolute inset-0 bg-white/10 dark:bg-black/20" />
+        </div>
+
+        <div className="relative z-0">
+          {children}
+        </div>
+
+        <Toaster
           position="top-center"
           richColors
           closeButton
