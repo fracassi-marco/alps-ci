@@ -72,21 +72,13 @@ export class FetchBuildDetailsStatsUseCase {
         const isCacheValid = latestCommitSha && build.lastAnalyzedCommitSha === latestCommitSha;
         const hasCachedFiles = build.mostUpdatedFiles && build.mostUpdatedFiles.length > 0;
         const hasCachedCommits = build.monthlyCommits && build.monthlyCommits.length > 0;
+        const hasCachedContributors = build.contributors && build.contributors.length > 0;
 
-        if (isCacheValid && hasCachedFiles && hasCachedCommits) {
+        if (isCacheValid && hasCachedFiles && hasCachedCommits && hasCachedContributors) {
           console.log(`✅ Using cached stats for commit ${latestCommitSha}`);
           mostUpdatedFiles = build.mostUpdatedFiles!;
           monthlyCommits = build.monthlyCommits!;
-
-          // Only fetch contributors (fast enough, usually)
-          try {
-            contributors = await this.githubClient.fetchContributorsList(
-              build.organization,
-              build.repository,
-              50
-            );
-          } catch (e) { console.error('Failed to fetch contributors', e); }
-
+          contributors = build.contributors!;
         } else {
           console.log(`🔄 Cache miss or partial data (stored: ${build.lastAnalyzedCommitSha}, current: ${latestCommitSha}). Fetching fresh data...`);
 
@@ -110,11 +102,12 @@ export class FetchBuildDetailsStatsUseCase {
           monthlyCommits = calculatedMonthlyCommits;
 
           // Update cache
-          if (latestCommitSha && (mostUpdatedFiles.length > 0 || monthlyCommits.length > 0)) {
+          if (latestCommitSha && (mostUpdatedFiles.length > 0 || monthlyCommits.length > 0 || contributors.length > 0)) {
             try {
               await this.buildRepo.update(build.id, {
                 mostUpdatedFiles,
                 monthlyCommits,
+                contributors,
                 lastAnalyzedCommitSha: latestCommitSha
               }, build.tenantId);
               console.log(`💾 Cache updated for build ${build.id} with commit ${latestCommitSha}`);

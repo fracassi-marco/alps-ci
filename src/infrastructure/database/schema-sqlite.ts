@@ -114,6 +114,7 @@ export const builds = sqliteTable('builds', {
   selectors: text('selectors', { mode: 'json' }).notNull().$defaultFn(() => []),
   mostUpdatedFiles: text('most_updated_files', { mode: 'json' }),
   monthlyCommits: text('monthly_commits', { mode: 'json' }),
+  contributors: text('contributors', { mode: 'json' }),
   lastAnalyzedCommitSha: text('last_analyzed_commit_sha'),
   accessTokenId: text('access_token_id').references(() => accessTokens.id, { onDelete: 'set null' }),
   personalAccessToken: text('personal_access_token'),

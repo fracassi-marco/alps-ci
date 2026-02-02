@@ -118,6 +118,7 @@ export const builds = pgTable('builds', {
   selectors: jsonb('selectors').notNull().default([]),
   mostUpdatedFiles: jsonb('most_updated_files'),
   monthlyCommits: jsonb('monthly_commits'),
+  contributors: jsonb('contributors'),
   lastAnalyzedCommitSha: text('last_analyzed_commit_sha'),
   personalAccessToken: text('personal_access_token').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

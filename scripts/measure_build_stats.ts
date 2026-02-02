@@ -98,6 +98,9 @@ async function measurePerformance() {
         if (stats.monthlyCommits) {
             console.log(`📅 Retrieved monthly commits for ${stats.monthlyCommits.length} months.`);
         }
+        if (stats.mostUpdatedFiles) {
+            console.log(`📄 Retrieved ${stats.mostUpdatedFiles.length} updated files.`);
+        }
 
     } catch (error) {
         console.error('❌ Error executing use case:', error);

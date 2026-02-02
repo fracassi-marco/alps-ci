@@ -88,6 +88,7 @@ export interface Build {
   updatedAt: Date;
   mostUpdatedFiles?: { path: string; updateCount: number; lastUpdated: Date }[];
   monthlyCommits?: { month: string; commitCount: number }[];
+  contributors?: Contributor[];
   lastAnalyzedCommitSha?: string | null;
 }
 
