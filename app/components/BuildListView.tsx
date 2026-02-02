@@ -52,55 +52,53 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
     return groupBuildsByLabel(builds);
   }, [builds]);
 
-  const fetchStats = useCallback(async (build: Build) => {
+  const fetchBatchStats = useCallback(async (buildsToFetch: Build[]) => {
     try {
-      const response = await fetch(`/api/builds/${build.id}/stats`);
+      const buildIds = buildsToFetch.map(b => b.id);
+      const response = await fetch('/api/builds/batch-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ buildIds }),
+      });
 
-      if (response.status === 401) {
-        const data = await response.json();
-        setBuildStatsMap((prev) => {
-          const newMap = new Map(prev);
-          const existing = newMap.get(build.id);
-          if (existing) {
-            newMap.set(build.id, {
-              ...existing,
-              error: data.error,
-              stats: null,
-              loading: false,
-            });
-          }
-          return newMap;
-        });
-      } else if (response.ok) {
-        const data = await response.json();
-        setBuildStatsMap((prev) => {
-          const newMap = new Map(prev);
-          const existing = newMap.get(build.id);
-          if (existing) {
-            newMap.set(build.id, {
-              ...existing,
-              stats: data,
-              error: null,
-              loading: false,
-            });
-          }
-          return newMap;
-        });
-      } else {
+      if (!response.ok) {
         throw new Error('Failed to fetch statistics');
       }
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+
+      const data = await response.json();
+
+      // Update all builds at once
       setBuildStatsMap((prev) => {
         const newMap = new Map(prev);
-        const existing = newMap.get(build.id);
-        if (existing) {
-          newMap.set(build.id, {
-            ...existing,
-            error: 'Failed to fetch statistics',
-            loading: false,
-          });
-        }
+        buildsToFetch.forEach((build) => {
+          const result = data[build.id];
+          const existing = newMap.get(build.id);
+          if (existing && result) {
+            newMap.set(build.id, {
+              ...existing,
+              stats: result.stats,
+              error: result.error,
+              loading: false,
+            });
+          }
+        });
+        return newMap;
+      });
+    } catch (err) {
+      console.error('Error fetching batch stats:', err);
+      // Set error for all builds
+      setBuildStatsMap((prev) => {
+        const newMap = new Map(prev);
+        buildsToFetch.forEach((build) => {
+          const existing = newMap.get(build.id);
+          if (existing) {
+            newMap.set(build.id, {
+              ...existing,
+              error: 'Failed to fetch statistics',
+              loading: false,
+            });
+          }
+        });
         return newMap;
       });
     }
@@ -108,6 +106,7 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
 
   useEffect(() => {
     // Initialize stats for all builds
+    const newBuilds: Build[] = [];
     builds.forEach((build) => {
       setBuildStatsMap((prev) => {
         // Only initialize if not already present
@@ -120,15 +119,19 @@ export function BuildListView({ builds, onRefresh, onEdit, onDelete }: BuildList
             loading: true,
             refreshing: false,
           });
-          // Fetch stats after setting initial state
-          fetchStats(build);
+          newBuilds.push(build);
           return newMap;
         }
         return prev; // No change if already exists
       });
     });
+    
+    // Fetch stats for all new builds in a single batch request
+    if (newBuilds.length > 0) {
+      fetchBatchStats(newBuilds);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildIds, fetchStats]);
+  }, [buildIds, fetchBatchStats]);
 
   const handleRefresh = async (build: Build) => {
     setBuildStatsMap((prev) => {

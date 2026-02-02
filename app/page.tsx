@@ -33,6 +33,7 @@ export default function Home() {
   const [buildRefreshKeys, setBuildRefreshKeys] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isSavingBuild, setIsSavingBuild] = useState(false);
+  const [buildStatsCache, setBuildStatsCache] = useState<Record<string, { stats: any; error: string | null; loading: boolean }>>({});
 
   // Filter builds based on search query (name and repository only)
   const filteredBuilds = useMemo(() => {
@@ -74,6 +75,62 @@ export default function Home() {
       fetchBuilds();
     }
   }, [session, tenantId]);
+
+  // Fetch batch stats when builds change
+  useEffect(() => {
+    if (builds.length > 0) {
+      fetchBatchStats();
+    }
+  }, [builds.map(b => b.id).join(',')]);
+
+  const fetchBatchStats = async () => {
+    try {
+      const buildIds = builds.map(b => b.id);
+      
+      // Initialize loading state
+      const initialCache: Record<string, { stats: any; error: string | null; loading: boolean }> = {};
+      builds.forEach(build => {
+        if (!buildStatsCache[build.id]) {
+          initialCache[build.id] = { stats: null, error: null, loading: true };
+        }
+      });
+      setBuildStatsCache(prev => ({ ...prev, ...initialCache }));
+
+      const response = await fetch('/api/builds/batch-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ buildIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch statistics');
+      }
+
+      const data = await response.json();
+      
+      // Update cache with results
+      const updatedCache: Record<string, { stats: any; error: string | null; loading: boolean }> = {};
+      builds.forEach(build => {
+        const result = data[build.id];
+        if (result) {
+          updatedCache[build.id] = {
+            stats: result.stats,
+            error: result.error,
+            loading: false,
+          };
+        }
+      });
+      setBuildStatsCache(prev => ({ ...prev, ...updatedCache }));
+    } catch (error) {
+      console.error('Failed to fetch batch stats:', error);
+      // Set error for all builds
+      const errorCache: Record<string, { stats: any; error: string | null; loading: boolean }> = {};
+      builds.forEach(build => {
+        errorCache[build.id] = { stats: null, error: 'Failed to fetch statistics', loading: false };
+      });
+      setBuildStatsCache(prev => ({ ...prev, ...errorCache }));
+    }
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -559,15 +616,21 @@ export default function Home() {
 
                   {/* Builds Grid */}
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {buildsInGroup.map((build) => (
-                      <BuildCard
-                        key={`${build.id}-${buildRefreshKeys[build.id] || 0}`}
-                        build={build}
-                        onEdit={handleEditBuild}
-                        onDelete={handleDeleteClick}
-                        onRefresh={handleRefresh}
-                      />
-                    ))}
+                    {buildsInGroup.map((build) => {
+                      const cachedData = buildStatsCache[build.id];
+                      return (
+                        <BuildCard
+                          key={`${build.id}-${buildRefreshKeys[build.id] || 0}`}
+                          build={build}
+                          onEdit={handleEditBuild}
+                          onDelete={handleDeleteClick}
+                          onRefresh={handleRefresh}
+                          initialStats={cachedData?.stats}
+                          initialError={cachedData?.error}
+                          initialLoading={cachedData?.loading ?? true}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               );

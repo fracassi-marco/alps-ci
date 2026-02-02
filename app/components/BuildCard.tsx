@@ -24,20 +24,26 @@ interface BuildCardProps {
   onEdit: (build: Build) => void;
   onDelete: (build: Build) => void;
   onRefresh: (build: Build) => void;
+  initialStats?: BuildStats | null;
+  initialError?: string | null;
+  initialLoading?: boolean;
 }
 
-export function BuildCard({ build, onEdit, onDelete, onRefresh }: BuildCardProps) {
+export function BuildCard({ build, onEdit, onDelete, onRefresh, initialStats, initialError, initialLoading = true }: BuildCardProps) {
   const router = useRouter();
-  const [stats, setStats] = useState<BuildStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<BuildStats | null>(initialStats ?? null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
+  const [loading, setLoading] = useState(initialStats !== undefined ? false : initialLoading);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showRecentRuns, setShowRecentRuns] = useState(false);
 
   useEffect(() => {
-    fetchStats();
-  }, [build.id]);
+    // Only fetch if no initial stats provided
+    if (initialStats === undefined) {
+      fetchStats();
+    }
+  }, [build.id, initialStats]);
 
   const fetchStats = async () => {
     try {

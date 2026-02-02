@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   Edit,
   Trash2,
@@ -19,14 +20,66 @@ import {
 } from 'lucide-react';
 import { useSession, signOut } from '@/infrastructure/auth-client';
 import Button from '../../components/Button';
-import { BuildDetailsChart } from '../../components/BuildDetailsChart';
-import { BuildDurationChart } from '../../components/BuildDurationChart';
-import { MonthlyCommitsChart } from '../../components/MonthlyCommitsChart';
-import { MonthlyTestsChart } from '../../components/MonthlyTestsChart';
-import { ContributorsList } from '../../components/ContributorsList';
-import { MostUpdatedFilesList } from '../../components/MostUpdatedFilesList';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { Build, BuildDetailsStats } from '@/domain/models';
+
+// Dynamic imports for chart components with loading fallback
+const BuildDetailsChart = dynamic(() => import('../../components/BuildDetailsChart').then(mod => ({ default: mod.BuildDetailsChart })), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+
+const BuildDurationChart = dynamic(() => import('../../components/BuildDurationChart').then(mod => ({ default: mod.BuildDurationChart })), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+
+const MonthlyCommitsChart = dynamic(() => import('../../components/MonthlyCommitsChart').then(mod => ({ default: mod.MonthlyCommitsChart })), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+
+const MonthlyTestsChart = dynamic(() => import('../../components/MonthlyTestsChart').then(mod => ({ default: mod.MonthlyTestsChart })), {
+  loading: () => <ChartSkeleton />,
+  ssr: false,
+});
+
+const ContributorsList = dynamic(() => import('../../components/ContributorsList').then(mod => ({ default: mod.ContributorsList })), {
+  loading: () => <ListSkeleton />,
+  ssr: false,
+});
+
+const MostUpdatedFilesList = dynamic(() => import('../../components/MostUpdatedFilesList').then(mod => ({ default: mod.MostUpdatedFilesList })), {
+  loading: () => <ListSkeleton />,
+  ssr: false,
+});
+
+// Loading skeletons
+function ChartSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+        <div className="h-80 bg-gray-100 dark:bg-gray-700 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+function ListSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded"></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function BuildDetailsPage() {
   const params = useParams();
