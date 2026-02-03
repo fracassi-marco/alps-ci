@@ -49,7 +49,7 @@ export class AutoSyncBuildIfNeededUseCase {
 
       // New commit detected! Sync the build history
       console.log(
-        `🔄 New commit detected for build ${build.id}: ${cachedCommitSha?.substring(0, 7) || 'none'} → ${lastCommit.sha.substring(0, 7)}`
+        `🔄 New commit detected for build ${build.id}: ${cachedCommitSha?.substring(0, 7) || 'none'} → ${lastCommit.sha.substring(0, 7)} ${build.repository}`
       );
 
       const syncUseCase = new SyncBuildHistoryUseCase(
@@ -61,7 +61,7 @@ export class AutoSyncBuildIfNeededUseCase {
 
       await syncUseCase.execute(build);
 
-      console.log(`✅ Build ${build.id} synced successfully`);
+      console.log(`✅ Build ${build.id} synced successfully ${build.repository}`);
       return true;
     } catch (error) {
       console.error(`Failed to auto-sync build ${build.id}:`, error);
