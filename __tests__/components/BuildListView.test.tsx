@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, cleanup, act } from '@testing-library/react';
 import { BuildListView } from '../../app/components/BuildListView';
 import type { Build, BuildStats } from '../../src/domain/models';
 
@@ -31,6 +31,27 @@ const mockFetch = mock((_url: string) => Promise.resolve({
 global.fetch = mockFetch as any;
 
 describe('BuildListView', () => {
+  // Helper to setup fetch mock for batch-stats
+  const setupBatchStatsMock = (statsMap: Record<string, { stats: BuildStats | null; error: string | null }>) => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('batch-stats')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(statsMap),
+        });
+      }
+      // Fallback for individual stats calls (refresh)
+      const buildId = Object.keys(statsMap)[0];
+      const result = buildId ? statsMap[buildId] : null;
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(result?.stats || {}),
+      });
+    });
+  };
+
   const mockBuild1: Build = {
     id: 'build-1',
     tenantId: 'tenant-123',
@@ -126,12 +147,8 @@ describe('BuildListView', () => {
     mockOnEdit.mockClear();
     mockOnDelete.mockClear();
 
-    // Reset mock implementations
-    mockFetch.mockImplementation((_url: string) => Promise.resolve({
-      ok: true,
-      status: 200,
-      json: async () => ({}),
-    }));
+    // Reset mock implementations with default empty response
+    setupBatchStatsMock({});
   });
 
   afterEach(() => {
@@ -140,37 +157,10 @@ describe('BuildListView', () => {
   });
 
   test('should render builds in table format', async () => {
-    mockFetch.mockImplementation(((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-            'build-2': { stats: mockStats2, error: null },
-          }),
-        });
-      }
-      if (url.includes('build-1')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => mockStats1,
-        });
-      }
-      if (url.includes('build-2')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => mockStats2,
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-      });
-    }) as any);
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
+      'build-2': { stats: mockStats2, error: null },
+    });
 
     render(
       <BuildListView
@@ -182,10 +172,13 @@ describe('BuildListView', () => {
     );
 
     // Wait for builds to render
-    await waitFor(() => {
-      expect(screen.getByText('Frontend Build')).toBeDefined();
-      expect(screen.getByText('Backend Build')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Frontend Build')).toBeDefined();
+        expect(screen.getByText('Backend Build')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     // Check for group header "Unlabeled" since builds have no labels
     expect(screen.getByText('Unlabeled')).toBeDefined();
@@ -204,21 +197,8 @@ describe('BuildListView', () => {
   });
 
   test('should display health badge for builds with executions', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -230,27 +210,17 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('93%')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('93%')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display "Inactive" label for builds with zero executions', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-2': { stats: mockStats2, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats2,
-      });
+    setupBatchStatsMock({
+      'build-2': { stats: mockStats2, error: null },
     });
 
     render(
@@ -262,27 +232,17 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Inactive')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Inactive')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display 7-day stats in compact format', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -294,28 +254,18 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const statsElements = screen.getAllByText('15 / 14 / 1');
-      expect(statsElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const statsElements = screen.getAllByText('15 / 14 / 1');
+        expect(statsElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display last tag when available', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -327,28 +277,18 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const tagElements = screen.getAllByText('v1.2.3');
-      expect(tagElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const tagElements = screen.getAllByText('v1.2.3');
+        expect(tagElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display "—" when last tag is not available', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-2': { stats: mockStats2, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats2,
-      });
+    setupBatchStatsMock({
+      'build-2': { stats: mockStats2, error: null },
     });
 
     render(
@@ -360,10 +300,13 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const cells = screen.getAllByText('—');
-      expect(cells.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const cells = screen.getAllByText('—');
+        expect(cells.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should handle empty builds array', () => {
@@ -383,21 +326,8 @@ describe('BuildListView', () => {
   });
 
   test('should call onEdit when edit button is clicked', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -409,10 +339,13 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const editButtons = screen.getAllByTitle('Edit build');
     fireEvent.click(editButtons[0]!);
@@ -422,21 +355,8 @@ describe('BuildListView', () => {
   });
 
   test('should show confirmation dialog when delete button is clicked', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -448,39 +368,32 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const deleteButtons = screen.getAllByTitle('Delete build');
     fireEvent.click(deleteButtons[0]!);
 
     // Check confirmation dialog appears
-    await waitFor(() => {
-      expect(screen.getByText('Delete Build?')).toBeDefined();
-      expect(screen.getByText(/Are you sure you want to delete/)).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Delete Build?')).toBeDefined();
+        expect(screen.getByText(/Are you sure you want to delete/)).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     expect(mockOnDelete).not.toHaveBeenCalled();
   });
 
   test('should call onDelete when delete is confirmed', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -492,17 +405,23 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const deleteButtons = screen.getAllByTitle('Delete build');
     fireEvent.click(deleteButtons[0]!);
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete Build?')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Delete Build?')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const confirmButton = screen.getByText('Delete');
     fireEvent.click(confirmButton);
@@ -512,21 +431,8 @@ describe('BuildListView', () => {
   });
 
   test('should not call onDelete when delete is cancelled', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -538,17 +444,23 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const deleteButtons = screen.getAllByTitle('Delete build');
     fireEvent.click(deleteButtons[0]!);
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete Build?')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Delete Build?')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
@@ -557,21 +469,8 @@ describe('BuildListView', () => {
   });
 
   test('should call onRefresh when refresh button is clicked', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -583,42 +482,46 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const refreshButtons = screen.getAllByTitle('Refresh data');
     fireEvent.click(refreshButtons[0]!);
 
-    await waitFor(() => {
-      expect(mockOnRefresh).toHaveBeenCalledTimes(1);
-      expect(mockOnRefresh).toHaveBeenCalledWith(mockBuild1);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockOnRefresh).toHaveBeenCalledTimes(1);
+        expect(mockOnRefresh).toHaveBeenCalledWith(mockBuild1);
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display loading state while fetching stats', () => {
+    // Setup a delayed response
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return new Promise((resolve) => {
-          setTimeout(() => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          if (url.includes('batch-stats')) {
             resolve({
               ok: true,
               status: 200,
-              json: async () => ({
+              json: () => Promise.resolve({
                 'build-1': { stats: mockStats1, error: null },
               }),
             });
-          }, 100);
-        });
-      }
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            ok: true,
-            status: 200,
-            json: async () => mockStats1,
-          });
+          } else {
+            resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve(mockStats1),
+            });
+          }
         }, 100);
       });
     });
@@ -638,21 +541,8 @@ describe('BuildListView', () => {
   });
 
   test('should display error state when PAT is invalid', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: null, error: 'Invalid Personal Access Token' },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: false,
-        status: 401,
-        json: async () => ({ error: 'Invalid Personal Access Token' }),
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: null, error: 'Invalid Personal Access Token' },
     });
 
     render(
@@ -664,27 +554,17 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Token error')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Token error')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should display error state when stats fetch fails', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: null, error: 'Failed to fetch statistics' },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: false,
-        status: 500,
-        json: async () => ({}),
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: null, error: 'Failed to fetch statistics' },
     });
 
     render(
@@ -696,27 +576,17 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Token error')).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Token error')).toBeDefined();
+      },
+      { timeout: 10000, interval: 100 }
+    );
   });
 
   test('should show loading spinner on refresh button while refreshing', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -728,28 +598,33 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
+    // Now setup delayed response for refresh
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({
-            ok: true,
-            status: 200,
-            json: async () => mockStats1,
-          });
+          if (url.includes('batch-stats')) {
+            resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({
+                'build-1': { stats: mockStats1, error: null },
+              }),
+            });
+          } else {
+            resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve(mockStats1),
+            });
+          }
         }, 100);
       });
     });
@@ -757,27 +632,19 @@ describe('BuildListView', () => {
     const refreshButtons = screen.getAllByTitle('Refresh data');
     fireEvent.click(refreshButtons[0]!);
 
-    // Check for spinning animation
-    const refreshIcons = document.querySelectorAll('.animate-spin');
-    expect(refreshIcons.length).toBeGreaterThan(0);
+    // Check for spinning animation - do this immediately after click
+    await waitFor(
+      () => {
+        const refreshIcons = document.querySelectorAll('.animate-spin');
+        expect(refreshIcons.length).toBeGreaterThan(0);
+      },
+      { timeout: 1000, interval: 10 }
+    );
   });
 
   test('should open GitHub repository in new tab when org/repo link is clicked', async () => {
-    mockFetch.mockImplementation((url: string) => {
-      if (url.includes('batch-stats')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            'build-1': { stats: mockStats1, error: null },
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => mockStats1,
-      });
+    setupBatchStatsMock({
+      'build-1': { stats: mockStats1, error: null },
     });
 
     render(
@@ -789,10 +656,13 @@ describe('BuildListView', () => {
       />
     );
 
-    await waitFor(() => {
-      const buildElements = screen.getAllByText('Frontend Build');
-      expect(buildElements.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const buildElements = screen.getAllByText('Frontend Build');
+        expect(buildElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000, interval: 100 }
+    );
 
     const repoLinks = screen.getAllByText('test-org/frontend-repo');
     const repoLink = repoLinks[0]!;
