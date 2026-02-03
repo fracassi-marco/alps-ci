@@ -102,23 +102,47 @@ export class FetchBuildStatsFromDatabaseUseCase {
 
           // Check if we have cached metadata
           if (isCacheValid && build.tags && build.totalCommits !== undefined && build.totalContributors !== undefined) {
+            console.log(`💾 Using cached base stats for commit ${latestCommitSha?.substring(0, 7)}`);
             lastTag = build.tags.length > 0 ? (build.tags[0] ?? null) : null;
             totalCommits = build.totalCommits;
             totalContributors = build.totalContributors;
 
-            // Still need to fetch time-windowed data (last 7 days) as it's not cached
-            try {
-              const [last7dCommits, last7dContribs] = await Promise.all([
-                this.githubClient.fetchCommits(build.organization, build.repository, sevenDaysAgo, new Date()).catch(() => 0),
-                this.githubClient.fetchContributors(build.organization, build.repository, sevenDaysAgo).catch(() => 0)
-              ]);
-              commitsLast7Days = last7dCommits;
-              contributorsLast7Days = last7dContribs;
-            } catch (e) {
-              console.error('Failed to fetch time-windowed stats', e);
+            // Use cached 7-day data (same commit SHA = same 7-day window)
+            if (build.cachedCommitsLast7Days !== undefined && 
+                build.cachedContributorsLast7Days !== undefined) {
+              commitsLast7Days = build.cachedCommitsLast7Days;
+              contributorsLast7Days = build.cachedContributorsLast7Days;
+            } else {
+              // Cache exists but missing 7-day data, fetch it
+              console.log(`🔄 Fetching missing 7-day stats for build ${build.name}`);
+              try {
+                const [last7dCommits, last7dContribs] = await Promise.all([
+                  this.githubClient.fetchCommits(build.organization, build.repository, sevenDaysAgo, new Date()).catch(() => 0),
+                  this.githubClient.fetchContributors(build.organization, build.repository, sevenDaysAgo).catch(() => 0)
+                ]);
+                commitsLast7Days = last7dCommits;
+                contributorsLast7Days = last7dContribs;
+                
+                // Update cache
+                if (this.buildRepo) {
+                  try {
+                    await this.buildRepo.update(build.id, {
+                      cachedCommitsLast7Days: commitsLast7Days,
+                      cachedContributorsLast7Days: contributorsLast7Days,
+                    }, build.tenantId);
+                  } catch (e) {
+                    console.error('Failed to cache 7-day stats', e);
+                  }
+                }
+              } catch (e) {
+                console.error('Failed to fetch time-windowed stats', e);
+                // Fallback to old cached values if available
+                commitsLast7Days = build.cachedCommitsLast7Days ?? 0;
+                contributorsLast7Days = build.cachedContributorsLast7Days ?? 0;
+              }
             }
           } else {
-            console.log(`🔄 Dashboard cache miss. Fetching fresh metadata...`);
+            console.log(`🔄 Refreshing base stats (new commits detected)`);
 
             // Fetch all metadata from GitHub
             const [tags, commits, contributors, last7dCommits, last7dContribs] = await Promise.all([
@@ -135,14 +159,16 @@ export class FetchBuildStatsFromDatabaseUseCase {
             commitsLast7Days = last7dCommits;
             contributorsLast7Days = last7dContribs;
 
-            // Update cache
+            // Update cache (including time-windowed data)
             if (this.buildRepo && latestCommitSha) {
               try {
                 await this.buildRepo.update(build.id, {
                   tags,
                   totalCommits,
                   totalContributors,
-                  lastAnalyzedCommitSha: latestCommitSha
+                  lastAnalyzedCommitSha: latestCommitSha,
+                  cachedCommitsLast7Days: commitsLast7Days,
+                  cachedContributorsLast7Days: contributorsLast7Days,
                 }, build.tenantId);
                 console.log(`💾 Dashboard properties cached for build ${build.id}`);
               } catch (e) {

@@ -78,6 +78,9 @@ export class DatabaseBuildRepository implements BuildRepository {
     if (updates.totalCommits !== undefined) updateData.totalCommits = updates.totalCommits;
     if (updates.totalContributors !== undefined) updateData.totalContributors = updates.totalContributors;
     if (updates.lastAnalyzedCommitSha !== undefined) updateData.lastAnalyzedCommitSha = updates.lastAnalyzedCommitSha;
+    if (updates.cachedCommitsLast7Days !== undefined) updateData.cachedCommitsLast7Days = updates.cachedCommitsLast7Days;
+    if (updates.cachedContributorsLast7Days !== undefined) updateData.cachedContributorsLast7Days = updates.cachedContributorsLast7Days;
+    if (updates.cachedStatsLastFetchedAt !== undefined) updateData.cachedStatsLastFetchedAt = updates.cachedStatsLastFetchedAt;
 
     // Always update the updatedAt timestamp
     updateData.updatedAt = new Date();
@@ -148,6 +151,35 @@ export class DatabaseBuildRepository implements BuildRepository {
       selectors = [];
     }
 
+    // Parse cached fields
+    let mostUpdatedFiles;
+    let monthlyCommits;
+    let contributors;
+
+    try {
+      mostUpdatedFiles = typeof row.mostUpdatedFiles === 'string'
+        ? JSON.parse(row.mostUpdatedFiles)
+        : row.mostUpdatedFiles || undefined;
+    } catch (error) {
+      mostUpdatedFiles = undefined;
+    }
+
+    try {
+      monthlyCommits = typeof row.monthlyCommits === 'string'
+        ? JSON.parse(row.monthlyCommits)
+        : row.monthlyCommits || undefined;
+    } catch (error) {
+      monthlyCommits = undefined;
+    }
+
+    try {
+      contributors = typeof row.contributors === 'string'
+        ? JSON.parse(row.contributors)
+        : row.contributors || undefined;
+    } catch (error) {
+      contributors = undefined;
+    }
+
     return {
       id: row.id,
       tenantId: row.tenantId,
@@ -160,21 +192,18 @@ export class DatabaseBuildRepository implements BuildRepository {
       personalAccessToken: row.personalAccessToken || null,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
-      mostUpdatedFiles: typeof row.mostUpdatedFiles === 'string'
-        ? JSON.parse(row.mostUpdatedFiles)
-        : row.mostUpdatedFiles || undefined,
-      monthlyCommits: typeof row.monthlyCommits === 'string'
-        ? JSON.parse(row.monthlyCommits)
-        : row.monthlyCommits || undefined,
-      contributors: typeof row.contributors === 'string'
-        ? JSON.parse(row.contributors)
-        : row.contributors || undefined,
+      mostUpdatedFiles,
+      monthlyCommits,
+      contributors,
       tags: typeof row.tags === 'string'
         ? JSON.parse(row.tags)
         : row.tags || undefined,
       totalCommits: row.totalCommits || undefined,
       totalContributors: row.totalContributors || undefined,
       lastAnalyzedCommitSha: row.lastAnalyzedCommitSha || null,
+      cachedCommitsLast7Days: row.cachedCommitsLast7Days || undefined,
+      cachedContributorsLast7Days: row.cachedContributorsLast7Days || undefined,
+      cachedStatsLastFetchedAt: row.cachedStatsLastFetchedAt ? new Date(row.cachedStatsLastFetchedAt) : undefined,
     };
   }
 }

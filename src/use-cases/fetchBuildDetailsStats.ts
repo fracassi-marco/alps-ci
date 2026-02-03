@@ -56,19 +56,8 @@ export class FetchBuildDetailsStatsUseCase {
 
     if (this.githubClient) {
       try {
-        // 1. Get current HEAD SHA (fast)
-        let latestCommitSha: string | null = null;
-        try {
-          const lastCommit = await this.githubClient.fetchLastCommit(
-            build.organization,
-            build.repository
-          );
-          if (lastCommit) {
-            latestCommitSha = lastCommit.sha;
-          }
-        } catch (e) {
-          console.error('Failed to fetch latest commit SHA', e);
-        }
+        // Use the commit SHA already fetched by baseStatsUseCase
+        const latestCommitSha = baseStats.lastCommit?.sha || null;
 
         // 2. Check Cache
         const isCacheValid = latestCommitSha && build.lastAnalyzedCommitSha === latestCommitSha;
@@ -77,12 +66,19 @@ export class FetchBuildDetailsStatsUseCase {
         const hasCachedContributors = build.contributors && build.contributors.length > 0;
 
         if (isCacheValid && hasCachedFiles && hasCachedCommits && hasCachedContributors) {
-          console.log(`✅ Using cached stats for commit ${latestCommitSha}`);
+          console.log(`✅ Using cached GitHub stats for commit ${latestCommitSha?.substring(0, 7)}`);
           mostUpdatedFiles = build.mostUpdatedFiles!;
           monthlyCommits = build.monthlyCommits!;
           contributors = build.contributors!;
         } else {
-          console.log(`🔄 Cache miss or partial data (stored: ${build.lastAnalyzedCommitSha}, current: ${latestCommitSha}). Fetching fresh data...`);
+          const reasons = [];
+          if (!latestCommitSha) reasons.push('no latest SHA');
+          else if (!build.lastAnalyzedCommitSha) reasons.push('no cached SHA');
+          else if (build.lastAnalyzedCommitSha !== latestCommitSha) reasons.push('new commits detected');
+          if (!hasCachedFiles) reasons.push('missing files');
+          if (!hasCachedCommits) reasons.push('missing commits');
+          if (!hasCachedContributors) reasons.push('missing contributors');
+          console.log(`🔄 Refreshing GitHub stats (${reasons.join(', ')})`);
 
           // Fetch everything in parallel
           const [contributorsList, activeFiles, calculatedMonthlyCommits] = await Promise.all([
@@ -104,7 +100,7 @@ export class FetchBuildDetailsStatsUseCase {
           monthlyCommits = calculatedMonthlyCommits;
 
           // Update cache
-          if (latestCommitSha && (mostUpdatedFiles.length > 0 || monthlyCommits.length > 0 || contributors.length > 0)) {
+          if (latestCommitSha) {
             try {
               await this.buildRepo.update(build.id, {
                 mostUpdatedFiles,
@@ -112,10 +108,12 @@ export class FetchBuildDetailsStatsUseCase {
                 contributors,
                 lastAnalyzedCommitSha: latestCommitSha
               }, build.tenantId);
-              console.log(`💾 Cache updated for build ${build.id} with commit ${latestCommitSha}`);
+              console.log(`💾 GitHub stats cached for build ${build.name} (commit ${latestCommitSha.substring(0, 7)})`);
             } catch (err) {
               console.error('Failed to update build cache:', err);
             }
+          } else {
+            console.log(`⚠️ Not saving cache: no latest commit SHA`);
           }
         }
       } catch (error) {
