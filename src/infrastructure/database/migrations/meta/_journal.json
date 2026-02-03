@@ -50,6 +50,20 @@
       "when": 1770021435246,
       "tag": "0006_breezy_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1770033981588,
+      "tag": "0007_light_darwin",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1770037900123,
+      "tag": "0008_rare_speed",
+      "breakpoints": true
     }
   ]
 }

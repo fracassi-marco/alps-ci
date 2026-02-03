@@ -1,0 +1,2 @@
+CREATE INDEX `idx_test_results_tenant_build_parsed` ON `test_results` (`tenant_id`,`build_id`,`parsed_at`);--> statement-breakpoint
+CREATE INDEX `idx_workflow_runs_tenant_build_created` ON `workflow_runs` (`tenant_id`,`build_id`,`workflow_created_at`);

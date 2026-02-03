@@ -28,6 +28,8 @@ function initializeDatabase(): DrizzleDB {
     return globalThis.__db;
   }
 
+  console.log('💾 Initializing Bun SQLite (bun:sqlite)...');
+
   const databaseUrl = process.env.DATABASE_URL || 'file:data/local.db';
   const dbPath = databaseUrl.replace('file:', '');
   const dbDir = join(process.cwd(), 'data');
@@ -38,8 +40,6 @@ function initializeDatabase(): DrizzleDB {
   } catch (error) {
     // Directory already exists
   }
-
-  console.log('💾 Initializing Bun SQLite (bun:sqlite)...');
   const sqlite = new Database(dbPath);
   const dbInstance = drizzle(sqlite, { schema });
 

@@ -93,6 +93,10 @@ export interface Build {
   totalCommits?: number;
   totalContributors?: number;
   lastAnalyzedCommitSha?: string | null;
+  // Time-windowed cache (last 7 days)
+  cachedCommitsLast7Days?: number;
+  cachedContributorsLast7Days?: number;
+  cachedStatsLastFetchedAt?: Date | null;
 }
 
 // Workflow run status

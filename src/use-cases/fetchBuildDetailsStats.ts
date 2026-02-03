@@ -66,19 +66,22 @@ export class FetchBuildDetailsStatsUseCase {
         const hasCachedContributors = build.contributors && build.contributors.length > 0;
 
         if (isCacheValid && hasCachedFiles && hasCachedCommits && hasCachedContributors) {
-          console.log(`✅ Using cached GitHub stats for commit ${latestCommitSha?.substring(0, 7)}`);
+          console.log(`✅ Using cached detailed stats for commit ${latestCommitSha?.substring(0, 7)} ${build.repository}`);
           mostUpdatedFiles = build.mostUpdatedFiles!;
           monthlyCommits = build.monthlyCommits!;
           contributors = build.contributors!;
         } else {
+          const oldCommit = build.lastAnalyzedCommitSha?.substring(0, 7) || 'none';
+          const newCommit = latestCommitSha?.substring(0, 7) || 'unknown';
+          
           const reasons = [];
           if (!latestCommitSha) reasons.push('no latest SHA');
           else if (!build.lastAnalyzedCommitSha) reasons.push('no cached SHA');
-          else if (build.lastAnalyzedCommitSha !== latestCommitSha) reasons.push('new commits detected');
+          else if (build.lastAnalyzedCommitSha !== latestCommitSha) reasons.push(`${oldCommit} → ${newCommit}`);
           if (!hasCachedFiles) reasons.push('missing files');
           if (!hasCachedCommits) reasons.push('missing commits');
           if (!hasCachedContributors) reasons.push('missing contributors');
-          console.log(`🔄 Refreshing GitHub stats (${reasons.join(', ')})`);
+          console.log(`🔄 Refreshing detailed stats (${reasons.join(', ')}) ${build.repository}`);
 
           // Fetch everything in parallel
           const [contributorsList, activeFiles, calculatedMonthlyCommits] = await Promise.all([

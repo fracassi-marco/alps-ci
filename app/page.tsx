@@ -62,19 +62,12 @@ export default function Home() {
     }
   }, [session, isPending, router]);
 
-  // Fetch user's tenant information
+  // Fetch tenant info and builds in parallel
   useEffect(() => {
     if (session) {
-      fetchTenantInfo();
+      fetchInitialData();
     }
   }, [session]);
-
-  useEffect(() => {
-    // Fetch builds on mount
-    if (session && tenantId) {
-      fetchBuilds();
-    }
-  }, [session, tenantId]);
 
   // Fetch batch stats when builds change
   useEffect(() => {
@@ -152,6 +145,37 @@ export default function Home() {
       </div>
     );
   }
+
+  const fetchInitialData = async () => {
+    try {
+      // Fetch tenant info and builds in parallel
+      const [tenantResponse, buildsResponse] = await Promise.all([
+        fetch('/api/user/tenant'),
+        fetch('/api/builds')
+      ]);
+
+      // Process tenant info
+      if (tenantResponse.ok) {
+        const tenantData = await tenantResponse.json();
+        setTenantId(tenantData.tenantId);
+        setUserRole(tenantData.role);
+      } else {
+        console.error('Failed to fetch tenant info');
+      }
+
+      // Process builds
+      if (buildsResponse.ok) {
+        const buildsData = await buildsResponse.json();
+        setBuilds(buildsData);
+      } else {
+        console.error('Failed to fetch builds');
+      }
+    } catch (error) {
+      console.error('Failed to fetch initial data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBuilds = async () => {
     try {

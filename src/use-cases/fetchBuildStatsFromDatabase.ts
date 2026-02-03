@@ -102,7 +102,7 @@ export class FetchBuildStatsFromDatabaseUseCase {
 
           // Check if we have cached metadata
           if (isCacheValid && build.tags && build.totalCommits !== undefined && build.totalContributors !== undefined) {
-            console.log(`💾 Using cached base stats for commit ${latestCommitSha?.substring(0, 7)}`);
+            console.log(`✅ Using cached base stats for commit ${latestCommitSha?.substring(0, 7)} ${build.repository}`);
             lastTag = build.tags.length > 0 ? (build.tags[0] ?? null) : null;
             totalCommits = build.totalCommits;
             totalContributors = build.totalContributors;
@@ -113,8 +113,6 @@ export class FetchBuildStatsFromDatabaseUseCase {
               commitsLast7Days = build.cachedCommitsLast7Days;
               contributorsLast7Days = build.cachedContributorsLast7Days;
             } else {
-              // Cache exists but missing 7-day data, fetch it
-              console.log(`🔄 Fetching missing 7-day stats for build ${build.name}`);
               try {
                 const [last7dCommits, last7dContribs] = await Promise.all([
                   this.githubClient.fetchCommits(build.organization, build.repository, sevenDaysAgo, new Date()).catch(() => 0),
@@ -142,7 +140,9 @@ export class FetchBuildStatsFromDatabaseUseCase {
               }
             }
           } else {
-            console.log(`🔄 Refreshing base stats (new commits detected)`);
+            const oldCommit = build.lastAnalyzedCommitSha?.substring(0, 7) || 'none';
+            const newCommit = latestCommitSha?.substring(0, 7) || 'unknown';
+            console.log(`🔄 Refreshing base stats (${oldCommit} → ${newCommit}) ${build.repository}`);
 
             // Fetch all metadata from GitHub
             const [tags, commits, contributors, last7dCommits, last7dContribs] = await Promise.all([

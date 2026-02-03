@@ -122,6 +122,10 @@ export const builds = sqliteTable('builds', {
   accessTokenId: text('access_token_id').references(() => accessTokens.id, { onDelete: 'set null' }),
   personalAccessToken: text('personal_access_token'),
   label: text('label'),
+  // Time-windowed cache (last 7 days)
+  cachedCommitsLast7Days: integer('cached_commits_last_7_days'),
+  cachedContributorsLast7Days: integer('cached_contributors_last_7_days'),
+  cachedStatsLastFetchedAt: integer('cached_stats_last_fetched_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
@@ -182,6 +186,7 @@ export const workflowRuns = sqliteTable('workflow_runs', {
   statusIdx: index('idx_workflow_runs_status').on(table.status),
   workflowCreatedAtIdx: index('idx_workflow_runs_workflow_created_at').on(table.workflowCreatedAt),
   buildIdWorkflowCreatedAtIdx: index('idx_workflow_runs_build_created').on(table.buildId, table.workflowCreatedAt),
+  tenantBuildCreatedIdx: index('idx_workflow_runs_tenant_build_created').on(table.tenantId, table.buildId, table.workflowCreatedAt),
   uniqueBuildGithubRun: uniqueIndex('idx_workflow_runs_unique').on(table.buildId, table.githubRunId),
 }));
 
@@ -212,6 +217,7 @@ export const testResults = sqliteTable('test_results', {
   buildIdIdx: index('idx_test_results_build_id').on(table.buildId),
   tenantIdIdx: index('idx_test_results_tenant_id').on(table.tenantId),
   buildIdParsedAtIdx: index('idx_test_results_build_parsed').on(table.buildId, table.parsedAt),
+  tenantBuildParsedIdx: index('idx_test_results_tenant_build_parsed').on(table.tenantId, table.buildId, table.parsedAt),
 }));
 
 // Build Sync Status table (tracks sync progress per build)
