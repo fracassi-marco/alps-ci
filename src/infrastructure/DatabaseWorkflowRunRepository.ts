@@ -6,6 +6,8 @@ import type { WorkflowRunRecord } from '@/domain/models';
 export interface WorkflowRunRepository {
   create(run: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkflowRunRecord>;
   bulkCreate(runs: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<WorkflowRunRecord[]>;
+  upsert(run: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkflowRunRecord>;
+  bulkUpsert(runs: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<WorkflowRunRecord[]>;
   findByBuildId(buildId: string, tenantId: string, limit?: number): Promise<WorkflowRunRecord[]>;
   findByBuildIdSince(buildId: string, tenantId: string, since: Date): Promise<WorkflowRunRecord[]>;
   findByBuildIdInDateRange(buildId: string, tenantId: string, startDate: Date, endDate: Date): Promise<WorkflowRunRecord[]>;
@@ -76,6 +78,68 @@ export class DatabaseWorkflowRunRepository implements WorkflowRunRepository {
       .returning();
 
     return created.map(this.mapToModel);
+  }
+
+  async upsert(run: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkflowRunRecord> {
+    // Check if run already exists
+    const existing = await this.findByGithubRunId(run.buildId, run.githubRunId, run.tenantId);
+
+    if (existing) {
+      // Update existing run
+      const [updated] = await db
+        .update(workflowRuns)
+        .set({
+          name: run.name,
+          status: run.status,
+          conclusion: run.conclusion,
+          htmlUrl: run.htmlUrl,
+          headBranch: run.headBranch,
+          event: run.event,
+          duration: run.duration,
+          commitSha: run.commitSha,
+          commitMessage: run.commitMessage,
+          commitAuthor: run.commitAuthor,
+          commitDate: run.commitDate,
+          workflowCreatedAt: run.workflowCreatedAt,
+          workflowUpdatedAt: run.workflowUpdatedAt,
+          syncedAt: run.syncedAt,
+        })
+        .where(
+          and(
+            eq(workflowRuns.buildId, run.buildId),
+            eq(workflowRuns.githubRunId, run.githubRunId),
+            eq(workflowRuns.tenantId, run.tenantId)
+          )
+        )
+        .returning();
+
+      if (!updated) {
+        throw new Error('Failed to update workflow run');
+      }
+
+      return this.mapToModel(updated);
+    }
+
+    // Create new run
+    return this.create(run);
+  }
+
+  async bulkUpsert(runs: Omit<WorkflowRunRecord, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<WorkflowRunRecord[]> {
+    if (runs.length === 0) {
+      return [];
+    }
+
+    // Process each run individually to handle upsert logic
+    // Note: This is not as efficient as a true SQL UPSERT, but Drizzle doesn't support
+    // onConflictDoUpdate for multiple unique constraints yet
+    const results: WorkflowRunRecord[] = [];
+
+    for (const run of runs) {
+      const result = await this.upsert(run);
+      results.push(result);
+    }
+
+    return results;
   }
 
   async findByBuildId(buildId: string, tenantId: string, limit?: number): Promise<WorkflowRunRecord[]> {

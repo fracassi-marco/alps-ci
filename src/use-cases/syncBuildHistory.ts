@@ -40,11 +40,8 @@ export class SyncBuildHistoryUseCase {
       // 3. Fetch workflow runs from GitHub
       const githubRuns = await this.fetchWorkflowRunsForBuild(build, sinceDate, syncStatus);
 
-      // 4. Filter out runs we already have in database
-      const newRuns = await this.filterNewRuns(githubRuns, build.id, build.tenantId);
-
-      if (newRuns.length === 0) {
-        console.log(`No new workflow runs to sync for build ${build.name}`);
+      if (githubRuns.length === 0) {
+        console.log(`No workflow runs found for build ${build.name}`);
         return {
           newRunsSynced: 0,
           testResultsParsed: 0,
@@ -52,15 +49,15 @@ export class SyncBuildHistoryUseCase {
         };
       }
 
-      // 5. Convert GitHub runs to database records
-      const runRecords = newRuns.map((run) => this.mapGitHubRunToRecord(run, build));
+      // 4. Convert GitHub runs to database records
+      const runRecords = githubRuns.map((run) => this.mapGitHubRunToRecord(run, build));
 
-      // 6. Persist workflow runs to database (bulk insert)
-      const persistedRuns = await this.workflowRunRepo.bulkCreate(runRecords);
+      // 5. Upsert workflow runs to database (insert new, update existing)
+      const persistedRuns = await this.workflowRunRepo.bulkUpsert(runRecords);
 
-      console.log(`Synced ${persistedRuns.length} new workflow runs for build ${build.name}`);
+      console.log(`Synced ${persistedRuns.length} workflow runs for build ${build.name}`);
 
-      // 7. For completed runs, fetch and persist test results (LAST 50 ONLY)
+      // 6. For completed runs, fetch and persist test results (LAST 50 ONLY)
       let testResultsParsed = 0;
       const runsForTestFetch = persistedRuns.slice(0, 50); // Only fetch tests for last 50 runs
       
@@ -80,7 +77,7 @@ export class SyncBuildHistoryUseCase {
         }
       }
 
-      // 8. Update sync status with latest run info
+      // 7. Update sync status with latest run info
       if (persistedRuns.length > 0) {
         // Runs are sorted newest first
         const latestRun = persistedRuns[0]!;
@@ -95,7 +92,7 @@ export class SyncBuildHistoryUseCase {
         });
       }
 
-      // 9. Mark initial backfill as complete if not already
+      // 8. Mark initial backfill as complete if not already
       if (!syncStatus.initialBackfillCompleted) {
         await this.syncStatusRepo.markBackfillComplete(build.id, build.tenantId);
       }
@@ -131,8 +128,10 @@ export class SyncBuildHistoryUseCase {
       // Use very old date to fetch all workflow runs (GitHub Actions launched in 2019)
       return new Date('2015-01-01');
     }
-    // Otherwise, incremental sync from last run or last 30 days
-    return syncStatus.lastSyncedRunCreatedAt || this.get30DaysAgo();
+    // Otherwise, fetch runs from last 7 days to catch any status updates
+    // (e.g., in_progress runs that have since completed)
+    // Don't use lastSyncedRunCreatedAt because runs created earlier might have been updated
+    return this.get7DaysAgo();
   }
 
   private async fetchWorkflowRunsForBuild(
@@ -185,24 +184,6 @@ export class SyncBuildHistoryUseCase {
     filteredRuns.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return filteredRuns;
-  }
-
-  private async filterNewRuns(
-    githubRuns: WorkflowRun[],
-    buildId: string,
-    tenantId: string
-  ): Promise<WorkflowRun[]> {
-    // Check which runs already exist in DB
-    const newRuns: WorkflowRun[] = [];
-
-    for (const run of githubRuns) {
-      const existing = await this.workflowRunRepo.findByGithubRunId(buildId, run.id, tenantId);
-      if (!existing) {
-        newRuns.push(run);
-      }
-    }
-
-    return newRuns;
   }
 
   private mapGitHubRunToRecord(
@@ -315,6 +296,13 @@ export class SyncBuildHistoryUseCase {
 
     const regex = new RegExp(`^${regexPattern}$`, 'i');
     return regex.test(value);
+  }
+
+  private get7DaysAgo(): Date {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    date.setHours(0, 0, 0, 0);
+    return date;
   }
 
   private get30DaysAgo(): Date {

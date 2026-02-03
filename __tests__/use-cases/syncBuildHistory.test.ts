@@ -62,6 +62,7 @@ describe('SyncBuildHistoryUseCase', () => {
     mockWorkflowRunRepo = {
       findByGithubRunId: mock(() => Promise.resolve(null)),
       bulkCreate: mock((records) => Promise.resolve(records)),
+      bulkUpsert: mock((records) => Promise.resolve(records)),
     };
 
     mockTestResultRepo = {
@@ -110,7 +111,7 @@ describe('SyncBuildHistoryUseCase', () => {
     const result = await useCase.execute(mockBuild);
 
     expect(result.newRunsSynced).toBe(1);
-    expect(mockWorkflowRunRepo.bulkCreate).toHaveBeenCalledWith([
+    expect(mockWorkflowRunRepo.bulkUpsert).toHaveBeenCalledWith([
       expect.objectContaining({
         buildId: mockBuild.id,
         tenantId: mockBuild.tenantId,
@@ -121,7 +122,7 @@ describe('SyncBuildHistoryUseCase', () => {
     ]);
   });
 
-  it('should skip existing workflow runs', async () => {
+  it('should update existing workflow runs', async () => {
     mockSyncStatusRepo.findByBuildId.mockResolvedValue(mockSyncStatus);
     mockGithubClient.fetchWorkflowRuns.mockResolvedValue([mockWorkflowRun]);
     mockWorkflowRunRepo.findByGithubRunId.mockResolvedValue({ id: 'existing-run' }); // Run exists
@@ -134,8 +135,8 @@ describe('SyncBuildHistoryUseCase', () => {
     );
     const result = await useCase.execute(mockBuild);
 
-    expect(result.newRunsSynced).toBe(0);
-    expect(mockWorkflowRunRepo.bulkCreate).not.toHaveBeenCalled();
+    expect(result.newRunsSynced).toBe(1);
+    expect(mockWorkflowRunRepo.bulkUpsert).toHaveBeenCalled();
   });
 
   it('should filter runs by branch selector', async () => {
@@ -242,7 +243,7 @@ describe('SyncBuildHistoryUseCase', () => {
       updatedAt: new Date(),
     };
     
-    mockWorkflowRunRepo.bulkCreate.mockResolvedValue([persistedRun]);
+    mockWorkflowRunRepo.bulkUpsert.mockResolvedValue([persistedRun]);
     mockGithubClient.fetchArtifacts.mockResolvedValue([
       { id: 1, name: 'test-results.xml', size_in_bytes: 1024 }
     ]);
@@ -306,7 +307,7 @@ describe('SyncBuildHistoryUseCase', () => {
       updatedAt: new Date(),
     };
     
-    mockWorkflowRunRepo.bulkCreate.mockResolvedValue([persistedRun]);
+    mockWorkflowRunRepo.bulkUpsert.mockResolvedValue([persistedRun]);
 
     const useCase = new SyncBuildHistoryUseCase(
       mockGithubClient,
@@ -354,7 +355,7 @@ describe('SyncBuildHistoryUseCase', () => {
       updatedAt: new Date(),
     }));
     
-    mockWorkflowRunRepo.bulkCreate.mockResolvedValue(persistedRuns);
+    mockWorkflowRunRepo.bulkUpsert.mockResolvedValue(persistedRuns);
     mockGithubClient.fetchArtifacts.mockResolvedValue([]); // No artifacts
 
     const useCase = new SyncBuildHistoryUseCase(
@@ -398,7 +399,7 @@ describe('SyncBuildHistoryUseCase', () => {
       updatedAt: new Date(),
     };
     
-    mockWorkflowRunRepo.bulkCreate.mockResolvedValue([persistedRun]);
+    mockWorkflowRunRepo.bulkUpsert.mockResolvedValue([persistedRun]);
 
     const useCase = new SyncBuildHistoryUseCase(
       mockGithubClient,
@@ -507,7 +508,7 @@ describe('SyncBuildHistoryUseCase', () => {
       updatedAt: new Date(),
     }));
     
-    mockWorkflowRunRepo.bulkCreate.mockResolvedValue(persistedRuns);
+    mockWorkflowRunRepo.bulkUpsert.mockResolvedValue(persistedRuns);
     mockGithubClient.fetchArtifacts.mockRejectedValue(new Error('Artifact fetch failed'));
 
     const useCase = new SyncBuildHistoryUseCase(
