@@ -46,7 +46,7 @@ export async function GET(
     const { id } = await params;
 
     // Find the build (scoped to tenant)
-    const build = await repository.findById(id, tenantId);
+    let build = await repository.findById(id, tenantId);
 
     if (!build) {
       return NextResponse.json({ error: 'Build not found' }, { status: 404 });
@@ -75,7 +75,8 @@ export async function GET(
     if (token) {
       githubClient = new GitHubGraphQLClient(token);
       
-      // Auto-sync in background if there are new commits (non-blocking)
+      // Auto-sync if there are new commits (BLOCKING)
+      // If new commits are detected, wait for sync to complete before returning data
       const autoSyncUseCase = new AutoSyncBuildIfNeededUseCase(
         githubClient,
         repository,
@@ -84,10 +85,16 @@ export async function GET(
         syncStatusRepository
       );
       
-      // Fire and forget - don't await, let it run in background
-      autoSyncUseCase.execute(build).catch((error) => {
-        console.error('Background auto-sync failed:', error);
-      });
+      // Wait for sync if new commits detected
+      const wasSynced = await autoSyncUseCase.execute(build);
+      
+      // If data was synced, refresh the build from DB to get updated lastAnalyzedCommitSha
+      if (wasSynced) {
+        const refreshedBuild = await repository.findById(build.id, tenantId);
+        if (refreshedBuild) {
+          build = refreshedBuild;
+        }
+      }
     }
   } catch (error) {
     console.error('Failed to initialize GitHub client:', error);

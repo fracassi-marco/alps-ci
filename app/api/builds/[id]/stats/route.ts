@@ -63,8 +63,8 @@ export async function GET(
     // Create GitHub client with the resolved token
     const githubClient = new GitHubGraphQLClient(githubToken);
 
-    // Auto-sync in background if there are new commits (non-blocking)
-    // This runs asynchronously and doesn't block the response
+    // Auto-sync if there are new commits (BLOCKING)
+    // If new commits are detected, wait for sync to complete before returning data
     const autoSyncUseCase = new AutoSyncBuildIfNeededUseCase(
       githubClient,
       repository,
@@ -73,19 +73,26 @@ export async function GET(
       syncStatusRepository
     );
     
-    // Fire and forget - don't await, let it run in background
-    autoSyncUseCase.execute(build).catch((error) => {
-      console.error('Background auto-sync failed:', error);
-    });
+    // Wait for sync if new commits detected
+    const wasSynced = await autoSyncUseCase.execute(build);
+    
+    // If data was synced, refresh the build from DB to get updated lastAnalyzedCommitSha
+    let updatedBuild = build;
+    if (wasSynced) {
+      const refreshedBuild = await repository.findById(build.id, tenantId);
+      if (refreshedBuild) {
+        updatedBuild = refreshedBuild;
+      }
+    }
 
-    // Fetch statistics from database immediately (fast!)
+    // Fetch statistics from database (will include newly synced data if sync occurred)
     const useCase = new FetchBuildStatsFromDatabaseUseCase(
       workflowRunRepository,
       testResultRepository,
       githubClient,
       repository // Inject BuildRepository for caching
     );
-    const stats = await useCase.execute(build);
+    const stats = await useCase.execute(updatedBuild);
 
     return NextResponse.json(stats);
   } catch (error) {
