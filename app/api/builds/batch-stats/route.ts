@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { GitHubGraphQLClient, GitHubAuthenticationError } from '@/infrastructure/GitHubGraphQLClient';
 import { FetchBuildStatsFromDatabaseUseCase } from '@/use-cases/fetchBuildStatsFromDatabase';
+import { AutoSyncBuildIfNeededUseCase } from '@/use-cases/autoSyncBuildIfNeeded';
 import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import { DatabaseBuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { DatabaseAccessTokenRepository } from '@/infrastructure/DatabaseAccessTokenRepository';
@@ -16,6 +18,7 @@ const accessTokenRepository = new DatabaseAccessTokenRepository();
 const tokenResolutionService = new TokenResolutionService(accessTokenRepository);
 const workflowRunRepository = new DatabaseWorkflowRunRepository();
 const testResultRepository = new DatabaseTestResultRepository();
+const syncStatusRepository = new DatabaseBuildSyncStatusRepository();
 
 interface BatchStatsResponse {
   [buildId: string]: {
@@ -89,7 +92,21 @@ export async function POST(request: Request) {
         // Create GitHub client with the resolved token
         const githubClient = new GitHubGraphQLClient(githubToken);
 
-        // Fetch statistics from database (fast!)
+        // Auto-sync in background if there are new commits (non-blocking)
+        const autoSyncUseCase = new AutoSyncBuildIfNeededUseCase(
+          githubClient,
+          repository,
+          workflowRunRepository,
+          testResultRepository,
+          syncStatusRepository
+        );
+        
+        // Fire and forget - don't await, let it run in background
+        autoSyncUseCase.execute(build).catch((error) => {
+          console.error(`Background auto-sync failed for build ${buildId}:`, error);
+        });
+
+        // Fetch statistics from database immediately (fast!)
         const useCase = new FetchBuildStatsFromDatabaseUseCase(
           workflowRunRepository,
           testResultRepository,

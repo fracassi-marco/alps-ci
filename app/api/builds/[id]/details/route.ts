@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepository';
 import { FetchBuildDetailsStatsUseCase } from '@/use-cases/fetchBuildDetailsStats';
+import { AutoSyncBuildIfNeededUseCase } from '@/use-cases/autoSyncBuildIfNeeded';
 import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
+import { DatabaseBuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
 import { getCurrentUser } from '@/infrastructure/auth-session';
 import { DatabaseTenantMemberRepository } from '@/infrastructure/DatabaseTenantMemberRepository';
 import { GitHubGraphQLClient } from '@/infrastructure/GitHubGraphQLClient';
@@ -15,6 +17,7 @@ const tenantMemberRepository = new DatabaseTenantMemberRepository();
 const workflowRunRepository = new DatabaseWorkflowRunRepository();
 const testResultRepository = new DatabaseTestResultRepository();
 const accessTokenRepository = new DatabaseAccessTokenRepository();
+const syncStatusRepository = new DatabaseBuildSyncStatusRepository();
 
 export async function GET(
   request: Request,
@@ -68,14 +71,28 @@ export async function GET(
         token = build.personalAccessToken;
       }
 
-      // Create GitHub client if token is available
-      if (token) {
-        githubClient = new GitHubGraphQLClient(token);
-      }
-    } catch (error) {
-      console.error('Failed to initialize GitHub client:', error);
-      // Continue without GitHub client (will return empty commit data)
+    // Create GitHub client if token is available
+    if (token) {
+      githubClient = new GitHubGraphQLClient(token);
+      
+      // Auto-sync in background if there are new commits (non-blocking)
+      const autoSyncUseCase = new AutoSyncBuildIfNeededUseCase(
+        githubClient,
+        repository,
+        workflowRunRepository,
+        testResultRepository,
+        syncStatusRepository
+      );
+      
+      // Fire and forget - don't await, let it run in background
+      autoSyncUseCase.execute(build).catch((error) => {
+        console.error('Background auto-sync failed:', error);
+      });
     }
+  } catch (error) {
+    console.error('Failed to initialize GitHub client:', error);
+    // Continue without GitHub client (will return empty commit data)
+  }
 
     // Fetch extended statistics with monthly data
     const useCase = new FetchBuildDetailsStatsUseCase(

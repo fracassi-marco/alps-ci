@@ -3,6 +3,7 @@ import { DatabaseBuildRepository } from '@/infrastructure/DatabaseBuildRepositor
 import { GitHubGraphQLClient, GitHubAuthenticationError } from '@/infrastructure/GitHubGraphQLClient';
 import { FetchBuildStatsFromDatabaseUseCase } from '@/use-cases/fetchBuildStatsFromDatabase';
 import { SyncBuildHistoryUseCase } from '@/use-cases/syncBuildHistory';
+import { AutoSyncBuildIfNeededUseCase } from '@/use-cases/autoSyncBuildIfNeeded';
 import { DatabaseWorkflowRunRepository } from '@/infrastructure/DatabaseWorkflowRunRepository';
 import { DatabaseTestResultRepository } from '@/infrastructure/DatabaseTestResultRepository';
 import { DatabaseBuildSyncStatusRepository } from '@/infrastructure/DatabaseBuildSyncStatusRepository';
@@ -62,7 +63,22 @@ export async function GET(
     // Create GitHub client with the resolved token
     const githubClient = new GitHubGraphQLClient(githubToken);
 
-    // Fetch statistics from database (fast!)
+    // Auto-sync in background if there are new commits (non-blocking)
+    // This runs asynchronously and doesn't block the response
+    const autoSyncUseCase = new AutoSyncBuildIfNeededUseCase(
+      githubClient,
+      repository,
+      workflowRunRepository,
+      testResultRepository,
+      syncStatusRepository
+    );
+    
+    // Fire and forget - don't await, let it run in background
+    autoSyncUseCase.execute(build).catch((error) => {
+      console.error('Background auto-sync failed:', error);
+    });
+
+    // Fetch statistics from database immediately (fast!)
     const useCase = new FetchBuildStatsFromDatabaseUseCase(
       workflowRunRepository,
       testResultRepository,
